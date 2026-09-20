@@ -73,3 +73,13 @@ prisma/{schema.prisma,seed.ts}
 - `npm run test` — chạy unit/integration test (Vitest)
 - `npm run test:e2e` — chạy e2e (Playwright)
 - `npx prisma migrate dev` — áp dụng migration schema
+
+## CSDL dev cục bộ
+
+Dùng `npx prisma dev` (Prisma Postgres local, không cần Docker/Internet) thay vì Supabase cho môi trường code/thiết kế schema. Instance tên `he-thong-boi-duong` đã chạy nền (`--detach`), `DATABASE_URL` trong `.env` (không commit) trỏ về nó.
+
+- `npx prisma dev ls` — xem trạng thái instance
+- `npx prisma dev stop he-thong-boi-duong` — dừng
+- `npx prisma dev start he-thong-boi-duong` — chạy lại
+
+Chuyển sang Supabase (để dùng Realtime cho BC-01 ở Đợt 3) là việc của giai đoạn triển khai sau, chỉ cần đổi `DATABASE_URL`.
