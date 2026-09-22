@@ -45,7 +45,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 ### 10. Quản trị hệ thống
 
 - [x] **QT-01** — Quản lý tài khoản người dùng
-- [ ] **QT-02** — Phân quyền theo vai trò (RBAC)
+- [x] **QT-02** — Phân quyền theo vai trò (RBAC)
 - [ ] **QT-04** — Sao lưu và phục hồi dữ liệu
 
 ## Đợt 2 (34 chức năng)
