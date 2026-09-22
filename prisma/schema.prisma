@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +8,474 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum VaiTro {
+  ADMIN
+  CAN_BO_QUAN_LY_DAO_TAO
+  CAN_BO_TAI_CHINH
+  GIANG_VIEN
+  HOC_VIEN
+  CAN_BO_DON_VI_LIEN_KET
+}
+
+enum TrangThaiTaiKhoan {
+  HOAT_DONG
+  TAM_KHOA
+}
+
+enum PhuongThucDangKy {
+  TRUC_TUYEN_NOP_GIAY
+  IMPORT_TU_XAC_NHAN
+  CHI_DU_THI
+  QUA_DON_VI_LIEN_KET
+}
+
+enum TrangThaiChuongTrinh {
+  DU_THAO
+  CHO_THAM_DINH
+  DA_BAN_HANH
+  NGUNG_HIEU_LUC
+}
+
+enum HinhThucGiangDay {
+  TRUC_TIEP
+  TRUC_TUYEN
+}
+
+enum TrangThaiKhoa {
+  CHUAN_BI
+  DANG_TUYEN_SINH
+  DANG_DIEN_RA
+  DA_KET_THUC
+  HUY
+}
+
+enum TrangThaiDangKy {
+  CHO_DUYET
+  HOP_LE
+  KHONG_HOP_LE
+  CHINH_THUC
+  HOAN_THANH
+  THOI_HOC
+}
+
+enum TrangThaiDiemDanh {
+  CO_MAT
+  VANG_CO_PHEP
+  VANG_KHONG_PHEP
+}
+
+enum TrangThaiHocPhi {
+  CHUA_NOP
+  DA_NOP_DU
+  CON_NO
+  MIEN_GIAM
+  CHO_THANH_LY_HOP_DONG
+  DA_HOAN_TAT
+}
+
+enum TrangThaiHopDong {
+  DANG_TRIEN_KHAI
+  DA_THANH_LY
+}
+
+enum TrangThaiChungChi {
+  CHO_KY_DUYET
+  DA_KY_DUYET
+  DA_CAP
+}
+
+// ============================================================
+// NGƯỜI DÙNG & RBAC (QT-01, QT-02)
+// Ma trận phân quyền Vai trò <-> Chức năng lưu trong DB (không hard-code)
+// để admin gán/thu hồi quyền qua UI mà không cần sửa code.
+// ============================================================
+
+model NguoiDung {
+  id          String            @id @default(cuid())
+  tenDangNhap String            @unique
+  matKhauHash String
+  hoTen       String
+  email       String?           @unique
+  // học viên có thể đăng nhập bằng CCCD hoặc mã số học viên (Phương thức 2 - HV-04)
+  soCCCD      String?           @unique
+  maSoHocVien String?           @unique
+  trangThai   TrangThaiTaiKhoan @default(HOAT_DONG)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  vaiTros      NguoiDungVaiTro[]
+  giangVien    GiangVien?
+  hocVien      HocVien?
+  donViLienKet DonViLienKet?     @relation("TaiKhoanDonViLienKet")
+
+  @@map("nguoi_dung")
+}
+
+model VaiTroModel {
+  id         String  @id @default(cuid())
+  ma         VaiTro  @unique
+  tenHienThi String
+  ghiChu     String?
+
+  nguoiDungs NguoiDungVaiTro[]
+  chucNangs  VaiTroChucNang[]
+
+  @@map("vai_tro")
+}
+
+model NguoiDungVaiTro {
+  nguoiDungId String
+  vaiTroId    String
+
+  nguoiDung NguoiDung   @relation(fields: [nguoiDungId], references: [id], onDelete: Cascade)
+  vaiTro    VaiTroModel @relation(fields: [vaiTroId], references: [id], onDelete: Cascade)
+
+  @@id([nguoiDungId, vaiTroId])
+  @@map("nguoi_dung_vai_tro")
+}
+
+model ChucNangHeThong {
+  id           String @id @default(cuid())
+  // mã chức năng theo bảng phân tích 69 chức năng, vd "DM-01"
+  maCN         String @unique
+  nhomChucNang String
+  tenChucNang  String
+
+  vaiTros VaiTroChucNang[]
+
+  @@map("chuc_nang_he_thong")
+}
+
+model VaiTroChucNang {
+  vaiTroId          String
+  chucNangHeThongId String
+
+  vaiTro          VaiTroModel     @relation(fields: [vaiTroId], references: [id], onDelete: Cascade)
+  chucNangHeThong ChucNangHeThong @relation(fields: [chucNangHeThongId], references: [id], onDelete: Cascade)
+
+  @@id([vaiTroId, chucNangHeThongId])
+  @@map("vai_tro_chuc_nang")
+}
+
+// ============================================================
+// DANH MỤC DÙNG CHUNG (DM-01..DM-05)
+// ============================================================
+
+model DonVi {
+  id         String  @id @default(cuid())
+  ma         String  @unique
+  ten        String
+  donViChaId String?
+  donViCha   DonVi?  @relation("DonViCapTren", fields: [donViChaId], references: [id])
+  donViCons  DonVi[] @relation("DonViCapTren")
+
+  giangViens GiangVien[]
+
+  @@map("don_vi")
+}
+
+model ChucDanhHocVi {
+  id   String @id @default(cuid())
+  ma   String @unique
+  ten  String
+  // phân loại: chuc_danh | hoc_ham | hoc_vi
+  loai String
+
+  giangViens GiangVien[]
+
+  @@map("chuc_danh_hoc_vi")
+}
+
+model LoaiHinhBoiDuong {
+  id  String @id @default(cuid())
+  ma  String @unique
+  ten String
+
+  chuongTrinhs ChuongTrinh[]
+
+  @@map("loai_hinh_boi_duong")
+}
+
+model PhongHoc {
+  id      String  @id @default(cuid())
+  ma      String  @unique
+  ten     String
+  coSo    String?
+  sucChua Int?
+
+  buoiHocs BuoiHoc[]
+
+  @@map("phong_hoc")
+}
+
+model DotTuyenSinh {
+  id          String   @id @default(cuid())
+  ma          String   @unique
+  ten         String
+  ngayBatDau  DateTime
+  ngayKetThuc DateTime
+
+  khoas Khoa[]
+
+  @@map("dot_tuyen_sinh")
+}
+
+// ============================================================
+// 13 THỰC THỂ NGHIỆP VỤ CỐT LÕI (mục 3.1 đặc tả)
+// Model rỗng ở bước nền tảng này; business logic/API cho từng CN
+// sẽ code ở các phiên module DM/CT/KH/HV/GD/KQ/HP/CC/DVLK sau,
+// theo đúng thứ tự Đợt 1 -> 2 -> 3.
+// ============================================================
+
+model ChuongTrinh {
+  id                 String               @id @default(cuid())
+  maCT               String               @unique
+  ten                String
+  mucTieu            String?
+  doiTuongApDung     String?
+  tongThoiLuong      Int?
+  loaiHinhBoiDuongId String
+  loaiHinhBoiDuong   LoaiHinhBoiDuong     @relation(fields: [loaiHinhBoiDuongId], references: [id])
+  // CT-07: mỗi chương trình gắn đúng 1 trong 4 phương thức đăng ký;
+  // mọi khóa mở theo chương trình kế thừa phương thức này.
+  phuongThucDangKy   PhuongThucDangKy?
+  trangThai          TrangThaiChuongTrinh @default(DU_THAO)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  hocPhans HocPhan[]
+  khoas    Khoa[]
+
+  @@map("chuong_trinh")
+}
+
+model HocPhan {
+  id            String      @id @default(cuid())
+  chuongTrinhId String
+  chuongTrinh   ChuongTrinh @relation(fields: [chuongTrinhId], references: [id], onDelete: Cascade)
+  ten           String
+  soTiet        Int
+  thuTu         Int
+
+  giangViens GiangVienHocPhan[]
+  buoiHocs   BuoiHoc[]
+  ketQuas    KetQuaHocTap[]
+
+  @@map("hoc_phan")
+}
+
+model Khoa {
+  id                String           @id @default(cuid())
+  maKhoa            String           @unique
+  chuongTrinhId     String
+  chuongTrinh       ChuongTrinh      @relation(fields: [chuongTrinhId], references: [id])
+  dotTuyenSinhId    String?
+  dotTuyenSinh      DotTuyenSinh?    @relation(fields: [dotTuyenSinhId], references: [id])
+  thoiGianKhaiGiang DateTime?
+  thoiGianBeGiang   DateTime?
+  siSoToiDa         Int
+  hinhThucGiangDay  HinhThucGiangDay @default(TRUC_TIEP)
+  mucHocPhi         Decimal?         @db.Decimal(12, 2)
+  trangThai         TrangThaiKhoa    @default(CHUAN_BI)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  buoiHocs   BuoiHoc[]
+  dangKys    DangKyHoc[]
+  hocPhis    HocPhi[]
+  chungChis  ChungChi[]
+  hopDongs   HopDongLienKet[]
+  giangViens GiangVienHocPhan[]
+
+  @@map("khoa")
+}
+
+model GiangVien {
+  id              String         @id @default(cuid())
+  nguoiDungId     String?        @unique
+  nguoiDung       NguoiDung?     @relation(fields: [nguoiDungId], references: [id])
+  hoTen           String
+  donViId         String?
+  donVi           DonVi?         @relation(fields: [donViId], references: [id])
+  chucDanhHocViId String?
+  chucDanhHocVi   ChucDanhHocVi? @relation(fields: [chucDanhHocViId], references: [id])
+  chuyenMon       String?
+
+  hocPhans  GiangVienHocPhan[]
+  diemDanhs DiemDanh[]
+
+  @@map("giang_vien")
+}
+
+// bảng nối phân công giảng viên phụ trách học phần trong 1 khóa cụ thể (KH-02)
+model GiangVienHocPhan {
+  id          String    @id @default(cuid())
+  khoaId      String
+  khoa        Khoa      @relation(fields: [khoaId], references: [id], onDelete: Cascade)
+  hocPhanId   String
+  hocPhan     HocPhan   @relation(fields: [hocPhanId], references: [id], onDelete: Cascade)
+  giangVienId String
+  giangVien   GiangVien @relation(fields: [giangVienId], references: [id])
+
+  @@unique([khoaId, hocPhanId])
+  @@map("giang_vien_hoc_phan")
+}
+
+model HocVien {
+  id           String     @id @default(cuid())
+  nguoiDungId  String?    @unique
+  nguoiDung    NguoiDung? @relation(fields: [nguoiDungId], references: [id])
+  maHocVien    String     @unique
+  hoTen        String
+  ngaySinh     DateTime?
+  donViCongTac String?
+  soCCCD       String?    @unique
+  soDienThoai  String?
+  email        String?
+
+  dangKys   DangKyHoc[]
+  diemDanhs DiemDanh[]
+  ketQuas   KetQuaHocTap[]
+  hocPhis   HocPhi[]
+  chungChis ChungChi[]
+
+  @@map("hoc_vien")
+}
+
+model DangKyHoc {
+  id               String          @id @default(cuid())
+  hocVienId        String
+  hocVien          HocVien         @relation(fields: [hocVienId], references: [id])
+  khoaId           String
+  khoa             Khoa            @relation(fields: [khoaId], references: [id])
+  ngayDangKy       DateTime        @default(now())
+  trangThai        TrangThaiDangKy @default(CHO_DUYET)
+  // chỉ có giá trị khi học viên đăng ký qua đơn vị liên kết (Phương thức 4);
+  // mỗi học viên qua ĐVLK gắn đúng 1 hợp đồng liên kết.
+  hopDongLienKetId String?
+  hopDongLienKet   HopDongLienKet? @relation(fields: [hopDongLienKetId], references: [id])
+
+  @@unique([hocVienId, khoaId])
+  @@map("dang_ky_hoc")
+}
+
+model BuoiHoc {
+  id            String    @id @default(cuid())
+  khoaId        String
+  khoa          Khoa      @relation(fields: [khoaId], references: [id], onDelete: Cascade)
+  hocPhanId     String?
+  hocPhan       HocPhan?  @relation(fields: [hocPhanId], references: [id])
+  ngayHoc       DateTime
+  gioBatDau     String?
+  gioKetThuc    String?
+  phongHocId    String?
+  phongHoc      PhongHoc? @relation(fields: [phongHocId], references: [id])
+  linkTrucTuyen String?
+
+  diemDanhs DiemDanh[]
+
+  @@map("buoi_hoc")
+}
+
+model DiemDanh {
+  id          String            @id @default(cuid())
+  buoiHocId   String
+  buoiHoc     BuoiHoc           @relation(fields: [buoiHocId], references: [id], onDelete: Cascade)
+  hocVienId   String
+  hocVien     HocVien           @relation(fields: [hocVienId], references: [id])
+  giangVienId String?
+  giangVien   GiangVien?        @relation(fields: [giangVienId], references: [id])
+  trangThai   TrangThaiDiemDanh @default(VANG_KHONG_PHEP)
+
+  @@unique([buoiHocId, hocVienId])
+  @@map("diem_danh")
+}
+
+model KetQuaHocTap {
+  id            String   @id @default(cuid())
+  hocVienId     String
+  hocVien       HocVien  @relation(fields: [hocVienId], references: [id])
+  hocPhanId     String
+  hocPhan       HocPhan  @relation(fields: [hocPhanId], references: [id])
+  diemThanhPhan Decimal? @db.Decimal(4, 2)
+  diemKetThuc   Decimal? @db.Decimal(4, 2)
+  dat           Boolean?
+  daPheDuyet    Boolean  @default(false)
+
+  @@unique([hocVienId, hocPhanId])
+  @@map("ket_qua_hoc_tap")
+}
+
+model HocPhi {
+  id             String          @id @default(cuid())
+  hocVienId      String
+  hocVien        HocVien         @relation(fields: [hocVienId], references: [id])
+  khoaId         String
+  khoa           Khoa            @relation(fields: [khoaId], references: [id])
+  soTienPhaiNop  Decimal         @db.Decimal(12, 2)
+  soTienDaNop    Decimal         @default(0) @db.Decimal(12, 2)
+  ngayNop        DateTime?
+  hinhThucNop    String?
+  trangThai      TrangThaiHocPhi @default(CHUA_NOP)
+  nguoiXacNhanId String?
+
+  @@unique([hocVienId, khoaId])
+  @@map("hoc_phi")
+}
+
+model ChungChi {
+  id        String            @id @default(cuid())
+  soHieu    String?           @unique
+  hocVienId String
+  hocVien   HocVien           @relation(fields: [hocVienId], references: [id])
+  khoaId    String
+  khoa      Khoa              @relation(fields: [khoaId], references: [id])
+  ngayCap   DateTime?
+  nguoiKy   String?
+  soVaoSo   String?
+  kenhNhan  String?
+  trangThai TrangThaiChungChi @default(CHO_KY_DUYET)
+
+  @@map("chung_chi")
+}
+
+model DonViLienKet {
+  id           String     @id @default(cuid())
+  ma           String     @unique
+  ten          String
+  diaChi       String?
+  nguoiDaiDien String?
+  soDienThoai  String?
+  // 1 tài khoản/đơn vị liên kết, chỉ thao tác trên các khóa được phân công qua hợp đồng
+  taiKhoanId   String?    @unique
+  taiKhoan     NguoiDung? @relation("TaiKhoanDonViLienKet", fields: [taiKhoanId], references: [id])
+
+  hopDongs HopDongLienKet[]
+
+  @@map("don_vi_lien_ket")
+}
+
+model HopDongLienKet {
+  id              String           @id @default(cuid())
+  maHopDong       String           @unique
+  donViLienKetId  String
+  donViLienKet    DonViLienKet     @relation(fields: [donViLienKetId], references: [id])
+  khoaId          String
+  khoa            Khoa             @relation(fields: [khoaId], references: [id])
+  soLuongDuKien   Int?
+  soLuongThucTe   Int?
+  donGiaThoaThuan Decimal?         @db.Decimal(12, 2)
+  trangThai       TrangThaiHopDong @default(DANG_TRIEN_KHAI)
+  ngayQuyetToan   DateTime?
+  soTienQuyetToan Decimal?         @db.Decimal(12, 2)
+
+  dangKys DangKyHoc[]
+
+  @@map("hop_dong_lien_ket")
 }
