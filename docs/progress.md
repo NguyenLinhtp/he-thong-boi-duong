@@ -6,7 +6,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 1. Quản trị danh mục dùng chung
 
-- [ ] **DM-01** — Quản lý danh mục đơn vị/phòng ban
+- [x] **DM-01** — Quản lý danh mục đơn vị/phòng ban
 - [ ] **DM-02** — Quản lý danh mục chức danh, học hàm/học vị
 - [ ] **DM-03** — Quản lý danh mục loại hình bồi dưỡng
 - [ ] **DM-04** — Quản lý danh mục phòng học/địa điểm
