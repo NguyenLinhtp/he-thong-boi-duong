@@ -22,13 +22,6 @@ export async function taoChuongTrinh(input: TaoChuongTrinhInput) {
   );
 }
 
-export async function danhSachChuongTrinh() {
-  return prisma.chuongTrinh.findMany({
-    include: { loaiHinhBoiDuong: true },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
 export async function layChuongTrinh(id: string) {
   return prisma.chuongTrinh.findUnique({
     where: { id },

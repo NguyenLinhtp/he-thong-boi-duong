@@ -2,10 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
-import { danhSachChuongTrinh } from "@/server/services/ct/ct-01-tao-chuong-trinh";
+import { timKiemChuongTrinh } from "@/server/services/ct/ct-05-tra-cuu";
+import type { TrangThaiChuongTrinh } from "@/generated/prisma/client";
 import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-boi-duong";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { FormTaoChuongTrinh } from "./form-tao-chuong-trinh";
+import { FormTraCuuChuongTrinh } from "./form-tra-cuu-chuong-trinh";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   DU_THAO: "Dự thảo",
@@ -14,9 +16,23 @@ const NHAN_TRANG_THAI: Record<string, string> = {
   NGUNG_HIEU_LUC: "Ngừng hiệu lực",
 };
 
-export default async function ChuongTrinhPage() {
+async function coQuyen(maCN: string): Promise<boolean> {
   try {
-    await requirePermission("CT-01");
+    await requirePermission(maCN);
+    return true;
+  } catch (error) {
+    if (error instanceof KhongCoQuyenError) return false;
+    throw error;
+  }
+}
+
+export default async function ChuongTrinhPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ten?: string; maCT?: string; loaiHinhBoiDuongId?: string; trangThai?: string }>;
+}) {
+  try {
+    await requirePermission("CT-05");
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
@@ -25,15 +41,28 @@ export default async function ChuongTrinhPage() {
     throw error;
   }
 
-  const [dsChuongTrinh, dsLoaiHinh] = await Promise.all([
-    danhSachChuongTrinh(),
+  const sp = await searchParams;
+  const [dsChuongTrinh, dsLoaiHinh, choPhepTao] = await Promise.all([
+    timKiemChuongTrinh({
+      ten: sp.ten || undefined,
+      maCT: sp.maCT || undefined,
+      loaiHinhBoiDuongId: sp.loaiHinhBoiDuongId || undefined,
+      trangThai: (sp.trangThai as TrangThaiChuongTrinh | undefined) || undefined,
+    }),
     danhSachLoaiHinhBoiDuong(),
+    coQuyen("CT-01"),
   ]);
+
+  const dsLoaiHinhRutGon = dsLoaiHinh.map((lh) => ({ id: lh.id, ten: lh.ten }));
 
   return (
     <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">CT-01 · Chương trình bồi dưỡng</h1>
-      <FormTaoChuongTrinh dsLoaiHinh={dsLoaiHinh.map((lh) => ({ id: lh.id, ten: lh.ten }))} />
+      <h1 className="text-lg font-semibold">Chương trình bồi dưỡng</h1>
+
+      {choPhepTao && <FormTaoChuongTrinh dsLoaiHinh={dsLoaiHinhRutGon} />}
+
+      <FormTraCuuChuongTrinh dsLoaiHinh={dsLoaiHinhRutGon} giaTriHienTai={sp} />
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -60,6 +89,13 @@ export default async function ChuongTrinhPage() {
               </TableCell>
             </TableRow>
           ))}
+          {dsChuongTrinh.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                Không tìm thấy chương trình phù hợp
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </main>
