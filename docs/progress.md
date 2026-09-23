@@ -10,7 +10,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 - [x] **DM-02** — Quản lý danh mục chức danh, học hàm/học vị
 - [x] **DM-03** — Quản lý danh mục loại hình bồi dưỡng
 - [x] **DM-04** — Quản lý danh mục phòng học/địa điểm
-- [ ] **DM-05** — Quản lý danh mục đợt/kỳ tuyển sinh
+- [x] **DM-05** — Quản lý danh mục đợt/kỳ tuyển sinh
 
 ### 2. Quản lý chương trình bồi dưỡng
 
