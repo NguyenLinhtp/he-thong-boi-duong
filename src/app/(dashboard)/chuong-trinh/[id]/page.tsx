@@ -3,9 +3,12 @@ import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layChuongTrinh } from "@/server/services/ct/ct-01-tao-chuong-trinh";
 import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-boi-duong";
+import { coKhoaDangHoatDong, lichSuPhienBan } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
 import { FormSuaChuongTrinh } from "./form-sua-chuong-trinh";
 import { DanhSachHocPhan } from "./danh-sach-hoc-phan";
 import { KhoiPheDuyet } from "./khoi-phe-duyet";
+import { FormCapNhatBanHanh } from "./form-cap-nhat-ban-hanh";
+import { LichSuPhienBan } from "./lich-su-phien-ban";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   DU_THAO: "Dự thảo",
@@ -44,8 +47,10 @@ export default async function ChiTietChuongTrinhPage({
   if (!chuongTrinh) notFound();
 
   const dangDuThao = chuongTrinh.trangThai === "DU_THAO";
+  const daBanHanh = chuongTrinh.trangThai === "DA_BAN_HANH";
   const choPhepSuaHocPhan = dangDuThao && (await coQuyen("CT-02"));
   const choPhepPheDuyet = await coQuyen("CT-03");
+  const choPhepSuaBanHanh = daBanHanh && (await coQuyen("CT-04"));
   const tongTiet = chuongTrinh.hocPhans.reduce((tong, hp) => tong + hp.soTiet, 0);
   const tongTietKhop = chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong;
 
@@ -72,6 +77,23 @@ export default async function ChiTietChuongTrinhPage({
             id: lh.id,
             ten: lh.ten,
           }))}
+        />
+      ) : choPhepSuaBanHanh ? (
+        <FormCapNhatBanHanh
+          chuongTrinh={{
+            id: chuongTrinh.id,
+            ten: chuongTrinh.ten,
+            mucTieu: chuongTrinh.mucTieu,
+            doiTuongApDung: chuongTrinh.doiTuongApDung,
+            tongThoiLuong: chuongTrinh.tongThoiLuong,
+            loaiHinhBoiDuongId: chuongTrinh.loaiHinhBoiDuongId,
+            phienBanHienTai: chuongTrinh.phienBanHienTai,
+          }}
+          dsLoaiHinh={(await danhSachLoaiHinhBoiDuong()).map((lh) => ({
+            id: lh.id,
+            ten: lh.ten,
+          }))}
+          coKhoaDangHoatDong={await coKhoaDangHoatDong(chuongTrinh.id)}
         />
       ) : (
         <div className="rounded-lg border p-4 text-sm">
@@ -101,6 +123,8 @@ export default async function ChiTietChuongTrinhPage({
           tongTietKhop={tongTietKhop}
         />
       )}
+
+      {choPhepSuaBanHanh && <LichSuPhienBan danhSach={await lichSuPhienBan(chuongTrinh.id)} />}
     </main>
   );
 }

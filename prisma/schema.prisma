@@ -253,13 +253,36 @@ model ChuongTrinh {
   yKienThamDinh      String?
   soQuyetDinh        String?
   ngayBanHanh        DateTime?
+  // CT-04: mỗi lần sửa chương trình đã ban hành tăng số này lên 1 và lưu
+  // snapshot nội dung trước khi sửa vào ChuongTrinhPhienBan.
+  phienBanHienTai    Int                  @default(1)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
-  hocPhans HocPhan[]
-  khoas    Khoa[]
+  hocPhans  HocPhan[]
+  khoas     Khoa[]
+  phienBans ChuongTrinhPhienBan[]
 
   @@map("chuong_trinh")
+}
+
+// CT-04: snapshot nội dung chương trình TRƯỚC mỗi lần sửa khi đã ban hành -
+// "lưu lại thành phiên bản mới, lưu lịch sử phiên bản cũ".
+model ChuongTrinhPhienBan {
+  id                 String      @id @default(cuid())
+  chuongTrinhId      String
+  chuongTrinh        ChuongTrinh @relation(fields: [chuongTrinhId], references: [id], onDelete: Cascade)
+  phienBan           Int
+  ten                String
+  mucTieu            String?
+  doiTuongApDung     String?
+  tongThoiLuong      Int?
+  loaiHinhBoiDuongId String
+  lyDoSua            String?
+  luuLucAt           DateTime    @default(now())
+
+  @@unique([chuongTrinhId, phienBan])
+  @@map("chuong_trinh_phien_ban")
 }
 
 model HocPhan {
