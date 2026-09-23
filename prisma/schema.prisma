@@ -188,6 +188,7 @@ model ChucDanhHocVi {
   loai String
 
   giangViens GiangVien[]
+  hocViens   HocVien[]
 
   @@map("chuc_danh_hoc_vi")
 }
@@ -328,16 +329,20 @@ model GiangVienHocPhan {
 }
 
 model HocVien {
-  id           String     @id @default(cuid())
-  nguoiDungId  String?    @unique
-  nguoiDung    NguoiDung? @relation(fields: [nguoiDungId], references: [id])
-  maHocVien    String     @unique
-  hoTen        String
-  ngaySinh     DateTime?
-  donViCongTac String?
-  soCCCD       String?    @unique
-  soDienThoai  String?
-  email        String?
+  id              String         @id @default(cuid())
+  nguoiDungId     String?        @unique
+  nguoiDung       NguoiDung?     @relation(fields: [nguoiDungId], references: [id])
+  maHocVien       String         @unique
+  hoTen           String
+  ngaySinh        DateTime?
+  // đơn vị công tác của học viên thường là trường/đơn vị bên ngoài, không
+  // thuộc danh mục DonVi nội bộ trường (DM-01) nên giữ dạng text tự do.
+  donViCongTac    String?
+  chucDanhHocViId String?
+  chucDanhHocVi   ChucDanhHocVi? @relation(fields: [chucDanhHocViId], references: [id])
+  soCCCD          String?        @unique
+  soDienThoai     String?
+  email           String?
 
   dangKys   DangKyHoc[]
   diemDanhs DiemDanh[]
