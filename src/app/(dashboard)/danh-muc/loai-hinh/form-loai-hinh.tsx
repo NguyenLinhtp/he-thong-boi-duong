@@ -1,0 +1,28 @@
+"use client";
+
+import { useActionState } from "react";
+import { taoLoaiHinhAction } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export function FormLoaiHinh() {
+  const [loi, formAction, dangXuLy] = useActionState(taoLoaiHinhAction, undefined);
+
+  return (
+    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="ma">Mã loại hình</Label>
+        <Input id="ma" name="ma" required className="w-40" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="ten">Tên loại hình</Label>
+        <Input id="ten" name="ten" required className="w-64" />
+      </div>
+      {loi && <p className="text-sm text-destructive">{loi}</p>}
+      <Button type="submit" disabled={dangXuLy}>
+        {dangXuLy ? "Đang thêm..." : "Thêm"}
+      </Button>
+    </form>
+  );
+}
