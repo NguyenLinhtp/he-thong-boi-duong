@@ -14,7 +14,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 2. Quản lý chương trình bồi dưỡng
 
-- [ ] **CT-01** — Tạo mới chương trình bồi dưỡng
+- [x] **CT-01** — Tạo mới chương trình bồi dưỡng
 - [ ] **CT-02** — Quản lý học phần/chuyên đề trong chương trình
 - [ ] **CT-03** — Trình duyệt và phê duyệt chương trình
 - [ ] **CT-04** — Cập nhật/chỉnh sửa chương trình đã ban hành
