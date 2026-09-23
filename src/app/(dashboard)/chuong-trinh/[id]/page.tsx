@@ -5,6 +5,7 @@ import { layChuongTrinh } from "@/server/services/ct/ct-01-tao-chuong-trinh";
 import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-boi-duong";
 import { FormSuaChuongTrinh } from "./form-sua-chuong-trinh";
 import { DanhSachHocPhan } from "./danh-sach-hoc-phan";
+import { KhoiPheDuyet } from "./khoi-phe-duyet";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   DU_THAO: "Dự thảo",
@@ -13,9 +14,9 @@ const NHAN_TRANG_THAI: Record<string, string> = {
   NGUNG_HIEU_LUC: "Ngừng hiệu lực",
 };
 
-async function coQuyenSuaHocPhan(): Promise<boolean> {
+async function coQuyen(maCN: string): Promise<boolean> {
   try {
-    await requirePermission("CT-02");
+    await requirePermission(maCN);
     return true;
   } catch (error) {
     if (error instanceof KhongCoQuyenError) return false;
@@ -43,8 +44,10 @@ export default async function ChiTietChuongTrinhPage({
   if (!chuongTrinh) notFound();
 
   const dangDuThao = chuongTrinh.trangThai === "DU_THAO";
-  const choPhepSuaHocPhan = dangDuThao && (await coQuyenSuaHocPhan());
+  const choPhepSuaHocPhan = dangDuThao && (await coQuyen("CT-02"));
+  const choPhepPheDuyet = await coQuyen("CT-03");
   const tongTiet = chuongTrinh.hocPhans.reduce((tong, hp) => tong + hp.soTiet, 0);
+  const tongTietKhop = chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong;
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -85,6 +88,19 @@ export default async function ChiTietChuongTrinhPage({
         tongThoiLuong={chuongTrinh.tongThoiLuong}
         choPhepSua={choPhepSuaHocPhan}
       />
+
+      {choPhepPheDuyet && chuongTrinh.trangThai !== "NGUNG_HIEU_LUC" && (
+        <KhoiPheDuyet
+          chuongTrinh={{
+            id: chuongTrinh.id,
+            trangThai: chuongTrinh.trangThai,
+            yKienThamDinh: chuongTrinh.yKienThamDinh,
+            soQuyetDinh: chuongTrinh.soQuyetDinh,
+            ngayBanHanh: chuongTrinh.ngayBanHanh,
+          }}
+          tongTietKhop={tongTietKhop}
+        />
+      )}
     </main>
   );
 }

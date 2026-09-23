@@ -246,7 +246,13 @@ model ChuongTrinh {
   // CT-07: mỗi chương trình gắn đúng 1 trong 4 phương thức đăng ký;
   // mọi khóa mở theo chương trình kế thừa phương thức này.
   phuongThucDangKy   PhuongThucDangKy?
+  // CT-03: quy trình Dự thảo -> Chờ thẩm định -> Đã ban hành.
+  // CT-03: "Chỉ chương trình Đã ban hành mới được dùng để mở khóa" - ràng
+  // buộc này áp dụng ở KH-01 (khởi tạo khóa) khi module đó được xây dựng.
   trangThai          TrangThaiChuongTrinh @default(DU_THAO)
+  yKienThamDinh      String?
+  soQuyetDinh        String?
+  ngayBanHanh        DateTime?
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
