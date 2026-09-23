@@ -4,6 +4,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layChuongTrinh } from "@/server/services/ct/ct-01-tao-chuong-trinh";
 import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-boi-duong";
 import { FormSuaChuongTrinh } from "./form-sua-chuong-trinh";
+import { DanhSachHocPhan } from "./danh-sach-hoc-phan";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   DU_THAO: "Dự thảo",
@@ -11,6 +12,16 @@ const NHAN_TRANG_THAI: Record<string, string> = {
   DA_BAN_HANH: "Đã ban hành",
   NGUNG_HIEU_LUC: "Ngừng hiệu lực",
 };
+
+async function coQuyenSuaHocPhan(): Promise<boolean> {
+  try {
+    await requirePermission("CT-02");
+    return true;
+  } catch (error) {
+    if (error instanceof KhongCoQuyenError) return false;
+    throw error;
+  }
+}
 
 export default async function ChiTietChuongTrinhPage({
   params,
@@ -31,6 +42,10 @@ export default async function ChiTietChuongTrinhPage({
   const chuongTrinh = await layChuongTrinh(id);
   if (!chuongTrinh) notFound();
 
+  const dangDuThao = chuongTrinh.trangThai === "DU_THAO";
+  const choPhepSuaHocPhan = dangDuThao && (await coQuyenSuaHocPhan());
+  const tongTiet = chuongTrinh.hocPhans.reduce((tong, hp) => tong + hp.soTiet, 0);
+
   return (
     <main className="flex flex-col gap-6 p-6">
       <h1 className="text-lg font-semibold">
@@ -40,7 +55,7 @@ export default async function ChiTietChuongTrinhPage({
         Trạng thái: {NHAN_TRANG_THAI[chuongTrinh.trangThai] ?? chuongTrinh.trangThai}
       </p>
 
-      {chuongTrinh.trangThai === "DU_THAO" ? (
+      {dangDuThao ? (
         <FormSuaChuongTrinh
           chuongTrinh={{
             id: chuongTrinh.id,
@@ -62,6 +77,14 @@ export default async function ChiTietChuongTrinhPage({
           <p>Tổng thời lượng: {chuongTrinh.tongThoiLuong ?? "—"}</p>
         </div>
       )}
+
+      <DanhSachHocPhan
+        chuongTrinhId={chuongTrinh.id}
+        dsHocPhan={chuongTrinh.hocPhans}
+        tongTiet={tongTiet}
+        tongThoiLuong={chuongTrinh.tongThoiLuong}
+        choPhepSua={choPhepSuaHocPhan}
+      />
     </main>
   );
 }

@@ -8,7 +8,10 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient() {
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
-  const adapter = new PrismaPg(pool);
+  // disposeExternalPool: true - để prisma.$disconnect() đóng luôn pg.Pool bên
+  // dưới, tránh rò rỉ connection tích lũy qua nhiều lần chạy test (local
+  // Prisma Postgres dev instance không chịu được nhiều connection bỏ ngỏ).
+  const adapter = new PrismaPg(pool, { disposeExternalPool: true });
   return new PrismaClient({ adapter });
 }
 

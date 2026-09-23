@@ -19,5 +19,8 @@ export default defineConfig({
     // nhiều connection đồng thời từ nhiều test file chạy song song (lỗi
     // "prepared statement requires 0 params" do multiplex sai) -> chạy tuần tự.
     fileParallelism: false,
+    // Đóng pool DB sau mỗi test file - tránh rò rỉ connection tích lũy qua
+    // nhiều file/nhiều lần chạy (xem tests/setup.ts).
+    setupFiles: ["./tests/setup.ts"],
   },
 });
