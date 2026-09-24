@@ -21,3 +21,15 @@ export class TrungLichGiangVienError extends Error {
     super("Giảng viên đã được phân công ở 1 khóa khác trùng thời gian");
   }
 }
+
+export class TrungLichGiangVienTheoBuoiError extends Error {
+  constructor() {
+    super("Giảng viên đã có buổi dạy khác trùng ngày/giờ này");
+  }
+}
+
+export class TrungPhongHocError extends Error {
+  constructor() {
+    super("Phòng học đã được xếp cho 1 buổi học khác trùng ngày/giờ này");
+  }
+}

@@ -4,8 +4,13 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { danhSachGiangVien } from "@/server/services/kh/dung-chung";
 import { danhSachPhanCong } from "@/server/services/kh/kh-02-phan-cong-giang-vien";
+import { danhSachBuoiHoc } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
+import { danhSachPhongHoc } from "@/server/services/dm/dm-04-phong-hoc";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
+import { FormBuoiHoc } from "./form-buoi-hoc";
+import { xoaBuoiHocAction } from "./actions";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   CHUAN_BI: "Chuẩn bị",
@@ -37,7 +42,12 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  const [dsPhanCong, dsGiangVien] = await Promise.all([danhSachPhanCong(id), danhSachGiangVien()]);
+  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc] = await Promise.all([
+    danhSachPhanCong(id),
+    danhSachGiangVien(),
+    danhSachBuoiHoc(id),
+    danhSachPhongHoc(),
+  ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
 
@@ -106,6 +116,56 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
               <TableRow>
                 <TableCell colSpan={2} className="text-center text-sm text-muted-foreground">
                   Chưa phân công giảng viên nào
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold">KH-03 · Thời khóa biểu</h2>
+
+        <FormBuoiHoc
+          khoaId={khoa.id}
+          dsHocPhan={khoa.chuongTrinh.hocPhans.map((hp) => ({ id: hp.id, ten: hp.ten }))}
+          dsPhongHoc={dsPhongHoc.map((ph) => ({ id: ph.id, ten: `${ph.ma} · ${ph.ten}` }))}
+        />
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Ngày</TableHead>
+              <TableHead>Giờ</TableHead>
+              <TableHead>Học phần</TableHead>
+              <TableHead>Phòng / hình thức</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {dsBuoiHoc.map((bh) => (
+              <TableRow key={bh.id}>
+                <TableCell>{new Date(bh.ngayHoc).toLocaleDateString("vi-VN")}</TableCell>
+                <TableCell>
+                  {bh.gioBatDau && bh.gioKetThuc ? `${bh.gioBatDau} – ${bh.gioKetThuc}` : "—"}
+                </TableCell>
+                <TableCell>{bh.hocPhan?.ten ?? "—"}</TableCell>
+                <TableCell>
+                  {bh.phongHoc?.ten ?? (bh.linkTrucTuyen ? "Trực tuyến" : "—")}
+                </TableCell>
+                <TableCell>
+                  <form action={xoaBuoiHocAction.bind(null, khoa.id, bh.id)}>
+                    <Button type="submit" variant="ghost" className="h-7 px-2 text-xs text-destructive">
+                      Xóa
+                    </Button>
+                  </form>
+                </TableCell>
+              </TableRow>
+            ))}
+            {dsBuoiHoc.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  Chưa có buổi học nào trong thời khóa biểu
                 </TableCell>
               </TableRow>
             )}
