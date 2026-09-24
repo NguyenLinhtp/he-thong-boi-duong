@@ -51,3 +51,11 @@ export class ChuyenTrangThaiKhoaKhongHopLeError extends Error {
     super(`Không thể chuyển trạng thái khóa từ "${tu}" sang "${den}"`);
   }
 }
+
+export class KhoaChuaMoDangKyError extends Error {
+  constructor() {
+    super(
+      "Khóa chưa/không còn mở đăng ký (chỉ Đang tuyển sinh và chưa đủ sĩ số mới phát hành được thông báo/link)",
+    );
+  }
+}

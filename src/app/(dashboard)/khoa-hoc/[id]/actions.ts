@@ -9,6 +9,11 @@ import {
   tuDongTaoLinkTrucTuyen,
 } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
 import { chuyenTrangThaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import {
+  phatHanhThongBao,
+  type KenhGui,
+  type ThongBaoDaPhatHanh,
+} from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import type { HinhThucGiangDay, TrangThaiKhoa } from "@/generated/prisma/client";
 
 export async function phanCongGiangVienAction(
@@ -111,4 +116,27 @@ export async function chuyenTrangThaiAction(
   revalidatePath(`/khoa-hoc/${khoaId}`);
   revalidatePath("/khoa-hoc");
   return undefined;
+}
+
+export type TrangThaiPhatHanhThongBao = { loi?: string; ketQua?: ThongBaoDaPhatHanh };
+
+export async function phatHanhThongBaoAction(
+  _prevState: TrangThaiPhatHanhThongBao | undefined,
+  formData: FormData,
+): Promise<TrangThaiPhatHanhThongBao> {
+  await requirePermission("KH-06");
+  const khoaId = String(formData.get("khoaId"));
+  const kenhGui = formData.getAll("kenhGui") as KenhGui[];
+
+  try {
+    const ketQua = await phatHanhThongBao({
+      khoaId,
+      noiDung: String(formData.get("noiDung") || ""),
+      kenhGui,
+    });
+    return { ketQua };
+  } catch (error) {
+    if (error instanceof Error) return { loi: error.message };
+    throw error;
+  }
 }

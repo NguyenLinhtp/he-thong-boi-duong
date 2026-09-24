@@ -8,12 +8,14 @@ import { danhSachBuoiHoc } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import { danhSachPhongHoc } from "@/server/services/dm/dm-04-phong-hoc";
 import { tinhTrangLinkTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
 import { tinhTrangSiSo } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { linkDangKyCongKhai } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
 import { FormBuoiHoc } from "./form-buoi-hoc";
 import { FormHinhThuc } from "./form-hinh-thuc";
 import { FormTrangThai } from "./form-trang-thai";
+import { FormThongBao } from "./form-thong-bao";
 import { xoaBuoiHocAction, tuDongTaoLinkAction } from "./actions";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
@@ -46,14 +48,16 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc, tinhTrangLink, siSo] = await Promise.all([
-    danhSachPhanCong(id),
-    danhSachGiangVien(),
-    danhSachBuoiHoc(id),
-    danhSachPhongHoc(),
-    tinhTrangLinkTrucTuyen(id),
-    tinhTrangSiSo(id),
-  ]);
+  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc, tinhTrangLink, siSo, linkCongKhai] =
+    await Promise.all([
+      danhSachPhanCong(id),
+      danhSachGiangVien(),
+      danhSachBuoiHoc(id),
+      danhSachPhongHoc(),
+      tinhTrangLinkTrucTuyen(id),
+      tinhTrangSiSo(id),
+      linkDangKyCongKhai(id),
+    ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
 
@@ -117,6 +121,11 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
             )}
           </div>
         )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold">KH-06 · Thông báo tuyển sinh/mở khóa</h2>
+        <FormThongBao khoaId={khoa.id} linkHienTai={linkCongKhai} />
       </section>
 
       <section className="flex flex-col gap-3">

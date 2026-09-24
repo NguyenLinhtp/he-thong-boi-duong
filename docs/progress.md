@@ -28,7 +28,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 - [x] **KH-03** — Thiết lập thời khóa biểu
 - [x] **KH-04** — Thiết lập hình thức giảng dạy
 - [x] **KH-05** — Quản lý trạng thái và sĩ số khóa
-- [ ] **KH-06** — Thông báo tuyển sinh/mở khóa
+- [x] **KH-06** — Thông báo tuyển sinh/mở khóa
 
 ### 4. Tuyển sinh & Quản lý học viên
 
