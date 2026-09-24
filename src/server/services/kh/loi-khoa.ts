@@ -33,3 +33,15 @@ export class TrungPhongHocError extends Error {
     super("Phòng học đã được xếp cho 1 buổi học khác trùng ngày/giờ này");
   }
 }
+
+export class KhoaKhongPhaiTrucTuyenError extends Error {
+  constructor() {
+    super("Khóa không ở hình thức trực tuyến");
+  }
+}
+
+export class ThieuLinkTrucTuyenError extends Error {
+  constructor() {
+    super("Khóa trực tuyến còn buổi học chưa có link - phải hoàn tất trước ngày khai giảng");
+  }
+}

@@ -6,11 +6,13 @@ import { danhSachGiangVien } from "@/server/services/kh/dung-chung";
 import { danhSachPhanCong } from "@/server/services/kh/kh-02-phan-cong-giang-vien";
 import { danhSachBuoiHoc } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import { danhSachPhongHoc } from "@/server/services/dm/dm-04-phong-hoc";
+import { tinhTrangLinkTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
 import { FormBuoiHoc } from "./form-buoi-hoc";
-import { xoaBuoiHocAction } from "./actions";
+import { FormHinhThuc } from "./form-hinh-thuc";
+import { xoaBuoiHocAction, tuDongTaoLinkAction } from "./actions";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   CHUAN_BI: "Chuẩn bị",
@@ -42,11 +44,12 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc] = await Promise.all([
+  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc, tinhTrangLink] = await Promise.all([
     danhSachPhanCong(id),
     danhSachGiangVien(),
     danhSachBuoiHoc(id),
     danhSachPhongHoc(),
+    tinhTrangLinkTrucTuyen(id),
   ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
@@ -80,6 +83,31 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
         <p>Mức học phí: {khoa.mucHocPhi ? khoa.mucHocPhi.toString() : "—"}</p>
         <p>Đợt tuyển sinh: {khoa.dotTuyenSinh?.ten ?? "—"}</p>
       </div>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold">KH-04 · Hình thức giảng dạy</h2>
+
+        <FormHinhThuc khoaId={khoa.id} hinhThucHienTai={khoa.hinhThucGiangDay} />
+
+        {tinhTrangLink.apDung && (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4 text-sm">
+            <p>
+              {tinhTrangLink.daDu
+                ? "Mọi buổi học đã có link trực tuyến."
+                : tinhTrangLink.tongBuoi === 0
+                  ? "Khóa trực tuyến chưa có buổi học nào trong thời khóa biểu (KH-03) để gán link."
+                  : `Còn ${tinhTrangLink.buoiThieuLink}/${tinhTrangLink.tongBuoi} buổi học chưa có link - phải hoàn tất trước ngày khai giảng.`}
+            </p>
+            {!tinhTrangLink.daDu && tinhTrangLink.buoiThieuLink > 0 && (
+              <form action={tuDongTaoLinkAction.bind(null, khoa.id)}>
+                <Button type="submit" variant="secondary" className="h-7 px-2 text-xs">
+                  Tự động tạo link cho các buổi còn thiếu
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">KH-02 · Phân công giảng viên phụ trách học phần</h2>
