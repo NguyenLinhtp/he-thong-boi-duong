@@ -8,7 +8,8 @@ import {
   thietLapHinhThucGiangDay,
   tuDongTaoLinkTrucTuyen,
 } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
-import type { HinhThucGiangDay } from "@/generated/prisma/client";
+import { chuyenTrangThaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import type { HinhThucGiangDay, TrangThaiKhoa } from "@/generated/prisma/client";
 
 export async function phanCongGiangVienAction(
   _prevState: string | undefined,
@@ -91,4 +92,23 @@ export async function tuDongTaoLinkAction(khoaId: string): Promise<void> {
   await requirePermission("KH-04");
   await tuDongTaoLinkTrucTuyen(khoaId);
   revalidatePath(`/khoa-hoc/${khoaId}`);
+}
+
+export async function chuyenTrangThaiAction(
+  _prevState: string | undefined,
+  formData: FormData,
+): Promise<string | undefined> {
+  await requirePermission("KH-05");
+  const khoaId = String(formData.get("khoaId"));
+
+  try {
+    await chuyenTrangThaiKhoa(khoaId, formData.get("trangThai") as TrangThaiKhoa);
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+
+  revalidatePath(`/khoa-hoc/${khoaId}`);
+  revalidatePath("/khoa-hoc");
+  return undefined;
 }

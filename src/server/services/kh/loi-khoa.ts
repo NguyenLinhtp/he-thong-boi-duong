@@ -45,3 +45,9 @@ export class ThieuLinkTrucTuyenError extends Error {
     super("Khóa trực tuyến còn buổi học chưa có link - phải hoàn tất trước ngày khai giảng");
   }
 }
+
+export class ChuyenTrangThaiKhoaKhongHopLeError extends Error {
+  constructor(tu: string, den: string) {
+    super(`Không thể chuyển trạng thái khóa từ "${tu}" sang "${den}"`);
+  }
+}

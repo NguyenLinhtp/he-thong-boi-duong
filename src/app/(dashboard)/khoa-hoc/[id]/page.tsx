@@ -7,11 +7,13 @@ import { danhSachPhanCong } from "@/server/services/kh/kh-02-phan-cong-giang-vie
 import { danhSachBuoiHoc } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import { danhSachPhongHoc } from "@/server/services/dm/dm-04-phong-hoc";
 import { tinhTrangLinkTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
+import { tinhTrangSiSo } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
 import { FormBuoiHoc } from "./form-buoi-hoc";
 import { FormHinhThuc } from "./form-hinh-thuc";
+import { FormTrangThai } from "./form-trang-thai";
 import { xoaBuoiHocAction, tuDongTaoLinkAction } from "./actions";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
@@ -44,12 +46,13 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc, tinhTrangLink] = await Promise.all([
+  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc, tinhTrangLink, siSo] = await Promise.all([
     danhSachPhanCong(id),
     danhSachGiangVien(),
     danhSachBuoiHoc(id),
     danhSachPhongHoc(),
     tinhTrangLinkTrucTuyen(id),
+    tinhTrangSiSo(id),
   ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
@@ -79,10 +82,17 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           Bế giảng:{" "}
           {khoa.thoiGianBeGiang ? new Date(khoa.thoiGianBeGiang).toLocaleDateString("vi-VN") : "—"}
         </p>
-        <p>Sĩ số tối đa: {khoa.siSoToiDa}</p>
+        <p>
+          Sĩ số: {siSo.siSoHienTai}/{siSo.siSoToiDa} {siSo.daDayDu && "(đã đủ)"}
+        </p>
         <p>Mức học phí: {khoa.mucHocPhi ? khoa.mucHocPhi.toString() : "—"}</p>
         <p>Đợt tuyển sinh: {khoa.dotTuyenSinh?.ten ?? "—"}</p>
       </div>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold">KH-05 · Trạng thái khóa</h2>
+        <FormTrangThai khoaId={khoa.id} trangThaiHienTai={khoa.trangThai} />
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">KH-04 · Hình thức giảng dạy</h2>
