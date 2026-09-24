@@ -27,3 +27,13 @@ export async function taoKhoaVoiMaTuSinh<T>(taoVoiMa: (maKhoa: string) => Promis
 
   throw new Error("Không sinh được mã khóa sau nhiều lần thử");
 }
+
+/**
+ * Danh sách giảng viên để chọn khi phân công (KH-02). Chưa có chức năng
+ * riêng quản lý danh mục giảng viên trong 69 CN - đây chỉ là truy vấn đọc
+ * hỗ trợ dropdown, không phải 1 CN mới.
+ */
+export async function danhSachGiangVien() {
+  return prisma.giangVien.findMany({ orderBy: { hoTen: "asc" } });
+}
+

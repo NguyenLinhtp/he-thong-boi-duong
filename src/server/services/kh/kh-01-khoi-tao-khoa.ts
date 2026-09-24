@@ -58,6 +58,9 @@ export async function danhSachKhoa() {
 export async function layKhoa(id: string) {
   return prisma.khoa.findUnique({
     where: { id },
-    include: { chuongTrinh: true, dotTuyenSinh: true },
+    include: {
+      chuongTrinh: { include: { hocPhans: { orderBy: { thuTu: "asc" } } } },
+      dotTuyenSinh: true,
+    },
   });
 }

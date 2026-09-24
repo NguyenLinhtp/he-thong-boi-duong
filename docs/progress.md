@@ -24,7 +24,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 ### 3. Quản lý khóa bồi dưỡng
 
 - [x] **KH-01** — Khởi tạo khóa bồi dưỡng
-- [ ] **KH-02** — Phân công giảng viên phụ trách học phần
+- [x] **KH-02** — Phân công giảng viên phụ trách học phần
 - [ ] **KH-03** — Thiết lập thời khóa biểu
 - [ ] **KH-04** — Thiết lập hình thức giảng dạy
 - [ ] **KH-05** — Quản lý trạng thái và sĩ số khóa

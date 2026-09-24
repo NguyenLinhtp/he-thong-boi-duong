@@ -2,6 +2,10 @@ import { notFound, redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
+import { danhSachGiangVien } from "@/server/services/kh/dung-chung";
+import { danhSachPhanCong } from "@/server/services/kh/kh-02-phan-cong-giang-vien";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { FormPhanCong } from "./form-phan-cong";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   CHUAN_BI: "Chuẩn bị",
@@ -33,6 +37,10 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
+  const [dsPhanCong, dsGiangVien] = await Promise.all([danhSachPhanCong(id), danhSachGiangVien()]);
+  const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
+  const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
+
   return (
     <main className="flex flex-col gap-6 p-6">
       <h1 className="text-lg font-semibold">
@@ -62,6 +70,48 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
         <p>Mức học phí: {khoa.mucHocPhi ? khoa.mucHocPhi.toString() : "—"}</p>
         <p>Đợt tuyển sinh: {khoa.dotTuyenSinh?.ten ?? "—"}</p>
       </div>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold">KH-02 · Phân công giảng viên phụ trách học phần</h2>
+
+        {hocPhanChuaPhanCong.length > 0 && dsGiangVien.length > 0 ? (
+          <FormPhanCong
+            khoaId={khoa.id}
+            dsHocPhan={hocPhanChuaPhanCong.map((hp) => ({ id: hp.id, ten: hp.ten }))}
+            dsGiangVien={dsGiangVien.map((gv) => ({ id: gv.id, hoTen: gv.hoTen }))}
+          />
+        ) : (
+          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+            {dsGiangVien.length === 0
+              ? "Chưa có giảng viên nào trong hệ thống."
+              : "Mọi học phần của chương trình đã được phân công giảng viên."}
+          </p>
+        )}
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Học phần</TableHead>
+              <TableHead>Giảng viên</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {dsPhanCong.map((pc) => (
+              <TableRow key={pc.id}>
+                <TableCell>{pc.hocPhan.ten}</TableCell>
+                <TableCell>{pc.giangVien.hoTen}</TableCell>
+              </TableRow>
+            ))}
+            {dsPhanCong.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={2} className="text-center text-sm text-muted-foreground">
+                  Chưa phân công giảng viên nào
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </section>
     </main>
   );
 }
