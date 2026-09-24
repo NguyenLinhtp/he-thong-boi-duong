@@ -19,7 +19,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 - [x] **CT-03** — Trình duyệt và phê duyệt chương trình
 - [x] **CT-04** — Cập nhật/chỉnh sửa chương trình đã ban hành
 - [x] **CT-05** — Tra cứu, tìm kiếm chương trình
-- [ ] **CT-07** — Thiết lập phương thức tiếp cận đăng ký học viên
+- [x] **CT-07** — Thiết lập phương thức tiếp cận đăng ký học viên
 
 ### 3. Quản lý khóa bồi dưỡng
 

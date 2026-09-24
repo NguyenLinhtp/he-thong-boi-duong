@@ -9,6 +9,7 @@ import { DanhSachHocPhan } from "./danh-sach-hoc-phan";
 import { KhoiPheDuyet } from "./khoi-phe-duyet";
 import { FormCapNhatBanHanh } from "./form-cap-nhat-ban-hanh";
 import { LichSuPhienBan } from "./lich-su-phien-ban";
+import { KhoiPhuongThucDangKy } from "./khoi-phuong-thuc-dang-ky";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   DU_THAO: "Dự thảo",
@@ -51,6 +52,8 @@ export default async function ChiTietChuongTrinhPage({
   const choPhepSuaHocPhan = dangDuThao && (await coQuyen("CT-02"));
   const choPhepPheDuyet = await coQuyen("CT-03");
   const choPhepSuaBanHanh = daBanHanh && (await coQuyen("CT-04"));
+  const choPhepPhuongThucDangKy =
+    chuongTrinh.trangThai !== "NGUNG_HIEU_LUC" && (await coQuyen("CT-07"));
   const tongTiet = chuongTrinh.hocPhans.reduce((tong, hp) => tong + hp.soTiet, 0);
   const tongTietKhop = chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong;
 
@@ -125,6 +128,13 @@ export default async function ChiTietChuongTrinhPage({
       )}
 
       {choPhepSuaBanHanh && <LichSuPhienBan danhSach={await lichSuPhienBan(chuongTrinh.id)} />}
+
+      {choPhepPhuongThucDangKy && (
+        <KhoiPhuongThucDangKy
+          chuongTrinhId={chuongTrinh.id}
+          phuongThucHienTai={chuongTrinh.phuongThucDangKy}
+        />
+      )}
     </main>
   );
 }
