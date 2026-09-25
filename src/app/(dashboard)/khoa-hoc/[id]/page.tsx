@@ -4,7 +4,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { danhSachGiangVien } from "@/server/services/kh/dung-chung";
 import { danhSachPhanCong } from "@/server/services/kh/kh-02-phan-cong-giang-vien";
-import { danhSachBuoiHoc } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
+import { danhSachBuoiHoc, lichDayGiangVien } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import { danhSachPhongHoc } from "@/server/services/dm/dm-04-phong-hoc";
 import { tinhTrangLinkTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
 import { tinhTrangSiSo } from "@/server/services/kh/kh-05-trang-thai-si-so";
@@ -60,6 +60,17 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
+
+  const giangVienDaPhanCong = [
+    ...new Map(dsPhanCong.map((pc) => [pc.giangVienId, pc.giangVien])).entries(),
+  ];
+  const lichDayTheoGiangVien = await Promise.all(
+    giangVienDaPhanCong.map(async ([giangVienId, giangVien]) => ({
+      giangVienId,
+      giangVien,
+      lich: (await lichDayGiangVien(giangVienId)).filter((bh) => bh.khoaId !== khoa.id),
+    })),
+  );
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -172,6 +183,33 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">KH-03 · Thời khóa biểu</h2>
+
+        {lichDayTheoGiangVien.some((l) => l.lich.length > 0) && (
+          <div className="rounded-lg border p-4 text-sm">
+            <p className="font-medium">
+              Lịch dạy hiện có của giảng viên đã phân công (ở khóa khác đang vận hành) - tham khảo
+              trước khi xếp thêm buổi học để tránh trùng lịch:
+            </p>
+            <div className="mt-2 flex flex-col gap-2">
+              {lichDayTheoGiangVien
+                .filter((l) => l.lich.length > 0)
+                .map(({ giangVienId, giangVien, lich }) => (
+                  <div key={giangVienId}>
+                    <p className="font-medium">{giangVien.hoTen}</p>
+                    <ul className="list-disc pl-5 text-muted-foreground">
+                      {lich.map((bh) => (
+                        <li key={bh.id}>
+                          {new Date(bh.ngayHoc).toLocaleDateString("vi-VN")}
+                          {bh.gioBatDau && bh.gioKetThuc ? ` ${bh.gioBatDau}–${bh.gioKetThuc}` : ""} ·{" "}
+                          {bh.khoa.maKhoa} - {bh.khoa.chuongTrinh.ten}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         <FormBuoiHoc
           khoaId={khoa.id}

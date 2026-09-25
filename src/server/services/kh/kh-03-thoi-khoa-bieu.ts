@@ -49,7 +49,8 @@ async function kiemTraTrungLichGiangVien(
   if (!giangVienId) return;
 
   const phanCongCuaGiangVien = await prisma.giangVienHocPhan.findMany({
-    where: { giangVienId },
+    // khóa đã hủy không còn "vận hành" nên không tính là chiếm lịch giảng viên
+    where: { giangVienId, khoa: { trangThai: { not: "HUY" } } },
   });
   const capKhoaHocPhan = phanCongCuaGiangVien.map((pc) => ({
     khoaId: pc.khoaId,
@@ -120,4 +121,22 @@ export async function danhSachBuoiHoc(khoaId: string) {
 
 export async function xoaBuoiHoc(id: string) {
   return prisma.buoiHoc.delete({ where: { id } });
+}
+
+/**
+ * Lịch dạy đầy đủ của 1 giảng viên trên toàn hệ thống (mọi khóa đang vận
+ * hành - loại trừ khóa đã hủy), dùng để cán bộ xem trước khi xếp thêm buổi
+ * học mới cho giảng viên đó ở KH-03, tránh phải thử-và-bị-chặn.
+ */
+export async function lichDayGiangVien(giangVienId: string) {
+  const phanCong = await prisma.giangVienHocPhan.findMany({
+    where: { giangVienId, khoa: { trangThai: { not: "HUY" } } },
+  });
+  if (phanCong.length === 0) return [];
+
+  return prisma.buoiHoc.findMany({
+    where: { OR: phanCong.map((pc) => ({ khoaId: pc.khoaId, hocPhanId: pc.hocPhanId })) },
+    include: { khoa: { include: { chuongTrinh: true } }, hocPhan: true, phongHoc: true },
+    orderBy: [{ ngayHoc: "asc" }, { gioBatDau: "asc" }],
+  });
 }

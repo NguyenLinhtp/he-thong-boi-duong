@@ -2,7 +2,12 @@ import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { khoiTaoKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { phanCongGiangVien } from "@/server/services/kh/kh-02-phan-cong-giang-vien";
-import { thietLapBuoiHoc, danhSachBuoiHoc } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
+import { chuyenTrangThaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import {
+  thietLapBuoiHoc,
+  danhSachBuoiHoc,
+  lichDayGiangVien,
+} from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import {
   KhongTimThayKhoaError,
   TrungLichGiangVienTheoBuoiError,
@@ -203,5 +208,87 @@ describe("KH-03 thiết lập thời khóa biểu", () => {
     await expect(
       thietLapBuoiHoc({ khoaId: "khong-ton-tai", ngayHoc: "2026-10-10" }),
     ).rejects.toThrow(KhongTimThayKhoaError);
+  });
+
+  it("không chặn trùng lịch giảng viên nếu khóa kia đã bị hủy (không còn vận hành)", async () => {
+    const { chuongTrinh: ct1, hocPhans: hp1 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
+    const { chuongTrinh: ct2, hocPhans: hp2 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
+    const khoa1 = await taoKhoa(ct1.id);
+    const khoa2 = await taoKhoa(ct2.id);
+    const gv = await taoGiangVien();
+
+    await phanCongGiangVien({ khoaId: khoa1.id, hocPhanId: hp1[0].id, giangVienId: gv.id });
+    await phanCongGiangVien({ khoaId: khoa2.id, hocPhanId: hp2[0].id, giangVienId: gv.id });
+    await thietLapBuoiHoc({
+      khoaId: khoa1.id,
+      hocPhanId: hp1[0].id,
+      ngayHoc: "2026-10-20",
+      gioBatDau: "08:00",
+      gioKetThuc: "10:00",
+    });
+    await chuyenTrangThaiKhoa(khoa1.id, "HUY");
+
+    const buoi = await thietLapBuoiHoc({
+      khoaId: khoa2.id,
+      hocPhanId: hp2[0].id,
+      ngayHoc: "2026-10-20",
+      gioBatDau: "09:00",
+      gioKetThuc: "11:00",
+    });
+    expect(buoi.id).toBeDefined();
+  });
+
+  it("lichDayGiangVien trả về đầy đủ buổi dạy của giảng viên trên các khóa, sắp theo ngày/giờ", async () => {
+    const { chuongTrinh: ct1, hocPhans: hp1 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
+    const { chuongTrinh: ct2, hocPhans: hp2 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
+    const khoa1 = await taoKhoa(ct1.id);
+    const khoa2 = await taoKhoa(ct2.id);
+    const gv = await taoGiangVien();
+
+    await phanCongGiangVien({ khoaId: khoa1.id, hocPhanId: hp1[0].id, giangVienId: gv.id });
+    await phanCongGiangVien({ khoaId: khoa2.id, hocPhanId: hp2[0].id, giangVienId: gv.id });
+    await thietLapBuoiHoc({
+      khoaId: khoa2.id,
+      hocPhanId: hp2[0].id,
+      ngayHoc: "2026-10-22",
+      gioBatDau: "13:00",
+      gioKetThuc: "15:00",
+    });
+    await thietLapBuoiHoc({
+      khoaId: khoa1.id,
+      hocPhanId: hp1[0].id,
+      ngayHoc: "2026-10-21",
+      gioBatDau: "08:00",
+      gioKetThuc: "10:00",
+    });
+
+    const lich = await lichDayGiangVien(gv.id);
+    expect(lich).toHaveLength(2);
+    expect(lich[0].khoaId).toBe(khoa1.id);
+    expect(lich[1].khoaId).toBe(khoa2.id);
+    expect(lich[0].khoa.chuongTrinh.id).toBe(ct1.id);
+  });
+
+  it("lichDayGiangVien loại trừ buổi dạy ở khóa đã hủy", async () => {
+    const { chuongTrinh, hocPhans } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
+    const khoa = await taoKhoa(chuongTrinh.id);
+    const gv = await taoGiangVien();
+
+    await phanCongGiangVien({ khoaId: khoa.id, hocPhanId: hocPhans[0].id, giangVienId: gv.id });
+    await thietLapBuoiHoc({
+      khoaId: khoa.id,
+      hocPhanId: hocPhans[0].id,
+      ngayHoc: "2026-10-23",
+      gioBatDau: "08:00",
+      gioKetThuc: "10:00",
+    });
+    await chuyenTrangThaiKhoa(khoa.id, "HUY");
+
+    expect(await lichDayGiangVien(gv.id)).toEqual([]);
+  });
+
+  it("lichDayGiangVien trả về mảng rỗng khi giảng viên chưa được phân công học phần nào", async () => {
+    const gv = await taoGiangVien();
+    expect(await lichDayGiangVien(gv.id)).toEqual([]);
   });
 });

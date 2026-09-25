@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { khoiTaoKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { phanCongGiangVien, danhSachPhanCong } from "@/server/services/kh/kh-02-phan-cong-giang-vien";
+import { chuyenTrangThaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   KhongTimThayKhoaError,
   KhongTimThayGiangVienError,
@@ -204,5 +205,23 @@ describe("KH-02 phân công giảng viên phụ trách học phần", () => {
     expect(phanCongMoi.giangVienId).toBe(gv2.id);
     const ds = await danhSachPhanCong(khoa.id);
     expect(ds).toHaveLength(1);
+  });
+
+  it("không chặn trùng lịch nếu khóa kia đã bị hủy (không còn vận hành)", async () => {
+    const { chuongTrinh: ct1, hocPhans: hp1 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
+    const { chuongTrinh: ct2, hocPhans: hp2 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
+    const khoa1 = await taoKhoa(ct1.id, "2026-10-01", "2026-12-01");
+    const khoa2 = await taoKhoa(ct2.id, "2026-11-01", "2027-01-01");
+    const gv = await taoGiangVien();
+
+    await phanCongGiangVien({ khoaId: khoa1.id, hocPhanId: hp1[0].id, giangVienId: gv.id });
+    await chuyenTrangThaiKhoa(khoa1.id, "HUY");
+
+    const phanCong2 = await phanCongGiangVien({
+      khoaId: khoa2.id,
+      hocPhanId: hp2[0].id,
+      giangVienId: gv.id,
+    });
+    expect(phanCong2.giangVienId).toBe(gv.id);
   });
 });

@@ -46,7 +46,12 @@ export async function phanCongGiangVien(input: PhanCongGiangVienInput) {
   if (!giangVien) throw new KhongTimThayGiangVienError();
 
   const phanCongKhoaKhac = await prisma.giangVienHocPhan.findMany({
-    where: { giangVienId: input.giangVienId, khoaId: { not: input.khoaId } },
+    where: {
+      giangVienId: input.giangVienId,
+      khoaId: { not: input.khoaId },
+      // khóa đã hủy không còn "vận hành" nên không tính là chiếm lịch giảng viên
+      khoa: { trangThai: { not: "HUY" } },
+    },
     include: { khoa: true },
   });
   const trungLich = phanCongKhoaKhac.some((pc) =>
