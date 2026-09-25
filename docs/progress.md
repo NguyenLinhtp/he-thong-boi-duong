@@ -99,8 +99,8 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 10. Quản trị hệ thống
 
-- [ ] **QT-03** — Nhật ký thao tác (audit log)
-- [ ] **QT-05** — Cấu hình tham số hệ thống
+- [x] **QT-03** — Nhật ký thao tác (audit log)
+- [x] **QT-05** — Cấu hình tham số hệ thống
 
 ### 11. Quản lý đơn vị liên kết
 

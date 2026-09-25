@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { layThamSoSo } from "@/server/services/qt/qt-05-tham-so";
 
 async function taoHocVienVoiMaTuSinh<T>(taoVoiMa: (maHocVien: string) => Promise<T>): Promise<T> {
   const nam = new Date().getFullYear();
@@ -25,11 +26,13 @@ async function taoHocVienVoiMaTuSinh<T>(taoVoiMa: (maHocVien: string) => Promise
 
 /**
  * HV-02: "hồ sơ không được xác nhận nộp giấy trong thời hạn quy định sẽ tự
- * động hủy đăng ký" - đặc tả chưa nêu rõ số ngày cụ thể, và tham số hệ thống
- * (QT-05, Đợt 2) chưa được xây dựng để cấu hình việc này. Tạm hardcode 7
- * ngày làm mặc định hợp lý; chuyển sang đọc từ QT-05 khi module đó có.
+ * động hủy đăng ký" - đặc tả chưa nêu rõ số ngày cụ thể. Đọc từ tham số hệ
+ * thống QT-05 (mã "SO_NGAY_HAN_NOP_GIAY"), mặc định 7 ngày nếu admin chưa
+ * cấu hình.
  */
-export const SO_NGAY_HAN_NOP_GIAY = 7;
+export async function soNgayHanNopGiay(): Promise<number> {
+  return layThamSoSo("SO_NGAY_HAN_NOP_GIAY", 7);
+}
 
 export type ThongTinHocVienInput = {
   hoTen: string;

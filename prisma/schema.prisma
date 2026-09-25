@@ -630,3 +630,34 @@ model SaoLuu {
 
   @@map("sao_luu")
 }
+
+// QT-03: "Không cho phép sửa/xóa nhật ký đã ghi" - model này chỉ có create +
+// đọc (danhSachNhatKy), không có hàm update/delete nào được viết ở tầng
+// service. nguoiThucHienId lưu rời (không FK) + nguoiThucHienTen snapshot lúc
+// ghi, để nhật ký không vỡ/mất tên nếu tài khoản đó sau này bị xóa (QT-01).
+model NhatKyThaoTac {
+  id               String   @id @default(cuid())
+  thoiGian         DateTime @default(now())
+  nguoiThucHienId  String?
+  nguoiThucHienTen String
+  hanhDong         String
+  doiTuong         String
+  doiTuongId       String
+  chiTiet          String?
+
+  @@index([doiTuong, doiTuongId])
+  @@map("nhat_ky_thao_tac")
+}
+
+// QT-05: tham số hệ thống dạng key-value chung, admin tự thêm/sửa qua UI
+// (vd chính sách mật khẩu, số ngày hạn nộp giấy...). Mỗi lần sửa được ghi vào
+// NhatKyThaoTac (QT-03) - đúng quy tắc nghiệp vụ của QT-05.
+model ThamSoHeThong {
+  id         String   @id @default(cuid())
+  ma         String   @unique
+  giaTri     String
+  moTa       String?
+  capNhatLuc DateTime @updatedAt
+
+  @@map("tham_so_he_thong")
+}

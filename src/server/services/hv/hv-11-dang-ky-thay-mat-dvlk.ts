@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { coTheNhanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   timHoacTaoHocVien,
-  SO_NGAY_HAN_NOP_GIAY,
+  soNgayHanNopGiay,
   type ThongTinHocVienInput,
 } from "@/server/services/hv/dung-chung";
 import { donViLienKetCuaTaiKhoan } from "@/server/services/hv/lien-ket-ho-tro";
@@ -52,7 +52,7 @@ export async function dangKyThayMatDonViLienKet(nguoiDungId: string, input: Dang
   const hocVien = await timHoacTaoHocVien(input);
 
   const hanNopGiay = new Date();
-  hanNopGiay.setDate(hanNopGiay.getDate() + SO_NGAY_HAN_NOP_GIAY);
+  hanNopGiay.setDate(hanNopGiay.getDate() + (await soNgayHanNopGiay()));
 
   let dangKy;
   try {
