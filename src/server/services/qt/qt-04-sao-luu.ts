@@ -29,8 +29,12 @@ const THU_TU_BANG = [
   "dotTuyenSinh",
   "nguoiDungVaiTro",
   "vaiTroChucNang",
+  "cauHinhSmtp",
+  "nhatKyThaoTac",
+  "thamSoHeThong",
   "giangVien",
   "hocVien",
+  "thongBao",
   "chuongTrinh",
   "donViLienKet",
   "chuongTrinhPhienBan",
@@ -43,6 +47,7 @@ const THU_TU_BANG = [
   "diemDanh",
   "ketQuaHocTap",
   "hocPhi",
+  "phieuThu",
   "chungChi",
 ] as const;
 

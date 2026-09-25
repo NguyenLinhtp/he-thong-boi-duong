@@ -78,12 +78,12 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 7. Quản lý học phí
 
-- [ ] **HP-01** — Thiết lập mức học phí theo khóa
-- [ ] **HP-02** — Ghi nhận và xác nhận thanh toán học phí
-- [ ] **HP-03** — Theo dõi công nợ học viên
-- [ ] **HP-04** — Lập phiếu thu, xuất chứng từ
-- [ ] **HP-05** — Báo cáo doanh thu và công nợ học phí
-- [ ] **HP-06** — Liên kết điều kiện học phí với kết quả/chứng chỉ
+- [x] **HP-01** — Thiết lập mức học phí theo khóa
+- [x] **HP-02** — Ghi nhận và xác nhận thanh toán học phí
+- [x] **HP-03** — Theo dõi công nợ học viên
+- [x] **HP-04** — Lập phiếu thu, xuất chứng từ
+- [x] **HP-05** — Báo cáo doanh thu và công nợ học phí
+- [x] **HP-06** — Liên kết điều kiện học phí với kết quả/chứng chỉ
 
 ### 8. Quản lý chứng chỉ/chứng nhận
 

@@ -153,11 +153,20 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     })),
   );
 
+  const choPhepHocPhi = await coQuyen("HP-01");
+
   return (
     <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">
-        {khoa.maKhoa} · {khoa.chuongTrinh.ten}
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold">
+          {khoa.maKhoa} · {khoa.chuongTrinh.ten}
+        </h1>
+        {choPhepHocPhi && (
+          <a href={`/khoa-hoc/${khoa.id}/hoc-phi`} className="text-sm underline">
+            Quản lý học phí (HP)
+          </a>
+        )}
+      </div>
       <div className="rounded-lg border p-4 text-sm">
         <p>Chương trình: {khoa.chuongTrinh.maCT} · {khoa.chuongTrinh.ten}</p>
         <p>Trạng thái: {NHAN_TRANG_THAI[khoa.trangThai] ?? khoa.trangThai}</p>

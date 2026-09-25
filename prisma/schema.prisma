@@ -351,6 +351,12 @@ model Khoa {
   siSoToiDa         Int
   hinhThucGiangDay  HinhThucGiangDay @default(TRUC_TIEP)
   mucHocPhi         Decimal?         @db.Decimal(12, 2)
+  // HP-01: chính sách miễn giảm áp dụng chung cho khóa (dạng mô tả tự do,
+  // việc miễn giảm cho từng học viên cụ thể được xác nhận riêng ở HP-02).
+  chinhSachMienGiam String?
+  // HP-01: "mức học phí không đổi sau khi khóa đã có học viên đăng ký, trừ
+  // khi có quyết định điều chỉnh" - lưu lý do lần điều chỉnh gần nhất.
+  lyDoDieuChinhHocPhi String?
   trangThai         TrangThaiKhoa    @default(CHUAN_BI)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
@@ -558,9 +564,36 @@ model HocPhi {
   hinhThucNop    String?
   trangThai      TrangThaiHocPhi @default(CHUA_NOP)
   nguoiXacNhanId String?
+  // HP-03: hạn chót nộp - dùng để tự động nhắc trước tối thiểu 7 ngày.
+  hanNop         DateTime?
+  lanNhacGanNhat DateTime?
+  // HP-06: "có thể bỏ chặn thủ công nếu lãnh đạo phê duyệt trường hợp đặc
+  // biệt" - khi true, daHoanTatNghiaVuTaiChinh() luôn trả về true bất kể
+  // trangThai, bỏ qua điều kiện học phí khi xét hoàn thành khóa/cấp chứng chỉ.
+  boQuaKiemTra   Boolean         @default(false)
+  lyDoBoQua      String?
+
+  phieuThus PhieuThu[]
 
   @@unique([hocVienId, khoaId])
   @@map("hoc_phi")
+}
+
+// HP-04: mỗi khoản nộp (có thể trả góp nhiều lần cho cùng 1 HocPhi) sinh
+// đúng 1 phiếu thu, số phiếu tăng dần không trùng (retry giống mã học viên ở
+// hv/dung-chung.ts).
+model PhieuThu {
+  id           String   @id @default(cuid())
+  soPhieu      String   @unique
+  hocPhiId     String
+  hocPhi       HocPhi   @relation(fields: [hocPhiId], references: [id])
+  soTien       Decimal  @db.Decimal(12, 2)
+  hinhThucNop  String?
+  ngayLap      DateTime @default(now())
+  nguoiLapId   String?
+  nguoiLapTen  String?
+
+  @@map("phieu_thu")
 }
 
 model ChungChi {

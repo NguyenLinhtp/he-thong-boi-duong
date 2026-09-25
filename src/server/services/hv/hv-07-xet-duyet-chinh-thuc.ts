@@ -6,6 +6,7 @@ import {
   VuotSiSoKhiXetDuyetError,
 } from "@/server/services/hv/loi-hoc-vien";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
+import { taoHocPhiSauKhiChinhThuc } from "@/server/services/hp/hp-01-thiet-lap";
 
 /**
  * HV-07 (actor "Lãnh đạo đơn vị" - đã gộp vào vai trò CAN_BO_QUAN_LY_DAO_TAO,
@@ -49,6 +50,7 @@ export async function xetDuyetDanhSachChinhThuc(khoaId: string, dsDangKyId: stri
       `Trúng tuyển chính thức khóa ${khoa.maKhoa}`,
       `Chúc mừng bạn đã trúng tuyển chính thức vào khóa ${khoa.maKhoa}.`,
     );
+    await taoHocPhiSauKhiChinhThuc(dk.id);
   }
 
   return ketQua;
