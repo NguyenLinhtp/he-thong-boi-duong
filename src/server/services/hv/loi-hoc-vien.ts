@@ -39,3 +39,31 @@ export class DaQuaHanNopGiayError extends Error {
     super("Hồ sơ đã quá hạn nộp bản giấy, đăng ký đã tự động bị hủy");
   }
 }
+
+export type DongLoiImport = { dong: number; loi: string };
+
+export class DuLieuImportLoiError extends Error {
+  constructor(public readonly cacDongLoi: DongLoiImport[]) {
+    super(
+      `File import có ${cacDongLoi.length} dòng lỗi, chưa nạp dữ liệu nào - vui lòng chỉnh sửa và tải lên lại`,
+    );
+  }
+}
+
+export class FileImportRongError extends Error {
+  constructor() {
+    super("File import không có dữ liệu (cần dòng tiêu đề + ít nhất 1 dòng dữ liệu)");
+  }
+}
+
+export class KhoaKhongConNhanImportError extends Error {
+  constructor() {
+    super("Khóa đã kết thúc tuyển sinh, không thể import thêm danh sách học viên");
+  }
+}
+
+export class ImportVuotSiSoToiDaError extends Error {
+  constructor(soChoConLai: number) {
+    super(`Số dòng import vượt quá sĩ số còn trống của khóa (còn ${soChoConLai} chỗ)`);
+  }
+}

@@ -10,6 +10,7 @@ import { tinhTrangLinkTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-gia
 import { tinhTrangSiSo } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { linkDangKyCongKhai } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import { danhSachChoNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
+import { danhSachChoTuXacNhan } from "@/server/services/hv/hv-03-import-danh-sach";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
@@ -17,6 +18,7 @@ import { FormBuoiHoc } from "./form-buoi-hoc";
 import { FormHinhThuc } from "./form-hinh-thuc";
 import { FormTrangThai } from "./form-trang-thai";
 import { FormThongBao } from "./form-thong-bao";
+import { FormImport } from "./form-import";
 import { xoaBuoiHocAction, tuDongTaoLinkAction, xacNhanNopGiayAction } from "./actions";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
@@ -49,17 +51,27 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc, tinhTrangLink, siSo, linkCongKhai, dsChoNopGiay] =
-    await Promise.all([
-      danhSachPhanCong(id),
-      danhSachGiangVien(),
-      danhSachBuoiHoc(id),
-      danhSachPhongHoc(),
-      tinhTrangLinkTrucTuyen(id),
-      tinhTrangSiSo(id),
-      linkDangKyCongKhai(id),
-      danhSachChoNopGiay(id),
-    ]);
+  const [
+    dsPhanCong,
+    dsGiangVien,
+    dsBuoiHoc,
+    dsPhongHoc,
+    tinhTrangLink,
+    siSo,
+    linkCongKhai,
+    dsChoNopGiay,
+    dsChoTuXacNhan,
+  ] = await Promise.all([
+    danhSachPhanCong(id),
+    danhSachGiangVien(),
+    danhSachBuoiHoc(id),
+    danhSachPhongHoc(),
+    tinhTrangLinkTrucTuyen(id),
+    tinhTrangSiSo(id),
+    linkDangKyCongKhai(id),
+    danhSachChoNopGiay(id),
+    danhSachChoTuXacNhan(id),
+  ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
 
@@ -177,6 +189,42 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                     Không có hồ sơ nào đang chờ nộp bản giấy
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </section>
+      )}
+
+      {khoa.chuongTrinh.phuongThucDangKy === "IMPORT_TU_XAC_NHAN" && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold">HV-03 · Import danh sách học viên</h2>
+
+          <FormImport khoaId={khoa.id} />
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Học viên</TableHead>
+                <TableHead>CCCD/mã số</TableHead>
+                <TableHead>Đơn vị công tác</TableHead>
+                <TableHead>Trạng thái</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dsChoTuXacNhan.map((dk) => (
+                <TableRow key={dk.id}>
+                  <TableCell>{dk.hocVien.hoTen}</TableCell>
+                  <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
+                  <TableCell>{dk.hocVien.donViCongTac ?? "—"}</TableCell>
+                  <TableCell>Chờ tự xác nhận</TableCell>
+                </TableRow>
+              ))}
+              {dsChoTuXacNhan.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                    Chưa có học viên nào được import
                   </TableCell>
                 </TableRow>
               )}

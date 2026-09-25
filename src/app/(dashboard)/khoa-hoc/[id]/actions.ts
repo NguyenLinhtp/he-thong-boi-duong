@@ -15,6 +15,8 @@ import {
   type ThongBaoDaPhatHanh,
 } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import { xacNhanNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
+import { importDanhSachHocVien } from "@/server/services/hv/hv-03-import-danh-sach";
+import { DuLieuImportLoiError } from "@/server/services/hv/loi-hoc-vien";
 import type { HinhThucGiangDay, TrangThaiKhoa } from "@/generated/prisma/client";
 
 export async function phanCongGiangVienAction(
@@ -146,4 +148,26 @@ export async function xacNhanNopGiayAction(khoaId: string, dangKyId: string): Pr
   await requirePermission("HV-02");
   await xacNhanNopGiay(dangKyId);
   revalidatePath(`/khoa-hoc/${khoaId}`);
+}
+
+export type TrangThaiImport = { loi?: string; cacDongLoi?: { dong: number; loi: string }[]; soLuongDaTao?: number };
+
+export async function importDanhSachAction(
+  _prevState: TrangThaiImport | undefined,
+  formData: FormData,
+): Promise<TrangThaiImport> {
+  await requirePermission("HV-03");
+  const khoaId = String(formData.get("khoaId"));
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { loi: "Vui lòng chọn file CSV để import" };
+
+  try {
+    const ketQua = await importDanhSachHocVien(khoaId, await file.text());
+    revalidatePath(`/khoa-hoc/${khoaId}`);
+    return { soLuongDaTao: ketQua.length };
+  } catch (error) {
+    if (error instanceof DuLieuImportLoiError) return { loi: error.message, cacDongLoi: error.cacDongLoi };
+    if (error instanceof Error) return { loi: error.message };
+    throw error;
+  }
 }

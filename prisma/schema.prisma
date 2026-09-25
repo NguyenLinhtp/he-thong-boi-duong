@@ -62,6 +62,11 @@ enum TrangThaiDangKy {
   DA_NOP_GIAY
   // HV-02: tự động hủy khi quá hạn nộp bản giấy mà chưa được xác nhận
   HUY_QUA_HAN_NOP_GIAY
+  // HV-03 (Phương thức 2): đã import, "danh sách học viên dự kiến... kèm
+  // thông tin định danh để tự xác nhận" - chờ học viên tự xác nhận (HV-04)
+  CHO_TU_XAC_NHAN
+  // HV-04 (Phương thức 2): "Đã xác nhận tham gia"
+  DA_XAC_NHAN_THAM_GIA
   CHO_DUYET
   HOP_LE
   KHONG_HOP_LE
