@@ -101,6 +101,17 @@ enum TrangThaiChungChi {
   DA_CAP
 }
 
+enum TrangThaiSaoLuu {
+  DANG_CHAY
+  THANH_CONG
+  THAT_BAI
+}
+
+enum LoaiKichHoatSaoLuu {
+  THU_CONG
+  TU_DONG
+}
+
 // ============================================================
 // NGƯỜI DÙNG & RBAC (QT-01, QT-02)
 // Ma trận phân quyền Vai trò <-> Chức năng lưu trong DB (không hard-code)
@@ -532,4 +543,21 @@ model HopDongLienKet {
   dangKys DangKyHoc[]
 
   @@map("hop_dong_lien_ket")
+}
+
+// QT-04: nhật ký sao lưu - mỗi lần chạy backup (thủ công qua nút bấm admin
+// hoặc tự động qua lịch bên ngoài gọi API) ghi lại đúng 1 dòng ở đây.
+model SaoLuu {
+  id              String              @id @default(cuid())
+  thoiGianBatDau  DateTime            @default(now())
+  thoiGianKetThuc DateTime?
+  trangThai       TrangThaiSaoLuu     @default(DANG_CHAY)
+  loaiKichHoat    LoaiKichHoatSaoLuu  @default(THU_CONG)
+  // tên người bấm "Sao lưu ngay"; null nếu chạy tự động theo lịch
+  nguoiKichHoat   String?
+  duongDanFile    String?
+  kichThuocByte   Int?
+  loiChiTiet      String?
+
+  @@map("sao_luu")
 }

@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# QT-04: file sao lưu dữ liệu (chứa dữ liệu thật, không commit)
+/backups
+
 # vercel
 .vercel
 
