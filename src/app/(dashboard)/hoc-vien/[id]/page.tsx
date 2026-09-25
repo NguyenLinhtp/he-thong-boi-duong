@@ -1,0 +1,90 @@
+import { notFound, redirect } from "next/navigation";
+import { requirePermission } from "@/lib/auth/guard";
+import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
+import { layHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
+import { KhongTimThayHocVienError } from "@/server/services/hv/loi-hoc-vien";
+import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { FormSuaHoSo } from "./form-sua-ho-so";
+
+const NHAN_TRANG_THAI_DANG_KY: Record<string, string> = {
+  CHO_NOP_GIAY: "Chờ nộp bản giấy",
+  DA_NOP_GIAY: "Đã nộp bản giấy - chờ duyệt",
+  HUY_QUA_HAN_NOP_GIAY: "Hủy (quá hạn nộp giấy)",
+  CHO_TU_XAC_NHAN: "Chờ tự xác nhận",
+  DA_XAC_NHAN_THAM_GIA: "Đã xác nhận tham gia",
+  CHO_DUYET: "Chờ duyệt",
+  HOP_LE: "Hợp lệ",
+  KHONG_HOP_LE: "Không hợp lệ",
+  CHINH_THUC: "Chính thức",
+  HOAN_THANH: "Hoàn thành",
+  THOI_HOC: "Thôi học",
+};
+
+export default async function ChiTietHocVienPage({ params }: { params: Promise<{ id: string }> }) {
+  try {
+    await requirePermission("HV-08");
+  } catch (error) {
+    if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
+    if (error instanceof KhongCoQuyenError) {
+      return <p className="p-6 text-destructive">{error.message}</p>;
+    }
+    throw error;
+  }
+
+  const { id } = await params;
+  let hocVien;
+  try {
+    hocVien = await layHoSoHocVien(id);
+  } catch (error) {
+    if (error instanceof KhongTimThayHocVienError) notFound();
+    throw error;
+  }
+
+  const dsChucDanhHocVi = await danhSachChucDanhHocVi();
+
+  return (
+    <main className="flex flex-col gap-6 p-6">
+      <h1 className="text-lg font-semibold">
+        {hocVien.maHocVien} · {hocVien.hoTen}
+      </h1>
+
+      <FormSuaHoSo
+        hocVien={hocVien}
+        dsChucDanhHocVi={dsChucDanhHocVi.map((cd) => ({ id: cd.id, ten: cd.ten }))}
+      />
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold">Lịch sử các khóa/kỳ thi đã hoặc đang tham gia</h2>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Mã khóa</TableHead>
+              <TableHead>Chương trình</TableHead>
+              <TableHead>Ngày đăng ký</TableHead>
+              <TableHead>Trạng thái</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {hocVien.dangKys.map((dk) => (
+              <TableRow key={dk.id}>
+                <TableCell>{dk.khoa.maKhoa}</TableCell>
+                <TableCell>{dk.khoa.chuongTrinh.ten}</TableCell>
+                <TableCell>{new Date(dk.ngayDangKy).toLocaleDateString("vi-VN")}</TableCell>
+                <TableCell>{NHAN_TRANG_THAI_DANG_KY[dk.trangThai] ?? dk.trangThai}</TableCell>
+              </TableRow>
+            ))}
+            {hocVien.dangKys.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                  Học viên chưa tham gia khóa/kỳ thi nào
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </section>
+    </main>
+  );
+}

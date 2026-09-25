@@ -111,3 +111,15 @@ export class VuotSiSoKhiXetDuyetError extends Error {
     super(`Số lượng xét duyệt chính thức vượt sĩ số tối đa của khóa (còn ${soChoConLai} chỗ)`);
   }
 }
+
+export class KhongTimThayHocVienError extends Error {
+  constructor() {
+    super("Không tìm thấy học viên");
+  }
+}
+
+export class CccdTrungError extends Error {
+  constructor() {
+    super("Số CCCD đã được dùng cho 1 học viên khác trong hệ thống");
+  }
+}
