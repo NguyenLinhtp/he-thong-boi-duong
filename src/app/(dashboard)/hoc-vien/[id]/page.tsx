@@ -4,8 +4,28 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
 import { KhongTimThayHocVienError } from "@/server/services/hv/loi-hoc-vien";
 import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
+import { danhSachThongBaoCuaHocVien } from "@/server/services/hv/hv-10-thong-bao";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { FormSuaHoSo } from "./form-sua-ho-so";
+
+const NHAN_LOAI_SU_KIEN: Record<string, string> = {
+  TRUNG_TUYEN: "Trúng tuyển",
+  NHAC_NOP_HO_SO_GIAY: "Nhắc nộp hồ sơ giấy",
+  LICH_HOC_LICH_THI: "Lịch học/lịch thi",
+  NHAC_HOC_PHI: "Nhắc học phí",
+  KET_QUA: "Kết quả",
+  CAP_CHUNG_CHI: "Cấp chứng chỉ",
+};
+
+async function coQuyen(maCN: string): Promise<boolean> {
+  try {
+    await requirePermission(maCN);
+    return true;
+  } catch (error) {
+    if (error instanceof KhongCoQuyenError) return false;
+    throw error;
+  }
+}
 
 const NHAN_TRANG_THAI_DANG_KY: Record<string, string> = {
   CHO_NOP_GIAY: "Chờ nộp bản giấy",
@@ -85,6 +105,38 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
           </TableBody>
         </Table>
       </section>
+
+      {(await coQuyen("HV-10")) && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold">HV-10 · Nhật ký thông báo đã gửi</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Thời gian</TableHead>
+                <TableHead>Sự kiện</TableHead>
+                <TableHead>Tiêu đề</TableHead>
+                <TableHead>Email</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(await danhSachThongBaoCuaHocVien(hocVien.id)).map((tb) => (
+                <TableRow key={tb.id}>
+                  <TableCell>{new Date(tb.createdAt).toLocaleString("vi-VN")}</TableCell>
+                  <TableCell>{NHAN_LOAI_SU_KIEN[tb.loaiSuKien] ?? tb.loaiSuKien}</TableCell>
+                  <TableCell>{tb.tieuDe}</TableCell>
+                  <TableCell>
+                    {tb.daGuiEmail ? (
+                      <span className="text-emerald-600">Đã gửi</span>
+                    ) : (
+                      <span className="text-muted-foreground">{tb.loiGuiEmail ?? "Chưa gửi"}</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </section>
+      )}
     </main>
   );
 }

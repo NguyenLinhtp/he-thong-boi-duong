@@ -8,6 +8,7 @@ import {
   KhoaKhongMoDangKyError,
   DaDangKyKhoaNayError,
 } from "@/server/services/hv/loi-hoc-vien";
+import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 
 export type DangKyDuThiInput = ThongTinHocVienInput & { khoaId: string };
 
@@ -36,8 +37,9 @@ export async function dangKyDuThi(input: DangKyDuThiInput) {
 
   const hocVien = await timHoacTaoHocVien(input);
 
+  let dangKy;
   try {
-    return await prisma.dangKyHoc.create({
+    dangKy = await prisma.dangKyHoc.create({
       data: { hocVienId: hocVien.id, khoaId: khoa.id },
       include: { hocVien: true, khoa: { include: { chuongTrinh: true } } },
     });
@@ -47,6 +49,15 @@ export async function dangKyDuThi(input: DangKyDuThiInput) {
     if (laLoiTrungDangKy) throw new DaDangKyKhoaNayError();
     throw error;
   }
+
+  await guiThongBao(
+    hocVien.id,
+    "LICH_HOC_LICH_THI",
+    `Đăng ký dự thi khóa ${khoa.maKhoa} thành công`,
+    `Bạn đã đăng ký dự thi thành công cho khóa ${khoa.maKhoa}. Lịch thi cụ thể sẽ được thông báo sau.`,
+  );
+
+  return dangKy;
 }
 
 export async function danhSachThiSinh(khoaId: string) {

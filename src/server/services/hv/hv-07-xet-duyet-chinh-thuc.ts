@@ -5,6 +5,7 @@ import {
   DanhSachXetDuyetKhongHopLeError,
   VuotSiSoKhiXetDuyetError,
 } from "@/server/services/hv/loi-hoc-vien";
+import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 
 /**
  * HV-07 (actor "Lãnh đạo đơn vị" - đã gộp vào vai trò CAN_BO_QUAN_LY_DAO_TAO,
@@ -36,10 +37,21 @@ export async function xetDuyetDanhSachChinhThuc(khoaId: string, dsDangKyId: stri
     data: { trangThai: "CHINH_THUC" },
   });
 
-  return prisma.dangKyHoc.findMany({
+  const ketQua = await prisma.dangKyHoc.findMany({
     where: { id: { in: dsDangKyId } },
     include: { hocVien: true },
   });
+
+  for (const dk of ketQua) {
+    await guiThongBao(
+      dk.hocVienId,
+      "TRUNG_TUYEN",
+      `Trúng tuyển chính thức khóa ${khoa.maKhoa}`,
+      `Chúc mừng bạn đã trúng tuyển chính thức vào khóa ${khoa.maKhoa}.`,
+    );
+  }
+
+  return ketQua;
 }
 
 export async function danhSachHopLeChoXetDuyet(khoaId: string) {

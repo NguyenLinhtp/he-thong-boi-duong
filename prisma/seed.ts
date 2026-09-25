@@ -23,7 +23,12 @@ const TEN_HIEN_THI: Record<VaiTro, string> = {
 function actorTextToVaiTros(actor: string): VaiTro[] {
   const roles = new Set<VaiTro>();
 
-  if (actor.includes("Quản trị hệ thống")) roles.add("ADMIN");
+  // HV-10 có actor "Hệ thống (tự động)" - bản thân sự kiện là tự động, nhưng
+  // màn hình cấu hình/xem nhật ký đi kèm (SMTP...) cần 1 vai trò người dùng
+  // quản trị được, quy về Quản trị hệ thống.
+  if (actor.includes("Quản trị hệ thống") || actor === "Hệ thống (tự động)") {
+    roles.add("ADMIN");
+  }
   if (actor.includes("Cán bộ tài chính")) roles.add("CAN_BO_TAI_CHINH");
   if (actor.includes("Giảng viên")) roles.add("GIANG_VIEN");
   if (actor.includes("Học viên")) roles.add("HOC_VIEN");

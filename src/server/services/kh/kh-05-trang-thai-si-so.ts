@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import type { TrangThaiKhoa } from "@/generated/prisma/client";
 import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
+import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 
 /**
  * KH-05: vòng đời khóa theo đúng thứ tự mô tả trong CN - "chuẩn bị mở -> đang
@@ -25,7 +26,28 @@ export async function chuyenTrangThaiKhoa(khoaId: string, trangThaiMoi: TrangTha
   const chuyenDuoc = CHUYEN_TIEP_HOP_LE[khoa.trangThai].includes(trangThaiMoi);
   if (!chuyenDuoc) throw new ChuyenTrangThaiKhoaKhongHopLeError(khoa.trangThai, trangThaiMoi);
 
-  return prisma.khoa.update({ where: { id: khoaId }, data: { trangThai: trangThaiMoi } });
+  const ketQua = await prisma.khoa.update({
+    where: { id: khoaId },
+    data: { trangThai: trangThaiMoi },
+  });
+
+  // HV-10: "lịch học/lịch thi" - báo khai giảng cho học viên chính thức khi
+  // khóa chuyển sang Đang diễn ra.
+  if (trangThaiMoi === "DANG_DIEN_RA") {
+    const dsChinhThuc = await prisma.dangKyHoc.findMany({
+      where: { khoaId, trangThai: "CHINH_THUC" },
+    });
+    for (const dk of dsChinhThuc) {
+      await guiThongBao(
+        dk.hocVienId,
+        "LICH_HOC_LICH_THI",
+        `Khóa ${khoa.maKhoa} bắt đầu khai giảng`,
+        `Khóa ${khoa.maKhoa} đã chuyển sang giai đoạn Đang diễn ra. Vui lòng theo dõi thời khóa biểu để tham gia học đúng lịch.`,
+      );
+    }
+  }
+
+  return ketQua;
 }
 
 /**

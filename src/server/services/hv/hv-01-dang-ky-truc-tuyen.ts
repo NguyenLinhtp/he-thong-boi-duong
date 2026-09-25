@@ -13,6 +13,7 @@ import {
   DaDangKyKhoaNayError,
   KhongTimThayDangKyError,
 } from "@/server/services/hv/loi-hoc-vien";
+import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 
 export type DangKyTrucTuyenInput = ThongTinHocVienInput & { khoaId: string };
 
@@ -41,8 +42,9 @@ export async function dangKyTrucTuyen(input: DangKyTrucTuyenInput) {
   const hanNopGiay = new Date();
   hanNopGiay.setDate(hanNopGiay.getDate() + SO_NGAY_HAN_NOP_GIAY);
 
+  let dangKy;
   try {
-    return await prisma.dangKyHoc.create({
+    dangKy = await prisma.dangKyHoc.create({
       data: { hocVienId: hocVien.id, khoaId: khoa.id, trangThai: "CHO_NOP_GIAY", hanNopGiay },
       include: { hocVien: true, khoa: { include: { chuongTrinh: true } } },
     });
@@ -52,6 +54,15 @@ export async function dangKyTrucTuyen(input: DangKyTrucTuyenInput) {
     if (laLoiTrungDangKy) throw new DaDangKyKhoaNayError();
     throw error;
   }
+
+  await guiThongBao(
+    hocVien.id,
+    "NHAC_NOP_HO_SO_GIAY",
+    `Đăng ký khóa ${khoa.maKhoa} thành công`,
+    `Bạn đã đăng ký thành công khóa ${khoa.maKhoa}. Vui lòng nộp bản giấy hồ sơ đăng ký trước ngày ${hanNopGiay.toLocaleDateString("vi-VN")}, nếu không đăng ký sẽ tự động bị hủy.`,
+  );
+
+  return dangKy;
 }
 
 export async function layDangKy(id: string) {

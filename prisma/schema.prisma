@@ -112,6 +112,19 @@ enum LoaiKichHoatSaoLuu {
   TU_DONG
 }
 
+// HV-10: các loại sự kiện phát sinh thông báo theo đặc tả. NHAC_HOC_PHI/
+// KET_QUA/CAP_CHUNG_CHI chưa có điểm gọi thật (module HP/KQ/CC chưa xây) -
+// định nghĩa sẵn để các module đó gọi guiThongBao() ngay khi được xây, không
+// cần sửa schema thêm.
+enum LoaiSuKienThongBao {
+  TRUNG_TUYEN
+  NHAC_NOP_HO_SO_GIAY
+  LICH_HOC_LICH_THI
+  NHAC_HOC_PHI
+  KET_QUA
+  CAP_CHUNG_CHI
+}
+
 // ============================================================
 // NGƯỜI DÙNG & RBAC (QT-01, QT-02)
 // Ma trận phân quyền Vai trò <-> Chức năng lưu trong DB (không hard-code)
@@ -404,8 +417,41 @@ model HocVien {
   ketQuas   KetQuaHocTap[]
   hocPhis   HocPhi[]
   chungChis ChungChi[]
+  thongBaos ThongBao[]
 
   @@map("hoc_vien")
+}
+
+// HV-10: nhật ký mỗi thông báo đã phát sinh cho 1 học viên - vừa là "trung
+// tâm thông báo trong hệ thống" (chưa có cổng đăng nhập học viên nên trước
+// mắt cán bộ xem trong hồ sơ học viên), vừa là log kết quả gửi email.
+model ThongBao {
+  id           String              @id @default(cuid())
+  hocVienId    String
+  hocVien      HocVien             @relation(fields: [hocVienId], references: [id], onDelete: Cascade)
+  loaiSuKien   LoaiSuKienThongBao
+  tieuDe       String
+  noiDung      String
+  daGuiEmail   Boolean             @default(false)
+  loiGuiEmail  String?
+  createdAt    DateTime            @default(now())
+
+  @@map("thong_bao")
+}
+
+// HV-10: cấu hình SMTP để gửi email thật - chỉ 1 dòng duy nhất (singleton),
+// admin nhập/sửa qua UI. Mật khẩu lưu ở dạng đã mã hóa (AES-256-GCM), không
+// lưu plaintext trong DB.
+model CauHinhSmtp {
+  id            String   @id @default(cuid())
+  host          String
+  port          Int
+  taiKhoan      String
+  matKhauMaHoa  String
+  tuDiaChi      String
+  capNhatLuc    DateTime @updatedAt
+
+  @@map("cau_hinh_smtp")
 }
 
 model DangKyHoc {
