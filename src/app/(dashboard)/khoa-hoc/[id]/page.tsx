@@ -13,6 +13,10 @@ import { danhSachChoNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay
 import { danhSachChoTuXacNhan } from "@/server/services/hv/hv-03-import-danh-sach";
 import { danhSachThiSinh } from "@/server/services/hv/hv-05-dang-ky-du-thi";
 import { danhSachChoThamDinh, danhSachDaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
+import {
+  danhSachHopLeChoXetDuyet,
+  danhSachChinhThuc,
+} from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
@@ -22,6 +26,7 @@ import { FormTrangThai } from "./form-trang-thai";
 import { FormThongBao } from "./form-thong-bao";
 import { FormImport } from "./form-import";
 import { FormThamDinh } from "./form-tham-dinh";
+import { FormXetDuyet } from "./form-xet-duyet";
 import { xoaBuoiHocAction, tuDongTaoLinkAction, xacNhanNopGiayAction } from "./actions";
 
 const NHAN_KET_QUA_THAM_DINH: Record<string, string> = {
@@ -72,6 +77,8 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     dsThiSinh,
     dsChoThamDinh,
     dsDaThamDinh,
+    dsHopLeChoXetDuyet,
+    dsChinhThuc,
   ] = await Promise.all([
     danhSachPhanCong(id),
     danhSachGiangVien(),
@@ -85,6 +92,8 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     danhSachThiSinh(id),
     danhSachChoThamDinh(id),
     danhSachDaThamDinh(id),
+    danhSachHopLeChoXetDuyet(id),
+    danhSachChinhThuc(id),
   ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
@@ -327,6 +336,38 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
                   <TableCell>{dk.hocVien.hoTen}</TableCell>
                   <TableCell>{NHAN_KET_QUA_THAM_DINH[dk.trangThai] ?? dk.trangThai}</TableCell>
                   <TableCell>{dk.ghiChuThamDinh ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold">HV-07 · Xét duyệt danh sách chính thức</h2>
+
+        <FormXetDuyet
+          khoaId={khoa.id}
+          dsHopLe={dsHopLeChoXetDuyet.map((dk) => ({
+            id: dk.id,
+            hoTen: dk.hocVien.hoTen,
+            soCCCD: dk.hocVien.soCCCD,
+          }))}
+        />
+
+        {dsChinhThuc.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Học viên chính thức</TableHead>
+                <TableHead>CCCD/mã số</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dsChinhThuc.map((dk) => (
+                <TableRow key={dk.id}>
+                  <TableCell>{dk.hocVien.hoTen}</TableCell>
+                  <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

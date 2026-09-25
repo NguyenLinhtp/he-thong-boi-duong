@@ -93,3 +93,21 @@ export class SaiTrangThaiThamDinhError extends Error {
     );
   }
 }
+
+export class DanhSachXetDuyetRongError extends Error {
+  constructor() {
+    super("Chưa chọn hồ sơ nào để xét duyệt chính thức");
+  }
+}
+
+export class DanhSachXetDuyetKhongHopLeError extends Error {
+  constructor() {
+    super("Có hồ sơ trong danh sách chọn không thuộc khóa này hoặc chưa được đánh dấu Hợp lệ (HV-06)");
+  }
+}
+
+export class VuotSiSoKhiXetDuyetError extends Error {
+  constructor(soChoConLai: number) {
+    super(`Số lượng xét duyệt chính thức vượt sĩ số tối đa của khóa (còn ${soChoConLai} chỗ)`);
+  }
+}
