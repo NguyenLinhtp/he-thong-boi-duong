@@ -27,8 +27,11 @@ function coTrungThoiGian(a: KhoangThoiGian, b: KhoangThoiGian): boolean {
 /**
  * KH-02: gán giảng viên cho 1 học phần trong 1 khóa. "Một giảng viên không
  * được phân công trùng lịch ở 2 khóa" - so sánh khoảng thời gian khai giảng
- * - bế giảng của khóa đang phân công với mọi khóa khác mà giảng viên đó đã
- * được phân công ở bất kỳ học phần nào.
+ * - bế giảng của khóa đang phân công với mọi khóa KHÁC mà giảng viên đó đã
+ * được phân công ở bất kỳ học phần nào (loại trừ chính khóa đang xét bằng
+ * `khoaId: { not: input.khoaId }`) - vì 1 giảng viên được phép dạy nhiều
+ * học phần/chuyên đề trong cùng 1 khóa, chỉ chặn khi trùng lịch giữa 2 khóa
+ * khác nhau.
  */
 export async function phanCongGiangVien(input: PhanCongGiangVienInput) {
   const khoa = await prisma.khoa.findUnique({ where: { id: input.khoaId } });

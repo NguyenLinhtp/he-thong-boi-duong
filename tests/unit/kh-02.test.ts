@@ -92,6 +92,24 @@ describe("KH-02 phân công giảng viên phụ trách học phần", () => {
     expect(ds[0].giangVien.id).toBe(gv.id);
   });
 
+  it("cho phép 1 giảng viên dạy nhiều học phần/chuyên đề trong cùng 1 khóa (không tính là trùng lịch)", async () => {
+    const { chuongTrinh, hocPhans } = await taoChuongTrinhDaBanHanhVoiHocPhan(3);
+    const khoa = await taoKhoa(chuongTrinh.id, "2026-10-01", "2026-12-01");
+    const gv = await taoGiangVien();
+
+    await phanCongGiangVien({ khoaId: khoa.id, hocPhanId: hocPhans[0].id, giangVienId: gv.id });
+    await phanCongGiangVien({ khoaId: khoa.id, hocPhanId: hocPhans[1].id, giangVienId: gv.id });
+    const phanCong3 = await phanCongGiangVien({
+      khoaId: khoa.id,
+      hocPhanId: hocPhans[2].id,
+      giangVienId: gv.id,
+    });
+
+    expect(phanCong3.giangVienId).toBe(gv.id);
+    const ds = await danhSachPhanCong(khoa.id);
+    expect(ds.filter((pc) => pc.giangVienId === gv.id)).toHaveLength(3);
+  });
+
   it("chặn khi học phần không thuộc chương trình của khóa", async () => {
     const { chuongTrinh: ct1 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
     const { hocPhans: hocPhansCt2 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
