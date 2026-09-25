@@ -40,7 +40,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 - [x] **HV-06** — Kiểm tra, thẩm định hồ sơ đăng ký
 - [x] **HV-07** — Xét duyệt danh sách chính thức
 - [x] **HV-08** — Quản lý hồ sơ học viên
-- [ ] **HV-09** — Quản lý danh sách học viên theo khóa
+- [x] **HV-09** — Quản lý danh sách học viên theo khóa
 
 ### 10. Quản trị hệ thống
 

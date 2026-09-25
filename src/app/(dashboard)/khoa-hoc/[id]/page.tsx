@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
-import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
+import { layKhoa, danhSachKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { danhSachGiangVien } from "@/server/services/kh/dung-chung";
 import { danhSachPhanCong } from "@/server/services/kh/kh-02-phan-cong-giang-vien";
 import { danhSachBuoiHoc, lichDayGiangVien } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
@@ -17,6 +17,7 @@ import {
   danhSachHopLeChoXetDuyet,
   danhSachChinhThuc,
 } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
+import { danhSachHocVienTheoKhoa } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
@@ -27,11 +28,33 @@ import { FormThongBao } from "./form-thong-bao";
 import { FormImport } from "./form-import";
 import { FormThamDinh } from "./form-tham-dinh";
 import { FormXetDuyet } from "./form-xet-duyet";
-import { xoaBuoiHocAction, tuDongTaoLinkAction, xacNhanNopGiayAction } from "./actions";
+import { FormThemHocVien } from "./form-them-hoc-vien";
+import { FormChuyenKhoa } from "./form-chuyen-khoa";
+import {
+  xoaBuoiHocAction,
+  tuDongTaoLinkAction,
+  xacNhanNopGiayAction,
+  xoaHocVienKhoiKhoaAction,
+  ghiNhanThoiHocAction,
+} from "./actions";
 
 const NHAN_KET_QUA_THAM_DINH: Record<string, string> = {
   HOP_LE: "Hợp lệ",
   KHONG_HOP_LE: "Không hợp lệ",
+};
+
+const NHAN_TRANG_THAI_DANG_KY: Record<string, string> = {
+  CHO_NOP_GIAY: "Chờ nộp bản giấy",
+  DA_NOP_GIAY: "Đã nộp bản giấy - chờ duyệt",
+  HUY_QUA_HAN_NOP_GIAY: "Hủy (quá hạn nộp giấy)",
+  CHO_TU_XAC_NHAN: "Chờ tự xác nhận",
+  DA_XAC_NHAN_THAM_GIA: "Đã xác nhận tham gia",
+  CHO_DUYET: "Chờ duyệt",
+  HOP_LE: "Hợp lệ",
+  KHONG_HOP_LE: "Không hợp lệ",
+  CHINH_THUC: "Chính thức",
+  HOAN_THANH: "Hoàn thành",
+  THOI_HOC: "Thôi học",
 };
 
 const NHAN_TRANG_THAI: Record<string, string> = {
@@ -79,6 +102,8 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     dsDaThamDinh,
     dsHopLeChoXetDuyet,
     dsChinhThuc,
+    dsHocVienTheoKhoa,
+    dsKhoaKhac,
   ] = await Promise.all([
     danhSachPhanCong(id),
     danhSachGiangVien(),
@@ -94,7 +119,12 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     danhSachDaThamDinh(id),
     danhSachHopLeChoXetDuyet(id),
     danhSachChinhThuc(id),
+    danhSachHocVienTheoKhoa(id),
+    danhSachKhoa(),
   ]);
+  const dsKhoaKhacRutGon = dsKhoaKhac
+    .filter((k) => k.id !== khoa.id)
+    .map((k) => ({ id: k.id, maKhoa: k.maKhoa }));
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
 
@@ -373,6 +403,56 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
             </TableBody>
           </Table>
         )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold">HV-09 · Quản lý danh sách học viên theo khóa</h2>
+
+        <FormThemHocVien khoaId={khoa.id} />
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Học viên</TableHead>
+              <TableHead>CCCD/mã số</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {dsHocVienTheoKhoa.map((dk) => (
+              <TableRow key={dk.id}>
+                <TableCell>{dk.hocVien.hoTen}</TableCell>
+                <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
+                <TableCell>{NHAN_TRANG_THAI_DANG_KY[dk.trangThai] ?? dk.trangThai}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <FormChuyenKhoa khoaId={khoa.id} dangKyId={dk.id} dsKhoaKhac={dsKhoaKhacRutGon} />
+                    {dk.trangThai !== "THOI_HOC" && (
+                      <form action={ghiNhanThoiHocAction.bind(null, khoa.id, dk.id)}>
+                        <Button type="submit" variant="secondary" className="h-7 px-2 text-xs">
+                          Ghi nhận thôi học
+                        </Button>
+                      </form>
+                    )}
+                    <form action={xoaHocVienKhoiKhoaAction.bind(null, khoa.id, dk.id)}>
+                      <Button type="submit" variant="ghost" className="h-7 px-2 text-xs text-destructive">
+                        Xóa
+                      </Button>
+                    </form>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {dsHocVienTheoKhoa.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                  Chưa có học viên nào trong khóa này
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </section>
 
       <section className="flex flex-col gap-3">

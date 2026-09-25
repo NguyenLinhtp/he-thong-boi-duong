@@ -123,3 +123,9 @@ export class CccdTrungError extends Error {
     super("Số CCCD đã được dùng cho 1 học viên khác trong hệ thống");
   }
 }
+
+export class KhongTheXoaHocVienCoKetQuaError extends Error {
+  constructor() {
+    super("Học viên đã có điểm/chứng chỉ ở khóa này, không được xóa khỏi khóa");
+  }
+}

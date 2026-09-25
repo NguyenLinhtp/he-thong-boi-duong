@@ -18,6 +18,12 @@ import { xacNhanNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { importDanhSachHocVien } from "@/server/services/hv/hv-03-import-danh-sach";
 import { thamDinhHoSo, type KetQuaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
 import { xetDuyetDanhSachChinhThuc } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
+import {
+  themHocVienVaoKhoa,
+  xoaHocVienKhoiKhoa,
+  chuyenHocVienSangKhoa,
+  ghiNhanThoiHoc,
+} from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
 import { DuLieuImportLoiError } from "@/server/services/hv/loi-hoc-vien";
 import type { HinhThucGiangDay, TrangThaiKhoa } from "@/generated/prisma/client";
 
@@ -184,6 +190,61 @@ export async function xetDuyetDanhSachChinhThucAction(
 
   try {
     await xetDuyetDanhSachChinhThuc(khoaId, dsDangKyId);
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+
+  revalidatePath(`/khoa-hoc/${khoaId}`);
+  return undefined;
+}
+
+export async function themHocVienVaoKhoaAction(
+  _prevState: string | undefined,
+  formData: FormData,
+): Promise<string | undefined> {
+  await requirePermission("HV-09");
+  const khoaId = String(formData.get("khoaId"));
+
+  try {
+    await themHocVienVaoKhoa({
+      khoaId,
+      hoTen: String(formData.get("hoTen")),
+      soCCCD: String(formData.get("soCCCD")),
+      lyDo: String(formData.get("lyDo") || "") || null,
+    });
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+
+  revalidatePath(`/khoa-hoc/${khoaId}`);
+  return undefined;
+}
+
+export async function xoaHocVienKhoiKhoaAction(khoaId: string, dangKyId: string): Promise<void> {
+  await requirePermission("HV-09");
+  await xoaHocVienKhoiKhoa(dangKyId);
+  revalidatePath(`/khoa-hoc/${khoaId}`);
+}
+
+export async function ghiNhanThoiHocAction(khoaId: string, dangKyId: string): Promise<void> {
+  await requirePermission("HV-09");
+  await ghiNhanThoiHoc(dangKyId);
+  revalidatePath(`/khoa-hoc/${khoaId}`);
+}
+
+export async function chuyenHocVienSangKhoaAction(
+  _prevState: string | undefined,
+  formData: FormData,
+): Promise<string | undefined> {
+  await requirePermission("HV-09");
+  const khoaId = String(formData.get("khoaId"));
+  const dangKyId = String(formData.get("dangKyId"));
+  const khoaMoiId = String(formData.get("khoaMoiId"));
+
+  try {
+    await chuyenHocVienSangKhoa(dangKyId, khoaMoiId);
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;

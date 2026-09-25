@@ -407,6 +407,9 @@ model DangKyHoc {
   trangThai        TrangThaiDangKy @default(CHO_DUYET)
   // HV-06: lý do đánh giá Hợp lệ/Không hợp lệ (chủ yếu ghi khi từ chối)
   ghiChuThamDinh   String?
+  // HV-09: lý do của lần thêm/chuyển/ghi nhận thôi học gần nhất (lịch sử đầy
+  // đủ hơn thuộc phạm vi QT-03 audit log, Đợt 2)
+  lyDoThayDoi      String?
   // chỉ có giá trị khi học viên đăng ký qua đơn vị liên kết (Phương thức 4);
   // mỗi học viên qua ĐVLK gắn đúng 1 hợp đồng liên kết.
   hopDongLienKetId String?
