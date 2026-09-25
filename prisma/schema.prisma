@@ -56,6 +56,10 @@ enum TrangThaiKhoa {
 }
 
 enum TrangThaiDangKy {
+  // HV-01 (Phương thức 1): "Đã đăng ký online - chờ nộp bản giấy"
+  CHO_NOP_GIAY
+  // HV-02 (Phương thức 1): "Đã nộp hồ sơ giấy - chờ duyệt"
+  DA_NOP_GIAY
   CHO_DUYET
   HOP_LE
   KHONG_HOP_LE
