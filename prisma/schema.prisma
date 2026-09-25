@@ -275,6 +275,10 @@ model ChuongTrinh {
   yKienThamDinh      String?
   soQuyetDinh        String?
   ngayBanHanh        DateTime?
+  // CT-06: lý do/thời điểm chuyển sang Ngừng hiệu lực (lưu trữ) - chỉ có
+  // giá trị khi trangThai = NGUNG_HIEU_LUC.
+  lyDoNgungHieuLuc   String?
+  ngayNgungHieuLuc   DateTime?
   // CT-04: mỗi lần sửa chương trình đã ban hành tăng số này lên 1 và lưu
   // snapshot nội dung trước khi sửa vào ChuongTrinhPhienBan.
   phienBanHienTai    Int                  @default(1)

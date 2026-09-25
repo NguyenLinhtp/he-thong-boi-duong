@@ -52,7 +52,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 2. Quản lý chương trình bồi dưỡng
 
-- [ ] **CT-06** — Ngừng hiệu lực/lưu trữ chương trình
+- [x] **CT-06** — Ngừng hiệu lực/lưu trữ chương trình
 
 ### 4. Tuyển sinh & Quản lý học viên
 
