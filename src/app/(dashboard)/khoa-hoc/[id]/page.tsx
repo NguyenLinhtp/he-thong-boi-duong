@@ -11,6 +11,7 @@ import { tinhTrangSiSo } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { linkDangKyCongKhai } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import { danhSachChoNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { danhSachChoTuXacNhan } from "@/server/services/hv/hv-03-import-danh-sach";
+import { danhSachThiSinh } from "@/server/services/hv/hv-05-dang-ky-du-thi";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
@@ -61,6 +62,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     linkCongKhai,
     dsChoNopGiay,
     dsChoTuXacNhan,
+    dsThiSinh,
   ] = await Promise.all([
     danhSachPhanCong(id),
     danhSachGiangVien(),
@@ -71,6 +73,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     linkDangKyCongKhai(id),
     danhSachChoNopGiay(id),
     danhSachChoTuXacNhan(id),
+    danhSachThiSinh(id),
   ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
@@ -225,6 +228,38 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
                     Chưa có học viên nào được import
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </section>
+      )}
+
+      {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold">HV-05 · Danh sách thí sinh dự thi</h2>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Thí sinh</TableHead>
+                <TableHead>CCCD</TableHead>
+                <TableHead>Ngày đăng ký</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dsThiSinh.map((dk) => (
+                <TableRow key={dk.id}>
+                  <TableCell>{dk.hocVien.hoTen}</TableCell>
+                  <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
+                  <TableCell>{new Date(dk.ngayDangKy).toLocaleDateString("vi-VN")}</TableCell>
+                </TableRow>
+              ))}
+              {dsThiSinh.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
+                    Chưa có thí sinh nào đăng ký dự thi
                   </TableCell>
                 </TableRow>
               )}

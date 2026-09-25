@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { dangKyTrucTuyen } from "@/server/services/hv/hv-01-dang-ky-truc-tuyen";
 import { xacNhanThamGia } from "@/server/services/hv/hv-04-tu-xac-nhan";
+import { dangKyDuThi } from "@/server/services/hv/hv-05-dang-ky-du-thi";
 
 export async function dangKyTrucTuyenAction(
   _prevState: string | undefined,
@@ -44,6 +45,31 @@ export async function xacNhanThamGiaAction(
       soDienThoai: String(formData.get("soDienThoai") || "") || null,
       email: String(formData.get("email") || "") || null,
       ngaySinh: String(formData.get("ngaySinh") || "") || null,
+    });
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+
+  return "THANH_CONG";
+}
+
+export async function dangKyDuThiAction(
+  _prevState: string | undefined,
+  formData: FormData,
+): Promise<string | undefined> {
+  const soDienThoai = String(formData.get("soDienThoai") || "");
+  const email = String(formData.get("email") || "");
+  const ngaySinh = String(formData.get("ngaySinh") || "");
+
+  try {
+    await dangKyDuThi({
+      khoaId: String(formData.get("khoaId")),
+      hoTen: String(formData.get("hoTen")),
+      soCCCD: String(formData.get("soCCCD")),
+      soDienThoai: soDienThoai || null,
+      email: email || null,
+      ngaySinh: ngaySinh || null,
     });
   } catch (error) {
     if (error instanceof Error) return error.message;

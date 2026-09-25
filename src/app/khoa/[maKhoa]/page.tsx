@@ -3,6 +3,7 @@ import { layKhoaTheoMa } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import { coTheNhanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { FormDangKy } from "./form-dang-ky";
 import { FormXacNhanThamGia } from "./form-xac-nhan-tham-gia";
+import { FormDangKyDuThi } from "./form-dang-ky-du-thi";
 
 export default async function TrangDangKyCongKhaiKhoa({
   params,
@@ -55,8 +56,19 @@ export default async function TrangDangKyCongKhaiKhoa({
           </p>
         ))}
 
+      {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" &&
+        (conMo ? (
+          <FormDangKyDuThi khoaId={khoa.id} />
+        ) : (
+          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+            Đợt thi hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).
+          </p>
+        ))}
+
       {khoa.chuongTrinh.phuongThucDangKy &&
-        !["TRUC_TUYEN_NOP_GIAY", "IMPORT_TU_XAC_NHAN"].includes(khoa.chuongTrinh.phuongThucDangKy) && (
+        !["TRUC_TUYEN_NOP_GIAY", "IMPORT_TU_XAC_NHAN", "CHI_DU_THI"].includes(
+          khoa.chuongTrinh.phuongThucDangKy,
+        ) && (
           <p className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
             Khóa đang mở đăng ký theo hình thức khác đăng ký trực tuyến. Vui lòng liên hệ trực tiếp
             trung tâm/đơn vị liên kết để biết chi tiết.

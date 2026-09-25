@@ -36,7 +36,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 - [x] **HV-02** — Xác nhận đã nhận hồ sơ giấy (Phương thức 1)
 - [x] **HV-03** — Import danh sách học viên có sẵn (Phương thức 2)
 - [x] **HV-04** — Học viên tự xác nhận tham gia bằng CCCD/mã số/tài khoản (Phương thức 2)
-- [ ] **HV-05** — Đăng ký dự thi, không qua học (Phương thức 3)
+- [x] **HV-05** — Đăng ký dự thi, không qua học (Phương thức 3)
 - [ ] **HV-06** — Kiểm tra, thẩm định hồ sơ đăng ký
 - [ ] **HV-07** — Xét duyệt danh sách chính thức
 - [ ] **HV-08** — Quản lý hồ sơ học viên
