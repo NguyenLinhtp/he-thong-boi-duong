@@ -67,3 +67,21 @@ export class ImportVuotSiSoToiDaError extends Error {
     super(`Số dòng import vượt quá sĩ số còn trống của khóa (còn ${soChoConLai} chỗ)`);
   }
 }
+
+export class KhongKhopDuLieuImportError extends Error {
+  constructor() {
+    super("CCCD/mã số không khớp với dữ liệu đã import cho khóa này");
+  }
+}
+
+export class DaXacNhanThamGiaError extends Error {
+  constructor() {
+    super("Đã xác nhận tham gia trước đó, không thể xác nhận trùng lần 2");
+  }
+}
+
+export class KhoaChuaMoXacNhanThamGiaError extends Error {
+  constructor() {
+    super("Khóa chưa/không còn mở xác nhận tham gia (chỉ mở khi khóa Đang tuyển sinh)");
+  }
+}
