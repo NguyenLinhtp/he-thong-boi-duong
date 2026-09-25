@@ -129,3 +129,21 @@ export class KhongTheXoaHocVienCoKetQuaError extends Error {
     super("Học viên đã có điểm/chứng chỉ ở khóa này, không được xóa khỏi khóa");
   }
 }
+
+export class KhongPhaiTaiKhoanDonViLienKetError extends Error {
+  constructor() {
+    super("Tài khoản đăng nhập chưa được gán cho đơn vị liên kết nào");
+  }
+}
+
+export class KhongCoHopDongLienKetHieuLucError extends Error {
+  constructor() {
+    super("Khóa này không có hợp đồng liên kết còn hiệu lực với đơn vị của bạn");
+  }
+}
+
+export class DonViLienKetKhongHopLeChoKhoaError extends Error {
+  constructor() {
+    super("Đơn vị liên kết được chọn không có hợp đồng còn hiệu lực với khóa này");
+  }
+}

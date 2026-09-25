@@ -1,0 +1,90 @@
+import { Prisma } from "@/generated/prisma/client";
+import { prisma } from "@/lib/db/prisma";
+import { coTheNhanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import {
+  timHoacTaoHocVien,
+  SO_NGAY_HAN_NOP_GIAY,
+  type ThongTinHocVienInput,
+} from "@/server/services/hv/dung-chung";
+import { hopDongConHieuLucTheoKhoa } from "@/server/services/hv/lien-ket-ho-tro";
+import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
+import {
+  KhongTimThayKhoaError,
+  SaiPhuongThucDangKyError,
+  KhoaKhongMoDangKyError,
+  DaDangKyKhoaNayError,
+  DonViLienKetKhongHopLeChoKhoaError,
+} from "@/server/services/hv/loi-hoc-vien";
+
+export type DangKyQuaDonViLienKetInput = ThongTinHocVienInput & {
+  khoaId: string;
+  donViLienKetId: string;
+};
+
+/**
+ * HV-12 (Phương thức 4b): học viên tự đăng ký trực tuyến như Phương thức 1,
+ * nhưng tự chọn đơn vị liên kết sẽ nộp bản giấy - "danh sách đơn vị liên kết
+ * hiển thị để chọn chỉ gồm các đơn vị đang có hợp đồng liên kết còn hiệu lực
+ * với khóa đó" (kiểm tra lại phía server, không chỉ tin dropdown phía client).
+ */
+export async function dangKyQuaDonViLienKet(input: DangKyQuaDonViLienKetInput) {
+  const khoa = await prisma.khoa.findUnique({
+    where: { id: input.khoaId },
+    include: { chuongTrinh: true },
+  });
+  if (!khoa) throw new KhongTimThayKhoaError();
+
+  if (khoa.chuongTrinh.phuongThucDangKy !== "QUA_DON_VI_LIEN_KET") {
+    throw new SaiPhuongThucDangKyError("Phương thức 4 (đăng ký qua đơn vị liên kết)");
+  }
+
+  const hopDongHopLe = (await hopDongConHieuLucTheoKhoa(khoa.id)).find(
+    (hd) => hd.donViLienKetId === input.donViLienKetId,
+  );
+  if (!hopDongHopLe) throw new DonViLienKetKhongHopLeChoKhoaError();
+
+  const conMo = await coTheNhanDangKy(khoa.id);
+  if (!conMo) throw new KhoaKhongMoDangKyError();
+
+  const hocVien = await timHoacTaoHocVien(input);
+
+  const hanNopGiay = new Date();
+  hanNopGiay.setDate(hanNopGiay.getDate() + SO_NGAY_HAN_NOP_GIAY);
+
+  let dangKy;
+  try {
+    dangKy = await prisma.dangKyHoc.create({
+      data: {
+        hocVienId: hocVien.id,
+        khoaId: khoa.id,
+        trangThai: "CHO_NOP_GIAY",
+        hanNopGiay,
+        hopDongLienKetId: hopDongHopLe.id,
+      },
+      include: {
+        hocVien: true,
+        khoa: { include: { chuongTrinh: true } },
+        hopDongLienKet: { include: { donViLienKet: true } },
+      },
+    });
+  } catch (error) {
+    const laLoiTrungDangKy =
+      error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+    if (laLoiTrungDangKy) throw new DaDangKyKhoaNayError();
+    throw error;
+  }
+
+  await guiThongBao(
+    hocVien.id,
+    "NHAC_NOP_HO_SO_GIAY",
+    `Đăng ký khóa ${khoa.maKhoa} thành công`,
+    `Bạn đã đăng ký thành công khóa ${khoa.maKhoa}. Vui lòng nộp bản giấy hồ sơ đăng ký cho đơn vị liên kết ${hopDongHopLe.donViLienKet.ten} trước ngày ${hanNopGiay.toLocaleDateString("vi-VN")}.`,
+  );
+
+  return dangKy;
+}
+
+/** Danh sách đơn vị liên kết hợp lệ để hiển thị cho học viên chọn khi đăng ký công khai. */
+export async function dsDonViLienKetChoKhoa(khoaId: string) {
+  return hopDongConHieuLucTheoKhoa(khoaId);
+}

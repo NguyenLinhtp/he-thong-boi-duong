@@ -47,8 +47,19 @@ export default async function TrangDonDangKy({
         <p>Mã khóa: {dangKy.khoa.maKhoa}</p>
         <p>Mã học viên: {dangKy.hocVien.maHocVien}</p>
         <p>Ngày đăng ký: {new Date(dangKy.ngayDangKy).toLocaleDateString("vi-VN")}</p>
+        {dangKy.hopDongLienKet && (
+          <p className="mt-2">
+            Đơn vị liên kết thu hồ sơ: <strong>{dangKy.hopDongLienKet.donViLienKet.ten}</strong>
+            {dangKy.hopDongLienKet.donViLienKet.diaChi &&
+              ` (${dangKy.hopDongLienKet.donViLienKet.diaChi})`}
+          </p>
+        )}
         <p className="mt-4 italic">
-          Trạng thái: Đã đăng ký online - chờ nộp bản giấy về trung tâm/phòng bồi dưỡng.
+          Trạng thái: Đã đăng ký online - chờ nộp bản giấy về{" "}
+          {dangKy.hopDongLienKet
+            ? `đơn vị liên kết ${dangKy.hopDongLienKet.donViLienKet.ten}`
+            : "trung tâm/phòng bồi dưỡng"}
+          .
         </p>
         <p className="mt-8 text-right">Người đăng ký ký tên</p>
       </article>

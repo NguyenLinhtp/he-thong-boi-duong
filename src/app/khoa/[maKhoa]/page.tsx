@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { layKhoaTheoMa } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import { coTheNhanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { dsDonViLienKetChoKhoa } from "@/server/services/hv/hv-12-dang-ky-qua-dvlk";
 import { FormDangKy } from "./form-dang-ky";
 import { FormXacNhanThamGia } from "./form-xac-nhan-tham-gia";
 import { FormDangKyDuThi } from "./form-dang-ky-du-thi";
+import { FormDangKyQuaDVLK } from "./form-dang-ky-qua-dvlk";
 
 export default async function TrangDangKyCongKhaiKhoa({
   params,
@@ -18,6 +20,10 @@ export default async function TrangDangKyCongKhaiKhoa({
   // PT2: học viên đã import sẵn giữ chỗ từ trước, không cần kiểm tra lại sĩ
   // số khi xác nhận (khác với PT1 là đăng ký mới, phải qua coTheNhanDangKy).
   const conMoXacNhanThamGia = khoa.trangThai === "DANG_TUYEN_SINH";
+  const dsDonViLienKet =
+    khoa.chuongTrinh.phuongThucDangKy === "QUA_DON_VI_LIEN_KET"
+      ? await dsDonViLienKetChoKhoa(khoa.id)
+      : [];
 
   return (
     <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
@@ -65,8 +71,29 @@ export default async function TrangDangKyCongKhaiKhoa({
           </p>
         ))}
 
+      {khoa.chuongTrinh.phuongThucDangKy === "QUA_DON_VI_LIEN_KET" &&
+        (!conMo ? (
+          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+            Khóa hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).
+          </p>
+        ) : dsDonViLienKet.length === 0 ? (
+          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+            Khóa chưa có đơn vị liên kết nào được phân công tiếp nhận hồ sơ. Vui lòng liên hệ trực
+            tiếp trung tâm.
+          </p>
+        ) : (
+          <FormDangKyQuaDVLK
+            khoaId={khoa.id}
+            maKhoa={khoa.maKhoa}
+            dsDonViLienKet={dsDonViLienKet.map((hd) => ({
+              id: hd.donViLienKetId,
+              ten: hd.donViLienKet.ten,
+            }))}
+          />
+        ))}
+
       {khoa.chuongTrinh.phuongThucDangKy &&
-        !["TRUC_TUYEN_NOP_GIAY", "IMPORT_TU_XAC_NHAN", "CHI_DU_THI"].includes(
+        !["TRUC_TUYEN_NOP_GIAY", "IMPORT_TU_XAC_NHAN", "CHI_DU_THI", "QUA_DON_VI_LIEN_KET"].includes(
           khoa.chuongTrinh.phuongThucDangKy,
         ) && (
           <p className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">

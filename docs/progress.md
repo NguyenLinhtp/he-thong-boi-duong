@@ -57,8 +57,8 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 ### 4. Tuyển sinh & Quản lý học viên
 
 - [x] **HV-10** — Gửi thông báo tự động cho học viên
-- [ ] **HV-11** — Đăng ký học viên thay mặt đơn vị liên kết (Phương thức 4a)
-- [ ] **HV-12** — Học viên tự đăng ký và chọn đơn vị liên kết thu hồ sơ (Phương thức 4b)
+- [x] **HV-11** — Đăng ký học viên thay mặt đơn vị liên kết (Phương thức 4a)
+- [x] **HV-12** — Học viên tự đăng ký và chọn đơn vị liên kết thu hồ sơ (Phương thức 4b)
 
 ### 5. Quản lý giảng dạy
 

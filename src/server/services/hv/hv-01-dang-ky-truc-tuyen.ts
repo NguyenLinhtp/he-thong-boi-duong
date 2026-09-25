@@ -68,7 +68,11 @@ export async function dangKyTrucTuyen(input: DangKyTrucTuyenInput) {
 export async function layDangKy(id: string) {
   const dangKy = await prisma.dangKyHoc.findUnique({
     where: { id },
-    include: { hocVien: true, khoa: { include: { chuongTrinh: true } } },
+    include: {
+      hocVien: true,
+      khoa: { include: { chuongTrinh: true } },
+      hopDongLienKet: { include: { donViLienKet: true } },
+    },
   });
   if (!dangKy) throw new KhongTimThayDangKyError();
   return dangKy;
