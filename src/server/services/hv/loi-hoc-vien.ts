@@ -85,3 +85,11 @@ export class KhoaChuaMoXacNhanThamGiaError extends Error {
     super("Khóa chưa/không còn mở xác nhận tham gia (chỉ mở khi khóa Đang tuyển sinh)");
   }
 }
+
+export class SaiTrangThaiThamDinhError extends Error {
+  constructor() {
+    super(
+      'Chỉ thẩm định được hồ sơ đã hoàn tất bước đăng ký (chờ duyệt/đã nộp giấy/đã xác nhận tham gia) hoặc đang ở kết quả thẩm định trước đó',
+    );
+  }
+}

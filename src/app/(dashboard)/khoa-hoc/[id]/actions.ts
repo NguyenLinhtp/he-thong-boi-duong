@@ -16,6 +16,7 @@ import {
 } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import { xacNhanNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { importDanhSachHocVien } from "@/server/services/hv/hv-03-import-danh-sach";
+import { thamDinhHoSo, type KetQuaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
 import { DuLieuImportLoiError } from "@/server/services/hv/loi-hoc-vien";
 import type { HinhThucGiangDay, TrangThaiKhoa } from "@/generated/prisma/client";
 
@@ -170,4 +171,25 @@ export async function importDanhSachAction(
     if (error instanceof Error) return { loi: error.message };
     throw error;
   }
+}
+
+export async function thamDinhHoSoAction(
+  _prevState: string | undefined,
+  formData: FormData,
+): Promise<string | undefined> {
+  await requirePermission("HV-06");
+  const khoaId = String(formData.get("khoaId"));
+  const dangKyId = String(formData.get("dangKyId"));
+  const ketQua = formData.get("ketQua") as KetQuaThamDinh;
+  const ghiChu = String(formData.get("ghiChu") || "");
+
+  try {
+    await thamDinhHoSo(dangKyId, ketQua, ghiChu || null);
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+
+  revalidatePath(`/khoa-hoc/${khoaId}`);
+  return undefined;
 }

@@ -12,6 +12,7 @@ import { linkDangKyCongKhai } from "@/server/services/kh/kh-06-thong-bao-tuyen-s
 import { danhSachChoNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { danhSachChoTuXacNhan } from "@/server/services/hv/hv-03-import-danh-sach";
 import { danhSachThiSinh } from "@/server/services/hv/hv-05-dang-ky-du-thi";
+import { danhSachChoThamDinh, danhSachDaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
@@ -20,7 +21,13 @@ import { FormHinhThuc } from "./form-hinh-thuc";
 import { FormTrangThai } from "./form-trang-thai";
 import { FormThongBao } from "./form-thong-bao";
 import { FormImport } from "./form-import";
+import { FormThamDinh } from "./form-tham-dinh";
 import { xoaBuoiHocAction, tuDongTaoLinkAction, xacNhanNopGiayAction } from "./actions";
+
+const NHAN_KET_QUA_THAM_DINH: Record<string, string> = {
+  HOP_LE: "Hợp lệ",
+  KHONG_HOP_LE: "Không hợp lệ",
+};
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   CHUAN_BI: "Chuẩn bị",
@@ -63,6 +70,8 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     dsChoNopGiay,
     dsChoTuXacNhan,
     dsThiSinh,
+    dsChoThamDinh,
+    dsDaThamDinh,
   ] = await Promise.all([
     danhSachPhanCong(id),
     danhSachGiangVien(),
@@ -74,6 +83,8 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     danhSachChoNopGiay(id),
     danhSachChoTuXacNhan(id),
     danhSachThiSinh(id),
+    danhSachChoThamDinh(id),
+    danhSachDaThamDinh(id),
   ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
@@ -267,6 +278,61 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           </Table>
         </section>
       )}
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-semibold">HV-06 · Kiểm tra, thẩm định hồ sơ đăng ký</h2>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Học viên</TableHead>
+              <TableHead>CCCD/mã số</TableHead>
+              <TableHead>Ngày đăng ký</TableHead>
+              <TableHead>Thẩm định</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {dsChoThamDinh.map((dk) => (
+              <TableRow key={dk.id}>
+                <TableCell>{dk.hocVien.hoTen}</TableCell>
+                <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
+                <TableCell>{new Date(dk.ngayDangKy).toLocaleDateString("vi-VN")}</TableCell>
+                <TableCell>
+                  <FormThamDinh khoaId={khoa.id} dangKyId={dk.id} />
+                </TableCell>
+              </TableRow>
+            ))}
+            {dsChoThamDinh.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                  Không có hồ sơ nào đang chờ thẩm định
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+
+        {dsDaThamDinh.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Học viên</TableHead>
+                <TableHead>Kết quả</TableHead>
+                <TableHead>Ghi chú</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dsDaThamDinh.map((dk) => (
+                <TableRow key={dk.id}>
+                  <TableCell>{dk.hocVien.hoTen}</TableCell>
+                  <TableCell>{NHAN_KET_QUA_THAM_DINH[dk.trangThai] ?? dk.trangThai}</TableCell>
+                  <TableCell>{dk.ghiChuThamDinh ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">KH-02 · Phân công giảng viên phụ trách học phần</h2>
