@@ -18,6 +18,7 @@ import {
   danhSachChinhThuc,
 } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
 import { danhSachHocVienTheoKhoa } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
+import { buoiHocDaKetThuc } from "@/server/services/gd/gd-05-link-truc-tuyen";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
@@ -30,8 +31,8 @@ import { FormThamDinh } from "./form-tham-dinh";
 import { FormXetDuyet } from "./form-xet-duyet";
 import { FormThemHocVien } from "./form-them-hoc-vien";
 import { FormChuyenKhoa } from "./form-chuyen-khoa";
+import { HangBuoiHoc } from "./hang-buoi-hoc";
 import {
-  xoaBuoiHocAction,
   tuDongTaoLinkAction,
   xacNhanNopGiayAction,
   xoaHocVienKhoiKhoaAction,
@@ -72,6 +73,16 @@ const NHAN_PHUONG_THUC: Record<string, string> = {
   QUA_DON_VI_LIEN_KET: "PT4 · Qua đơn vị liên kết",
 };
 
+async function coQuyen(maCN: string): Promise<boolean> {
+  try {
+    await requirePermission(maCN);
+    return true;
+  } catch (error) {
+    if (error instanceof KhongCoQuyenError) return false;
+    throw error;
+  }
+}
+
 export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id: string }> }) {
   try {
     await requirePermission("KH-01");
@@ -82,6 +93,9 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     }
     throw error;
   }
+
+  const choPhepGD03 = await coQuyen("GD-03");
+  const choPhepGD05 = await coQuyen("GD-05");
 
   const { id } = await params;
   const khoa = await layKhoa(id);
@@ -545,23 +559,30 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           </TableHeader>
           <TableBody>
             {dsBuoiHoc.map((bh) => (
-              <TableRow key={bh.id}>
-                <TableCell>{new Date(bh.ngayHoc).toLocaleDateString("vi-VN")}</TableCell>
-                <TableCell>
-                  {bh.gioBatDau && bh.gioKetThuc ? `${bh.gioBatDau} – ${bh.gioKetThuc}` : "—"}
-                </TableCell>
-                <TableCell>{bh.hocPhan?.ten ?? "—"}</TableCell>
-                <TableCell>
-                  {bh.phongHoc?.ten ?? (bh.linkTrucTuyen ? "Trực tuyến" : "—")}
-                </TableCell>
-                <TableCell>
-                  <form action={xoaBuoiHocAction.bind(null, khoa.id, bh.id)}>
-                    <Button type="submit" variant="ghost" className="h-7 px-2 text-xs text-destructive">
-                      Xóa
-                    </Button>
-                  </form>
-                </TableCell>
-              </TableRow>
+              <HangBuoiHoc
+                key={bh.id}
+                khoaId={khoa.id}
+                buoiHoc={{
+                  id: bh.id,
+                  ngayHoc: bh.ngayHoc.toISOString(),
+                  gioBatDau: bh.gioBatDau,
+                  gioKetThuc: bh.gioKetThuc,
+                  hocPhanId: bh.hocPhanId,
+                  hocPhanTen: bh.hocPhan?.ten ?? null,
+                  phongHocId: bh.phongHocId,
+                  phongHocTen: bh.phongHoc?.ten ?? null,
+                  linkTrucTuyen: bh.linkTrucTuyen,
+                  linkConHieuLuc: bh.linkTrucTuyen ? !bh.daHuy && !buoiHocDaKetThuc(bh) : false,
+                  daHuy: bh.daHuy,
+                  lyDoThayDoi: bh.lyDoThayDoi,
+                  noiDungDaGiang: bh.noiDungDaGiang,
+                  nhanXet: bh.nhanXet,
+                }}
+                dsHocPhan={khoa.chuongTrinh.hocPhans.map((hp) => ({ id: hp.id, ten: hp.ten }))}
+                dsPhongHoc={dsPhongHoc.map((ph) => ({ id: ph.id, ten: `${ph.ma} · ${ph.ten}` }))}
+                choPhepGD03={choPhepGD03}
+                choPhepGD05={choPhepGD05}
+              />
             ))}
             {dsBuoiHoc.length === 0 && (
               <TableRow>

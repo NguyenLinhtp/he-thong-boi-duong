@@ -62,10 +62,10 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 5. Quản lý giảng dạy
 
-- [ ] **GD-01** — Điểm danh học viên theo buổi học
-- [ ] **GD-02** — Ghi nhật ký buổi học
-- [ ] **GD-03** — Xử lý nghỉ học, đổi lịch, học bù
-- [ ] **GD-05** — Tạo và quản lý link phòng học trực tuyến
+- [x] **GD-01** — Điểm danh học viên theo buổi học
+- [x] **GD-02** — Ghi nhật ký buổi học
+- [x] **GD-03** — Xử lý nghỉ học, đổi lịch, học bù
+- [x] **GD-05** — Tạo và quản lý link phòng học trực tuyến
 
 ### 6. Quản lý điểm và kết quả học tập
 

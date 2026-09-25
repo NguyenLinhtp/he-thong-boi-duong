@@ -14,6 +14,8 @@ import {
   type KenhGui,
   type ThongBaoDaPhatHanh,
 } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
+import { huyBuoiHoc, doiLichBuoiHoc } from "@/server/services/gd/gd-03-doi-lich";
+import { thuHoiLinkTrucTuyen } from "@/server/services/gd/gd-05-link-truc-tuyen";
 import { xacNhanNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { importDanhSachHocVien } from "@/server/services/hv/hv-03-import-danh-sach";
 import { thamDinhHoSo, type KetQuaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
@@ -83,6 +85,61 @@ export async function themBuoiHocAction(
 export async function xoaBuoiHocAction(khoaId: string, buoiHocId: string): Promise<void> {
   await requirePermission("KH-03");
   await xoaBuoiHoc(buoiHocId);
+  revalidatePath(`/khoa-hoc/${khoaId}`);
+}
+
+export async function huyBuoiHocAction(
+  _prevState: string | undefined,
+  formData: FormData,
+): Promise<string | undefined> {
+  await requirePermission("GD-03");
+  const khoaId = String(formData.get("khoaId"));
+  const buoiHocId = String(formData.get("buoiHocId"));
+
+  try {
+    await huyBuoiHoc(buoiHocId, String(formData.get("lyDo") || ""));
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+
+  revalidatePath(`/khoa-hoc/${khoaId}`);
+  return undefined;
+}
+
+export async function doiLichBuoiHocAction(
+  _prevState: string | undefined,
+  formData: FormData,
+): Promise<string | undefined> {
+  await requirePermission("GD-03");
+  const khoaId = String(formData.get("khoaId"));
+  const buoiHocId = String(formData.get("buoiHocId"));
+  const hocPhanId = String(formData.get("hocPhanId") || "");
+  const gioBatDau = String(formData.get("gioBatDau") || "");
+  const gioKetThuc = String(formData.get("gioKetThuc") || "");
+  const phongHocId = String(formData.get("phongHocId") || "");
+
+  try {
+    await doiLichBuoiHoc(buoiHocId, {
+      hocPhanId: hocPhanId || null,
+      ngayHoc: String(formData.get("ngayHoc")),
+      gioBatDau: gioBatDau || null,
+      gioKetThuc: gioKetThuc || null,
+      phongHocId: phongHocId || null,
+      lyDo: String(formData.get("lyDo") || ""),
+    });
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+
+  revalidatePath(`/khoa-hoc/${khoaId}`);
+  return undefined;
+}
+
+export async function thuHoiLinkAction(khoaId: string, buoiHocId: string): Promise<void> {
+  await requirePermission("GD-05");
+  await thuHoiLinkTrucTuyen(buoiHocId);
   revalidatePath(`/khoa-hoc/${khoaId}`);
 }
 

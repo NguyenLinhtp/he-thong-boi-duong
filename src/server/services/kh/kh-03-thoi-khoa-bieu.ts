@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { trungLichPhongHoc } from "@/server/services/dm/dm-04-phong-hoc";
 import {
   KhongTimThayKhoaError,
+  KhongTimThayBuoiHocError,
   TrungLichGiangVienTheoBuoiError,
   TrungPhongHocError,
 } from "@/server/services/kh/loi-khoa";
@@ -25,7 +26,10 @@ function coTrungGio(aBatDau: string, aKetThuc: string, bBatDau: string, bKetThuc
   return aBatDau < bKetThuc && bBatDau < aKetThuc;
 }
 
-async function timGiangVienChoHocPhan(khoaId: string, hocPhanId: string): Promise<string | null> {
+export async function timGiangVienChoHocPhan(
+  khoaId: string,
+  hocPhanId: string,
+): Promise<string | null> {
   const phanCong = await prisma.giangVienHocPhan.findUnique({
     where: { khoaId_hocPhanId: { khoaId, hocPhanId } },
   });
@@ -108,6 +112,36 @@ export async function thietLapBuoiHoc(input: ThietLapBuoiHocInput) {
       linkTrucTuyen: input.linkTrucTuyen ?? null,
     },
     include: { hocPhan: true, phongHoc: true },
+  });
+}
+
+/**
+ * GD-03: cập nhật lịch của 1 buổi học đã có (đổi ngày/giờ/phòng) - kiểm tra
+ * lại đúng 2 quy tắc trùng lịch như khi tạo mới, loại trừ chính buổi này ra
+ * khỏi tập so sánh (boQuaBuoiHocId).
+ */
+export async function capNhatBuoiHoc(
+  id: string,
+  input: Omit<ThietLapBuoiHocInput, "khoaId"> & { lyDoThayDoi?: string | null },
+) {
+  const buoiHoc = await prisma.buoiHoc.findUnique({ where: { id } });
+  if (!buoiHoc) throw new KhongTimThayBuoiHocError();
+
+  const inputDayDu: ThietLapBuoiHocInput = { ...input, khoaId: buoiHoc.khoaId };
+  await kiemTraTrungLichGiangVien(inputDayDu, id);
+  await kiemTraTrungPhongHoc(inputDayDu, id);
+
+  return prisma.buoiHoc.update({
+    where: { id },
+    data: {
+      hocPhanId: input.hocPhanId ?? null,
+      ngayHoc: new Date(input.ngayHoc),
+      gioBatDau: input.gioBatDau ?? null,
+      gioKetThuc: input.gioKetThuc ?? null,
+      phongHocId: input.phongHocId ?? null,
+      ...(input.lyDoThayDoi !== undefined ? { lyDoThayDoi: input.lyDoThayDoi } : {}),
+    },
+    include: { hocPhan: true, phongHoc: true, khoa: true },
   });
 }
 

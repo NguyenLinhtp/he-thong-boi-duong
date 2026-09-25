@@ -8,29 +8,33 @@ import type { LoaiSuKienThongBao } from "@/generated/prisma/client";
 // giảng...) nên luôn thỏa quy tắc, không cần hàng đợi/lập lịch riêng.
 //
 // Gửi email là nỗ lực tốt nhất (best-effort): mọi lỗi (chưa cấu hình SMTP,
-// sai thông tin, học viên không có email, mất kết nối...) đều bị bắt lại và
-// ghi vào ThongBao.loiGuiEmail - KHÔNG BAO GIỜ throw ra ngoài, vì nghiệp vụ
-// gọi hàm này (vd HV-07 xét duyệt chính thức) không được phép fail chỉ vì
-// gửi email lỗi. Dòng ThongBao luôn được ghi lại, đóng vai trò "trung tâm
-// thông báo trong hệ thống" - hiện chưa có cổng đăng nhập học viên nên cán
-// bộ xem trực tiếp trong hồ sơ học viên (HV-08).
-export async function guiThongBao(
-  hocVienId: string,
-  loaiSuKien: LoaiSuKienThongBao,
-  tieuDe: string,
-  noiDung: string,
-) {
-  const hocVien = await prisma.hocVien.findUnique({ where: { id: hocVienId } });
-  if (!hocVien) return null;
-
+// sai thông tin, người nhận không có email, mất kết nối...) đều bị bắt lại
+// và ghi vào ThongBao.loiGuiEmail - KHÔNG BAO GIỜ throw ra ngoài, vì nghiệp
+// vụ gọi hàm này (vd HV-07 xét duyệt chính thức, GD-03 đổi lịch) không được
+// phép fail chỉ vì gửi email lỗi. Dòng ThongBao luôn được ghi lại, đóng vai
+// trò "trung tâm thông báo trong hệ thống" - hiện chưa có cổng đăng nhập
+// học viên/giảng viên nên cán bộ xem trực tiếp trong hồ sơ học viên (HV-08)
+// hoặc trang giảng viên.
+async function guiThongBaoNoiBo(input: {
+  data: { hocVienId: string } | { giangVienId: string };
+  emailNguoiNhan: string | null;
+  loaiSuKien: LoaiSuKienThongBao;
+  tieuDe: string;
+  noiDung: string;
+}) {
   const thongBao = await prisma.thongBao.create({
-    data: { hocVienId, loaiSuKien, tieuDe, noiDung },
+    data: {
+      ...input.data,
+      loaiSuKien: input.loaiSuKien,
+      tieuDe: input.tieuDe,
+      noiDung: input.noiDung,
+    },
   });
 
-  if (!hocVien.email) {
+  if (!input.emailNguoiNhan) {
     return prisma.thongBao.update({
       where: { id: thongBao.id },
-      data: { loiGuiEmail: "Học viên chưa có địa chỉ email" },
+      data: { loiGuiEmail: "Người nhận chưa có địa chỉ email" },
     });
   }
 
@@ -52,9 +56,9 @@ export async function guiThongBao(
     });
     await transporter.sendMail({
       from: cauHinh.tuDiaChi,
-      to: hocVien.email,
-      subject: tieuDe,
-      text: noiDung,
+      to: input.emailNguoiNhan,
+      subject: input.tieuDe,
+      text: input.noiDung,
     });
     return await prisma.thongBao.update({
       where: { id: thongBao.id },
@@ -68,9 +72,55 @@ export async function guiThongBao(
   }
 }
 
+export async function guiThongBao(
+  hocVienId: string,
+  loaiSuKien: LoaiSuKienThongBao,
+  tieuDe: string,
+  noiDung: string,
+) {
+  const hocVien = await prisma.hocVien.findUnique({ where: { id: hocVienId } });
+  if (!hocVien) return null;
+
+  return guiThongBaoNoiBo({
+    data: { hocVienId },
+    emailNguoiNhan: hocVien.email,
+    loaiSuKien,
+    tieuDe,
+    noiDung,
+  });
+}
+
+// GD-03: nhánh "giảng viên" của cùng cơ chế thông báo - giảng viên mời
+// giảng có thể không có tài khoản đăng nhập nên lấy email trực tiếp từ
+// GiangVien.email (không qua NguoiDung).
+export async function guiThongBaoGiangVien(
+  giangVienId: string,
+  loaiSuKien: LoaiSuKienThongBao,
+  tieuDe: string,
+  noiDung: string,
+) {
+  const giangVien = await prisma.giangVien.findUnique({ where: { id: giangVienId } });
+  if (!giangVien) return null;
+
+  return guiThongBaoNoiBo({
+    data: { giangVienId },
+    emailNguoiNhan: giangVien.email,
+    loaiSuKien,
+    tieuDe,
+    noiDung,
+  });
+}
+
 export async function danhSachThongBaoCuaHocVien(hocVienId: string) {
   return prisma.thongBao.findMany({
     where: { hocVienId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function danhSachThongBaoCuaGiangVien(giangVienId: string) {
+  return prisma.thongBao.findMany({
+    where: { giangVienId },
     orderBy: { createdAt: "desc" },
   });
 }

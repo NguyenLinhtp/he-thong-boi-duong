@@ -10,6 +10,12 @@ export class KhongTimThayGiangVienError extends Error {
   }
 }
 
+export class KhongTimThayBuoiHocError extends Error {
+  constructor() {
+    super("Không tìm thấy buổi học");
+  }
+}
+
 export class HocPhanKhongThuocChuongTrinhError extends Error {
   constructor() {
     super("Học phần không thuộc chương trình của khóa này");

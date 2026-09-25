@@ -47,7 +47,7 @@ describe("HV-10 gửi thông báo tự động cho học viên", () => {
     const tb = await guiThongBao(hv.id, "TRUNG_TUYEN", "Tiêu đề", "Nội dung");
 
     expect(tb?.daGuiEmail).toBe(false);
-    expect(tb?.loiGuiEmail).toBe("Học viên chưa có địa chỉ email");
+    expect(tb?.loiGuiEmail).toBe("Người nhận chưa có địa chỉ email");
   });
 
   it("ghi nhận thông báo, báo lỗi 'chưa cấu hình SMTP' khi chưa có cấu hình", async () => {

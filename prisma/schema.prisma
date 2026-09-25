@@ -375,9 +375,15 @@ model GiangVien {
   chucDanhHocViId String?
   chucDanhHocVi   ChucDanhHocVi? @relation(fields: [chucDanhHocViId], references: [id])
   chuyenMon       String?
+  // GD-03: cần kênh liên lạc để "thông báo gửi ... giảng viên" khi đổi
+  // lịch/nghỉ học - giảng viên mời giảng có thể không có tài khoản đăng
+  // nhập (nguoiDungId null) nên không thể chỉ dựa vào NguoiDung.email.
+  email           String?
+  soDienThoai     String?
 
   hocPhans  GiangVienHocPhan[]
   diemDanhs DiemDanh[]
+  thongBaos ThongBao[]
 
   @@map("giang_vien")
 }
@@ -425,10 +431,15 @@ model HocVien {
 // HV-10: nhật ký mỗi thông báo đã phát sinh cho 1 học viên - vừa là "trung
 // tâm thông báo trong hệ thống" (chưa có cổng đăng nhập học viên nên trước
 // mắt cán bộ xem trong hồ sơ học viên), vừa là log kết quả gửi email.
+// GD-03: "thông báo gửi học viên/giảng viên" - cùng 1 bảng nhật ký, đúng 1
+// trong 2 khóa ngoại hocVienId/giangVienId có giá trị (ràng buộc kiểm tra ở
+// tầng ứng dụng, guiThongBao()/guiThongBaoGiangVien() không cho gọi thiếu).
 model ThongBao {
   id           String              @id @default(cuid())
-  hocVienId    String
-  hocVien      HocVien             @relation(fields: [hocVienId], references: [id], onDelete: Cascade)
+  hocVienId    String?
+  hocVien      HocVien?            @relation(fields: [hocVienId], references: [id], onDelete: Cascade)
+  giangVienId  String?
+  giangVien    GiangVien?          @relation(fields: [giangVienId], references: [id], onDelete: Cascade)
   loaiSuKien   LoaiSuKienThongBao
   tieuDe       String
   noiDung      String
@@ -492,6 +503,14 @@ model BuoiHoc {
   phongHocId    String?
   phongHoc      PhongHoc? @relation(fields: [phongHocId], references: [id])
   linkTrucTuyen String?
+  // GD-03: "nghỉ học" - buổi bị hủy hẳn, không tổ chức (khác học bù, là 1
+  // buổi mới tạo qua KH-03 thietLapBuoiHoc). lyDoThayDoi dùng chung cho cả
+  // hủy lẫn đổi lịch (ghi lại lần thay đổi gần nhất).
+  daHuy         Boolean   @default(false)
+  lyDoThayDoi   String?
+  // GD-02: nhật ký buổi học - không bắt buộc, giảng viên tự ghi sau buổi.
+  noiDungDaGiang String?
+  nhanXet       String?
 
   diemDanhs DiemDanh[]
 
