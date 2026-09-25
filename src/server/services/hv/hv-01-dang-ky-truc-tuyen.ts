@@ -1,7 +1,11 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { coTheNhanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
-import { timHoacTaoHocVien, type ThongTinHocVienInput } from "@/server/services/hv/dung-chung";
+import {
+  timHoacTaoHocVien,
+  SO_NGAY_HAN_NOP_GIAY,
+  type ThongTinHocVienInput,
+} from "@/server/services/hv/dung-chung";
 import {
   KhongTimThayKhoaError,
   SaiPhuongThucDangKyError,
@@ -34,9 +38,12 @@ export async function dangKyTrucTuyen(input: DangKyTrucTuyenInput) {
 
   const hocVien = await timHoacTaoHocVien(input);
 
+  const hanNopGiay = new Date();
+  hanNopGiay.setDate(hanNopGiay.getDate() + SO_NGAY_HAN_NOP_GIAY);
+
   try {
     return await prisma.dangKyHoc.create({
-      data: { hocVienId: hocVien.id, khoaId: khoa.id, trangThai: "CHO_NOP_GIAY" },
+      data: { hocVienId: hocVien.id, khoaId: khoa.id, trangThai: "CHO_NOP_GIAY", hanNopGiay },
       include: { hocVien: true, khoa: { include: { chuongTrinh: true } } },
     });
   } catch (error) {

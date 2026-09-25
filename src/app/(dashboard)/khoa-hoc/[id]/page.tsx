@@ -9,6 +9,7 @@ import { danhSachPhongHoc } from "@/server/services/dm/dm-04-phong-hoc";
 import { tinhTrangLinkTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
 import { tinhTrangSiSo } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { linkDangKyCongKhai } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
+import { danhSachChoNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
@@ -16,7 +17,7 @@ import { FormBuoiHoc } from "./form-buoi-hoc";
 import { FormHinhThuc } from "./form-hinh-thuc";
 import { FormTrangThai } from "./form-trang-thai";
 import { FormThongBao } from "./form-thong-bao";
-import { xoaBuoiHocAction, tuDongTaoLinkAction } from "./actions";
+import { xoaBuoiHocAction, tuDongTaoLinkAction, xacNhanNopGiayAction } from "./actions";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   CHUAN_BI: "Chuẩn bị",
@@ -48,7 +49,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc, tinhTrangLink, siSo, linkCongKhai] =
+  const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc, tinhTrangLink, siSo, linkCongKhai, dsChoNopGiay] =
     await Promise.all([
       danhSachPhanCong(id),
       danhSachGiangVien(),
@@ -57,6 +58,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
       tinhTrangLinkTrucTuyen(id),
       tinhTrangSiSo(id),
       linkDangKyCongKhai(id),
+      danhSachChoNopGiay(id),
     ]);
   const hocPhanDaPhanCong = new Set(dsPhanCong.map((pc) => pc.hocPhanId));
   const hocPhanChuaPhanCong = khoa.chuongTrinh.hocPhans.filter((hp) => !hocPhanDaPhanCong.has(hp.id));
@@ -138,6 +140,50 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
         <h2 className="text-base font-semibold">KH-06 · Thông báo tuyển sinh/mở khóa</h2>
         <FormThongBao khoaId={khoa.id} linkHienTai={linkCongKhai} />
       </section>
+
+      {khoa.chuongTrinh.phuongThucDangKy === "TRUC_TUYEN_NOP_GIAY" && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold">HV-02 · Xác nhận đã nhận hồ sơ giấy</h2>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Học viên</TableHead>
+                <TableHead>CCCD</TableHead>
+                <TableHead>Ngày đăng ký</TableHead>
+                <TableHead>Hạn nộp giấy</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dsChoNopGiay.map((dk) => (
+                <TableRow key={dk.id}>
+                  <TableCell>{dk.hocVien.hoTen}</TableCell>
+                  <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
+                  <TableCell>{new Date(dk.ngayDangKy).toLocaleDateString("vi-VN")}</TableCell>
+                  <TableCell>
+                    {dk.hanNopGiay ? new Date(dk.hanNopGiay).toLocaleDateString("vi-VN") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <form action={xacNhanNopGiayAction.bind(null, khoa.id, dk.id)}>
+                      <Button type="submit" variant="secondary" className="h-7 px-2 text-xs">
+                        Xác nhận đã nhận
+                      </Button>
+                    </form>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {dsChoNopGiay.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                    Không có hồ sơ nào đang chờ nộp bản giấy
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">KH-02 · Phân công giảng viên phụ trách học phần</h2>

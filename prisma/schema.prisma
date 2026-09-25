@@ -60,6 +60,8 @@ enum TrangThaiDangKy {
   CHO_NOP_GIAY
   // HV-02 (Phương thức 1): "Đã nộp hồ sơ giấy - chờ duyệt"
   DA_NOP_GIAY
+  // HV-02: tự động hủy khi quá hạn nộp bản giấy mà chưa được xác nhận
+  HUY_QUA_HAN_NOP_GIAY
   CHO_DUYET
   HOP_LE
   KHONG_HOP_LE
@@ -393,6 +395,10 @@ model DangKyHoc {
   khoaId           String
   khoa             Khoa            @relation(fields: [khoaId], references: [id])
   ngayDangKy       DateTime        @default(now())
+  // HV-02 (Phương thức 1): hạn chót nộp bản giấy - chỉ có giá trị khi hồ sơ
+  // ở CHO_NOP_GIAY; quá hạn mà chưa xác nhận thì tự động chuyển
+  // HUY_QUA_HAN_NOP_GIAY.
+  hanNopGiay       DateTime?
   trangThai        TrangThaiDangKy @default(CHO_DUYET)
   // chỉ có giá trị khi học viên đăng ký qua đơn vị liên kết (Phương thức 4);
   // mỗi học viên qua ĐVLK gắn đúng 1 hợp đồng liên kết.

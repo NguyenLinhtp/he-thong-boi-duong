@@ -14,6 +14,7 @@ import {
   type KenhGui,
   type ThongBaoDaPhatHanh,
 } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
+import { xacNhanNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import type { HinhThucGiangDay, TrangThaiKhoa } from "@/generated/prisma/client";
 
 export async function phanCongGiangVienAction(
@@ -139,4 +140,10 @@ export async function phatHanhThongBaoAction(
     if (error instanceof Error) return { loi: error.message };
     throw error;
   }
+}
+
+export async function xacNhanNopGiayAction(khoaId: string, dangKyId: string): Promise<void> {
+  await requirePermission("HV-02");
+  await xacNhanNopGiay(dangKyId);
+  revalidatePath(`/khoa-hoc/${khoaId}`);
 }

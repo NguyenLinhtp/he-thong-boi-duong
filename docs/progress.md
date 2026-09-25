@@ -33,7 +33,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 ### 4. Tuyển sinh & Quản lý học viên
 
 - [x] **HV-01** — Đăng ký khóa học trực tuyến kèm in đơn đăng ký (Phương thức 1)
-- [ ] **HV-02** — Xác nhận đã nhận hồ sơ giấy (Phương thức 1)
+- [x] **HV-02** — Xác nhận đã nhận hồ sơ giấy (Phương thức 1)
 - [ ] **HV-03** — Import danh sách học viên có sẵn (Phương thức 2)
 - [ ] **HV-04** — Học viên tự xác nhận tham gia bằng CCCD/mã số/tài khoản (Phương thức 2)
 - [ ] **HV-05** — Đăng ký dự thi, không qua học (Phương thức 3)

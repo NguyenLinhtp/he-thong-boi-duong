@@ -23,6 +23,14 @@ async function taoHocVienVoiMaTuSinh<T>(taoVoiMa: (maHocVien: string) => Promise
   throw new Error("Không sinh được mã học viên sau nhiều lần thử");
 }
 
+/**
+ * HV-02: "hồ sơ không được xác nhận nộp giấy trong thời hạn quy định sẽ tự
+ * động hủy đăng ký" - đặc tả chưa nêu rõ số ngày cụ thể, và tham số hệ thống
+ * (QT-05, Đợt 2) chưa được xây dựng để cấu hình việc này. Tạm hardcode 7
+ * ngày làm mặc định hợp lý; chuyển sang đọc từ QT-05 khi module đó có.
+ */
+export const SO_NGAY_HAN_NOP_GIAY = 7;
+
 export type ThongTinHocVienInput = {
   hoTen: string;
   soCCCD?: string | null;

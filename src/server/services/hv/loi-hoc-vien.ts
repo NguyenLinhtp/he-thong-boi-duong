@@ -27,3 +27,15 @@ export class DaDangKyKhoaNayError extends Error {
     super("Học viên đã đăng ký khóa này rồi, không thể đăng ký trùng lần 2");
   }
 }
+
+export class SaiTrangThaiXacNhanNopGiayError extends Error {
+  constructor() {
+    super('Chỉ xác nhận nộp giấy được với hồ sơ đang ở trạng thái "chờ nộp bản giấy"');
+  }
+}
+
+export class DaQuaHanNopGiayError extends Error {
+  constructor() {
+    super("Hồ sơ đã quá hạn nộp bản giấy, đăng ký đã tự động bị hủy");
+  }
+}
