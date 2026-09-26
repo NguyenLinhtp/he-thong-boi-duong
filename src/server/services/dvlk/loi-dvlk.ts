@@ -66,3 +66,53 @@ export class NgoaiPhamViDonViLienKetError extends LoiDonViLienKet {
     super("Không tìm thấy hợp đồng liên kết trong phạm vi đơn vị của bạn");
   }
 }
+
+// DVLK-03
+export class KhongTimThayKhoaDvlkError extends LoiDonViLienKet {
+  constructor() {
+    super("Không tìm thấy khóa bồi dưỡng");
+  }
+}
+
+export class KhongTimThayHopDongDvlkError extends LoiDonViLienKet {
+  constructor() {
+    super("Không tìm thấy hợp đồng liên kết");
+  }
+}
+
+export class DonViTamNgungError extends LoiDonViLienKet {
+  constructor() {
+    super("Đơn vị liên kết đang Tạm ngừng hợp tác - không lập được hợp đồng mới");
+  }
+}
+
+// CT-07/DVLK-04: tuyển sinh qua đơn vị liên kết chỉ áp dụng cho khóa Phương thức 4
+export class KhoaKhongQuaDonViLienKetError extends LoiDonViLienKet {
+  constructor() {
+    super("Khóa không thuộc chương trình Phương thức 4 (tuyển sinh qua đơn vị liên kết)");
+  }
+}
+
+export class KhoaDaDongError extends LoiDonViLienKet {
+  constructor() {
+    super("Khóa đã kết thúc hoặc đã hủy - không lập hợp đồng liên kết mới");
+  }
+}
+
+export class DaCoHopDongHieuLucError extends LoiDonViLienKet {
+  constructor(maHopDong: string) {
+    super(`Đơn vị đã có hợp đồng ${maHopDong} đang triển khai với khóa này`);
+  }
+}
+
+export class HopDongDaThanhLyError extends LoiDonViLienKet {
+  constructor() {
+    super("Hợp đồng liên kết đã thanh lý - không chỉnh sửa được");
+  }
+}
+
+export class SoLieuHopDongKhongHopLeError extends LoiDonViLienKet {
+  constructor(chiTiet: string) {
+    super(`Số liệu hợp đồng không hợp lệ: ${chiTiet}`);
+  }
+}

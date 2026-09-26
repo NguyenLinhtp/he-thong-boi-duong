@@ -97,7 +97,12 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Hợp đồng liên kết (các khóa được phân công)</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Hợp đồng liên kết (các khóa được phân công)</h2>
+          <Link href={`/don-vi-lien-ket/hop-dong?donVi=${dv.id}`} className="text-sm underline">
+            Lập / quản lý hợp đồng (DVLK-03) →
+          </Link>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -116,7 +121,11 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
             )}
             {dv.hopDongs.map((hd) => (
               <TableRow key={hd.id}>
-                <TableCell>{hd.maHopDong}</TableCell>
+                <TableCell>
+                  <Link href={`/don-vi-lien-ket/hop-dong/${hd.id}`} className="underline">
+                    {hd.maHopDong}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   {hd.khoa.maKhoa} · {hd.khoa.chuongTrinh.ten}
                 </TableCell>

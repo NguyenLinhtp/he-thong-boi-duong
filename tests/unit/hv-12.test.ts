@@ -6,7 +6,7 @@ import {
   dangKyQuaDonViLienKet,
   dsDonViLienKetChoKhoa,
 } from "@/server/services/hv/hv-12-dang-ky-qua-dvlk";
-import { taoDonViLienKet, taoHopDongLienKet } from "@/server/services/hv/lien-ket-ho-tro";
+import { taoDonViLienKet } from "@/server/services/dvlk/dvlk-01-danh-muc";
 import {
   KhongTimThayKhoaError,
   SaiPhuongThucDangKyError,
@@ -63,10 +63,9 @@ async function taoDonViVaHopDong(khoaId: string) {
   });
   donViLienKetTaoTrongTest.push(donVi.id);
 
-  const hopDong = await taoHopDongLienKet({
-    maHopDong: `HD12_${crypto.randomUUID()}`,
-    donViLienKetId: donVi.id,
-    khoaId,
+  // fixture tạo thẳng (kể cả khóa không Phương thức 4 để test chặn) - quy tắc lập hợp đồng test ở DVLK-03
+  const hopDong = await prisma.hopDongLienKet.create({
+    data: { maHopDong: `HD12_${crypto.randomUUID()}`, donViLienKetId: donVi.id, khoaId },
   });
 
   return { donVi, hopDong };

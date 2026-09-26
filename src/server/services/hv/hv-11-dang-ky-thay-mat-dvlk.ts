@@ -6,7 +6,7 @@ import {
   soNgayHanNopGiay,
   type ThongTinHocVienInput,
 } from "@/server/services/hv/dung-chung";
-import { donViLienKetCuaTaiKhoan } from "@/server/services/hv/lien-ket-ho-tro";
+import { donViLienKetCuaTaiKhoan } from "@/server/services/dvlk/dvlk-02-tai-khoan";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 import {
   KhongTimThayKhoaError,

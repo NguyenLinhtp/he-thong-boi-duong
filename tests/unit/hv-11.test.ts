@@ -3,14 +3,13 @@ import { prisma } from "@/lib/db/prisma";
 import { khoiTaoKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { chuyenTrangThaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { dangKyThayMatDonViLienKet } from "@/server/services/hv/hv-11-dang-ky-thay-mat-dvlk";
+import { taoDonViLienKet } from "@/server/services/dvlk/dvlk-01-danh-muc";
+import { ganTaiKhoanDonViLienKet } from "@/server/services/dvlk/dvlk-02-tai-khoan";
 import {
-  taoDonViLienKet,
-  ganTaiKhoanDonViLienKet,
-  taoHopDongLienKet,
   MaDonViLienKetTrungError,
   TaiKhoanKhongPhaiCanBoDonViLienKetError,
   TaiKhoanDaGanDonViKhacError,
-} from "@/server/services/hv/lien-ket-ho-tro";
+} from "@/server/services/dvlk/loi-dvlk";
 import {
   KhongTimThayKhoaError,
   SaiPhuongThucDangKyError,
@@ -91,10 +90,9 @@ async function taoDonViVaHopDong(khoaId: string, nguoiDungId?: string) {
     await ganTaiKhoanDonViLienKet(donVi.id, nguoiDungId);
   }
 
-  const hopDong = await taoHopDongLienKet({
-    maHopDong: `HD_${crypto.randomUUID()}`,
-    donViLienKetId: donVi.id,
-    khoaId,
+  // fixture tạo thẳng (kể cả khóa không Phương thức 4 để test chặn) - quy tắc lập hợp đồng test ở DVLK-03
+  const hopDong = await prisma.hopDongLienKet.create({
+    data: { maHopDong: `HD_${crypto.randomUUID()}`, donViLienKetId: donVi.id, khoaId },
   });
 
   return { donVi, hopDong };
@@ -233,7 +231,7 @@ describe("HV-11 đăng ký học viên thay mặt đơn vị liên kết (Phươ
   });
 });
 
-describe("Hỗ trợ tối thiểu đơn vị liên kết (lien-ket-ho-tro)", () => {
+describe("DVLK-01/02 dùng cho HV-11: mã đơn vị, gắn tài khoản", () => {
   it("chặn tạo trùng mã đơn vị liên kết", async () => {
     const ma = `DVLK_DUP_${crypto.randomUUID()}`;
     const donVi = await taoDonViLienKet({ ma, ten: "A" });

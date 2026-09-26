@@ -834,6 +834,8 @@ model HopDongLienKet {
   trangThai       TrangThaiHopDong @default(DANG_TRIEN_KHAI)
   ngayQuyetToan   DateTime?
   soTienQuyetToan Decimal?         @db.Decimal(12, 2)
+  ghiChu          String?
+  createdAt       DateTime         @default(now())
 
   dangKys  DangKyHoc[]
   banGiaos BanGiaoChungChi[]
