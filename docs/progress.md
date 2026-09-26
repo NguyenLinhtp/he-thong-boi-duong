@@ -129,7 +129,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 - [ ] **BC-01** — Dashboard tổng quan thời gian thực
 - [ ] **BC-04** — Xuất báo cáo theo mẫu gửi cấp trên
-- [ ] **BC-05** — Tra cứu hồ sơ lưu trữ điện tử
+- [x] **BC-05** — Tra cứu hồ sơ lưu trữ điện tử
 
 ### 11. Quản lý đơn vị liên kết
 
