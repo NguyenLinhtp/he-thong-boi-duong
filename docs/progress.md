@@ -98,7 +98,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 9. Báo cáo – Thống kê – Dashboard
 
-- [ ] **BC-02** — Báo cáo định kỳ hoạt động đào tạo
+- [x] **BC-02** — Báo cáo định kỳ hoạt động đào tạo
 - [ ] **BC-03** — Báo cáo tài chính học phí
 
 ### 10. Quản trị hệ thống
