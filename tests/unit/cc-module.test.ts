@@ -1,6 +1,8 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
-import { xetDeNghiCapChungChi, lapDanhSachDeNghi } from "@/server/services/cc/cc-01-de-nghi";
+import ExcelJS from "exceljs";
+import { xetDeNghiCapChungChi, lapDanhSachDeNghi, danhSachHoanThanh } from "@/server/services/cc/cc-01-de-nghi";
+import { xuatExcelDanhSachHoanThanh } from "@/server/services/cc/xuat-danh-sach-hoan-thanh";
 import { sinhSoHieu, huyChungChi, duLieuInChungChi } from "@/server/services/cc/cc-02-so-hieu";
 import { kyDuyetChungChi } from "@/server/services/cc/cc-03-ky-duyet";
 import { traTrucTiep, banGiaoTheoLo, soCapChungChi } from "@/server/services/cc/cc-04-so-cap";
@@ -12,6 +14,7 @@ import {
   SaiKenhNhanChungChiError,
   HopDongChuaThanhLyError,
   LoTrongError,
+  KhongTimThayLopError,
 } from "@/server/services/cc/loi-chung-chi";
 
 const loaiHinhIds: string[] = [];
@@ -26,6 +29,7 @@ afterAll(async () => {
   await prisma.ketQuaKhoa.deleteMany({ where: { khoaId: { in: khoaIds } } });
   await prisma.hocPhi.deleteMany({ where: { khoaId: { in: khoaIds } } });
   await prisma.dangKyHoc.deleteMany({ where: { khoaId: { in: khoaIds } } });
+  await prisma.lopHoc.deleteMany({ where: { khoaId: { in: khoaIds } } });
   await prisma.hopDongLienKet.deleteMany({ where: { khoaId: { in: khoaIds } } });
   await prisma.donViLienKet.deleteMany({ where: { id: { in: donViLienKetIds } } });
   await prisma.khoa.deleteMany({ where: { id: { in: khoaIds } } });
@@ -422,5 +426,70 @@ describe("Loại văn bằng theo chương trình (chứng chỉ / giấy chứn
       await huyChungChi(cc.id, "Lập nhầm loại", NGUOI);
     }
     expect((await thietLapLoaiVanBang(f.khoa.chuongTrinhId, "CHUNG_CHI")).loaiVanBang).toBe("CHUNG_CHI");
+  });
+});
+
+describe("CC-01 (bổ sung) danh sách hoàn thành theo khóa/lớp và xuất Excel", () => {
+  async function taoKhoaCoLop() {
+    const f = await taoKhoaDuDieuKien(3);
+    const [lop1, lop2] = await Promise.all(
+      ["L1", "L2"].map((ma) =>
+        prisma.lopHoc.create({ data: { khoaId: f.khoa.id, maLop: `${ma}_${uid().slice(0, 6)}`, ten: `Lớp ${ma}`, siSoToiDa: 10 } }),
+      ),
+    );
+    const ds = await prisma.ketQuaKhoa.findMany({ where: { khoaId: f.khoa.id, datHocTap: true }, include: { hocVien: true }, orderBy: { hocVien: { hoTen: "asc" } } });
+    // A, B -> lớp 1; C -> lớp 2
+    await prisma.dangKyHoc.updateMany({ where: { khoaId: f.khoa.id, hocVienId: { in: [ds[0].hocVienId, ds[1].hocVienId] } }, data: { lopId: lop1.id } });
+    await prisma.dangKyHoc.updateMany({ where: { khoaId: f.khoa.id, hocVienId: ds[2].hocVienId }, data: { lopId: lop2.id } });
+    return { ...f, lop1, lop2 };
+  }
+
+  it("chặn khi kết quả khóa chưa phê duyệt", async () => {
+    const { khoa } = await taoKhoaDaPheDuyet({ pheDuyet: false });
+    await expect(danhSachHoanThanh(khoa.id)).rejects.toThrow(ChuaPheDuyetKetQuaError);
+    await expect(xuatExcelDanhSachHoanThanh(khoa.id)).rejects.toThrow(ChuaPheDuyetKetQuaError);
+  });
+
+  it("chỉ gồm người đủ điều kiện/đã có văn bằng; lọc được theo lớp", async () => {
+    const f = await taoKhoaCoLop();
+
+    const caKhoa = await danhSachHoanThanh(f.khoa.id);
+    expect(caKhoa.dong.map((d) => d.hoTen)).toEqual(["A Đạt cá nhân", "B Không đạt", "C Còn nợ"]);
+    expect(caKhoa.lop).toBeNull();
+
+    const theoLop1 = await danhSachHoanThanh(f.khoa.id, f.lop1.id);
+    expect(theoLop1.lop?.id).toBe(f.lop1.id);
+    expect(theoLop1.dong.map((d) => d.hoTen)).toEqual(["A Đạt cá nhân", "B Không đạt"]);
+    expect(theoLop1.dong.every((d) => d.maLop === f.lop1.maLop)).toBe(true);
+    expect((await danhSachHoanThanh(f.khoa.id, f.lop2.id)).dong.map((d) => d.hoTen)).toEqual(["C Còn nợ"]);
+  });
+
+  it("không lọc được theo lớp của khóa khác", async () => {
+    const f = await taoKhoaCoLop();
+    const g = await taoKhoaCoLop();
+    await expect(danhSachHoanThanh(f.khoa.id, g.lop1.id)).rejects.toThrow(KhongTimThayLopError);
+  });
+
+  it("file Excel có tiêu đề theo loại văn bằng, lớp, đủ dòng học viên", async () => {
+    const f = await taoKhoaCoLop();
+    await prisma.chuongTrinh.update({ where: { id: f.khoa.chuongTrinhId }, data: { loaiVanBang: "CHUNG_NHAN" } });
+
+    const { tenFile, noiDung, soHocVien } = await xuatExcelDanhSachHoanThanh(f.khoa.id, f.lop1.id);
+    expect(tenFile).toBe(`DS-hoan-thanh-${f.khoa.maKhoa}-${f.lop1.maLop}.xlsx`);
+    expect(soHocVien).toBe(2);
+
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(noiDung as unknown as ArrayBuffer);
+    const ws = wb.worksheets[0];
+    const giaTri: string[] = [];
+    ws.eachRow((r) => giaTri.push(String(r.getCell(1).value ?? "") + "|" + String(r.getCell(3).value ?? "")));
+    const toanBo = giaTri.join(" / ");
+    expect(toanBo).toContain("DANH SÁCH HỌC VIÊN HOÀN THÀNH");
+    expect(toanBo.toLowerCase()).toContain("giấy chứng nhận");
+    expect(toanBo).toContain(`Lớp: ${f.lop1.maLop}`);
+    expect(giaTri).toContain("1|A Đạt cá nhân");
+    expect(giaTri).toContain("2|B Không đạt");
+    expect(toanBo).not.toContain("C Còn nợ");
+    expect(toanBo).toContain("Tổng cộng: 2 học viên");
   });
 });

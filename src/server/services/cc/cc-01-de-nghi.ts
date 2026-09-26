@@ -5,6 +5,7 @@ import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
 import {
   KhongTimThayKhoaError,
   ChuaPheDuyetKetQuaError,
+  KhongTimThayLopError,
 } from "@/server/services/cc/loi-chung-chi";
 
 /** Trạng thái chứng chỉ còn hiệu lực - mỗi (học viên, khóa) chỉ có tối đa 1. */
@@ -122,6 +123,57 @@ export async function lapDanhSachDeNghi(
   });
 
   return dsTao;
+}
+
+/**
+ * CC-01 (bổ sung 26/09/2026): danh sách học viên HOÀN THÀNH chương trình để
+ * làm hồ sơ ban hành quyết định cấp văn bằng = đủ điều kiện (xem
+ * lyDoKhongDuDieuKien) + đã có văn bằng chưa hủy. Lọc theo 1 lớp (KH-07) hoặc
+ * cả khóa (lopId trống).
+ */
+export async function danhSachHoanThanh(khoaId: string, lopId?: string | null) {
+  const { duDieuKien, daCoChungChi } = await xetDeNghiCapChungChi(khoaId);
+  const dsKetQua = [...duDieuKien, ...daCoChungChi];
+  const hocVienIds = dsKetQua.map((kq) => kq.hocVienId);
+
+  const [khoa, lop, dsDangKy, dsChungChi] = await Promise.all([
+    prisma.khoa.findUniqueOrThrow({ where: { id: khoaId }, include: { chuongTrinh: true } }),
+    lopId ? prisma.lopHoc.findFirst({ where: { id: lopId, khoaId } }) : null,
+    prisma.dangKyHoc.findMany({
+      where: { khoaId, hocVienId: { in: hocVienIds } },
+      include: { lop: true, hopDongLienKet: { include: { donViLienKet: true } } },
+    }),
+    prisma.chungChi.findMany({
+      where: { khoaId, hocVienId: { in: hocVienIds }, trangThai: { in: [...TRANG_THAI_CON_HIEU_LUC] } },
+    }),
+  ]);
+  if (lopId && !lop) throw new KhongTimThayLopError();
+  const dangKyTheoHocVien = new Map(dsDangKy.map((dk) => [dk.hocVienId, dk]));
+  const chungChiTheoHocVien = new Map(dsChungChi.map((cc) => [cc.hocVienId, cc]));
+
+  const dong = dsKetQua
+    .map((kq) => {
+      const dangKy = dangKyTheoHocVien.get(kq.hocVienId);
+      const chungChi = chungChiTheoHocVien.get(kq.hocVienId);
+      return {
+        hocVienId: kq.hocVienId,
+        maHocVien: kq.hocVien.maHocVien,
+        hoTen: kq.hocVien.hoTen,
+        ngaySinh: kq.hocVien.ngaySinh,
+        donViCongTac: kq.hocVien.donViCongTac,
+        lopId: dangKy?.lopId ?? null,
+        maLop: dangKy?.lop?.maLop ?? null,
+        donViLienKet: dangKy?.hopDongLienKet?.donViLienKet.ten ?? null,
+        diemTongKet: kq.diemTongKet === null ? null : Number(kq.diemTongKet),
+        tyLeChuyenCan: kq.tyLeChuyenCan === null ? null : Number(kq.tyLeChuyenCan),
+        soHieu: chungChi?.soHieu ?? null,
+        soQuyetDinh: chungChi?.soQuyetDinh ?? null,
+      };
+    })
+    .filter((d) => !lopId || d.lopId === lopId)
+    .sort((a, b) => a.hoTen.localeCompare(b.hoTen, "vi"));
+
+  return { khoa, lop, dong };
 }
 
 export async function danhSachChungChiCuaKhoa(khoaId: string) {

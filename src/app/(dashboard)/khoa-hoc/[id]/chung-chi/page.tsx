@@ -4,6 +4,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { xetDeNghiCapChungChi, danhSachChungChiCuaKhoa } from "@/server/services/cc/cc-01-de-nghi";
 import { hopDongChoBanGiao } from "@/server/services/cc/cc-04-so-cap";
+import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
 import { ChuaPheDuyetKetQuaError } from "@/server/services/cc/loi-chung-chi";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import {
@@ -50,8 +51,9 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
     if (!(error instanceof ChuaPheDuyetKetQuaError)) throw error;
     xet = null;
   }
-  const [dsChungChi, dsHopDong, choPhepCC02, choPhepCC03, choPhepCC04] = await Promise.all([
+  const [dsChungChi, dsLop, dsHopDong, choPhepCC02, choPhepCC03, choPhepCC04] = await Promise.all([
     danhSachChungChiCuaKhoa(id),
+    danhSachLop(id),
     hopDongChoBanGiao(id),
     coQuyen("CC-02"),
     coQuyen("CC-03"),
@@ -92,6 +94,25 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
         ) : (
           <>
             <NutLapDeNghi khoaId={khoa.id} soDuDieuKien={xet.duDieuKien.length} />
+            {/* form GET tới API trả file .xlsx -> trình duyệt tải xuống, không rời trang */}
+            <form
+              method="get"
+              action={`/api/cc/khoa/${khoa.id}/danh-sach-hoan-thanh`}
+              className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
+            >
+              <span className="text-sm">Xuất danh sách hoàn thành (Excel) để ban hành quyết định:</span>
+              <select name="lop" defaultValue="" className="h-8 rounded-lg border px-2 text-sm">
+                <option value="">Cả khóa</option>
+                {dsLop.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    Lớp {l.maLop} · {l.ten}
+                  </option>
+                ))}
+              </select>
+              <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+                Tải Excel
+              </button>
+            </form>
             <Table>
               <TableHeader>
                 <TableRow>

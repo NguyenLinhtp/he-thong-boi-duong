@@ -7,6 +7,13 @@ export class KhongTimThayKhoaError extends LoiChungChi {
   }
 }
 
+// KH-07: lớp phải thuộc đúng khóa đang thao tác (không lọc/nhập QĐ qua lớp khóa khác).
+export class KhongTimThayLopError extends LoiChungChi {
+  constructor() {
+    super("Không tìm thấy lớp trong khóa này");
+  }
+}
+
 export class KhongTimThayChungChiError extends LoiChungChi {
   constructor() {
     super("Không tìm thấy chứng chỉ");

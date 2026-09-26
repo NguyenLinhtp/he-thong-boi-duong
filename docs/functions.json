@@ -582,7 +582,7 @@
     "mo_ta_chi_tiet": "Tự động lọc học viên đủ điều kiện (đạt kết quả học tập hoặc kết quả thi, và hoàn tất học phí cá nhân — hoặc, đối với học viên do đơn vị liên kết tuyển sinh, hợp đồng liên kết đã thanh lý) không phân biệt phương thức đăng ký ban đầu",
     "actor": "Cán bộ quản lý đào tạo",
     "input": "Kết quả khóa/kết quả thi, trạng thái học phí hoặc trạng thái thanh lý hợp đồng liên kết",
-    "output": "Danh sách đề nghị cấp chứng chỉ",
+    "output": "Danh sách đề nghị cấp chứng chỉ; (bổ sung 26/09/2026) danh sách học viên hoàn thành chương trình theo khóa hoặc theo lớp, xuất Excel làm căn cứ ban hành quyết định cấp chứng chỉ/giấy chứng nhận",
     "quy_tac_nghiep_vu": "Chỉ học viên đủ cả 2 điều kiện mới vào danh sách; học viên qua đơn vị liên kết bị loại khỏi danh sách cho đến khi hợp đồng liên kết tương ứng được thanh lý",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 2"
