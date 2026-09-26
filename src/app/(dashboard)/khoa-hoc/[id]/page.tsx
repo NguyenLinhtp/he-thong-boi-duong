@@ -160,6 +160,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   // khóa có lớp: mỗi học phần có thể phân công thêm theo từng lớp nên luôn hiện đủ học phần
   const hocPhanDePhanCong = dsLop.length > 0 ? khoa.chuongTrinh.hocPhans : hocPhanChuaPhanCong;
   const choPhepKetQua = (await coQuyen("KQ-02")) || (await coQuyen("KQ-03"));
+  const choPhepChungChi = await coQuyen("CC-01");
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -176,6 +177,11 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           {choPhepKetQua && (
             <a href={`/khoa-hoc/${khoa.id}/ket-qua`} className="text-sm underline">
               Kết quả học tập (KQ)
+            </a>
+          )}
+          {choPhepChungChi && (
+            <a href={`/khoa-hoc/${khoa.id}/chung-chi`} className="text-sm underline">
+              Chứng chỉ (CC)
             </a>
           )}
           {choPhepHocPhi && (

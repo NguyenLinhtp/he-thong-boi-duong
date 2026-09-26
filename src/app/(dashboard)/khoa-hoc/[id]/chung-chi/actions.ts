@@ -1,0 +1,32 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { requirePermission } from "@/lib/auth/guard";
+import { lapDanhSachDeNghi } from "@/server/services/cc/cc-01-de-nghi";
+import { LoiChungChi } from "@/server/services/cc/loi-chung-chi";
+
+export type KetQuaThaoTacCC = { loi?: string; thongBao?: string } | undefined;
+
+/** Chạy 1 thao tác CC: lỗi nghiệp vụ trả về làm thông báo, lỗi khác ném tiếp. */
+async function thucHien(khoaId: string, thaoTac: () => Promise<string>): Promise<KetQuaThaoTacCC> {
+  let thongBao: string;
+  try {
+    thongBao = await thaoTac();
+  } catch (error) {
+    if (error instanceof LoiChungChi) return { loi: error.message };
+    throw error;
+  }
+  revalidatePath(`/khoa-hoc/${khoaId}/chung-chi`);
+  return { thongBao };
+}
+
+export async function lapDeNghiAction(_prev: KetQuaThaoTacCC, formData: FormData): Promise<KetQuaThaoTacCC> {
+  const phien = await requirePermission("CC-01");
+  const khoaId = String(formData.get("khoaId"));
+  return thucHien(khoaId, async () => {
+    const ds = await lapDanhSachDeNghi(khoaId, { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen });
+    return ds.length > 0
+      ? `Đã lập đề nghị cấp chứng chỉ cho ${ds.length} học viên.`
+      : "Không có học viên mới đủ điều kiện.";
+  });
+}

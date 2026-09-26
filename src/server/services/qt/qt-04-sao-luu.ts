@@ -51,6 +51,7 @@ const THU_TU_BANG = [
   "ketQuaKhoa",
   "hocPhi",
   "phieuThu",
+  "banGiaoChungChi",
   "chungChi",
 ] as const;
 

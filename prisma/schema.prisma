@@ -95,10 +95,22 @@ enum TrangThaiHopDong {
   DA_THANH_LY
 }
 
+// CC: Đề nghị (CC-01) -> Chờ ký duyệt (CC-02, đã có số hiệu, đã in) -> Đã ký
+// duyệt (CC-03) -> Đã cấp (CC-04, đã vào sổ + trao/bàn giao). Đã hủy: giữ lại
+// dòng + số hiệu để "không cấp lại số đã hủy".
 enum TrangThaiChungChi {
+  DE_NGHI
   CHO_KY_DUYET
   DA_KY_DUYET
   DA_CAP
+  DA_HUY
+}
+
+// CC-04: "trao trực tiếp cho học viên tự đăng ký, hoặc bàn giao theo lô về
+// đơn vị liên kết" - kênh bắt buộc khớp nguồn đăng ký của học viên.
+enum KenhNhanChungChi {
+  TRUC_TIEP
+  BAN_GIAO_DVLK
 }
 
 enum TrangThaiSaoLuu {
@@ -692,20 +704,57 @@ model PhieuThu {
   @@map("phieu_thu")
 }
 
+// CC-01..04. Không có thao tác xóa ở tầng service: hồ sơ lưu vĩnh viễn (CC-04),
+// chứng chỉ hủy vẫn giữ dòng + số hiệu (CC-02 "không cấp lại số đã hủy").
+// Mỗi (học viên, khóa) chỉ có tối đa 1 chứng chỉ chưa hủy - kiểm tra ở service.
 model ChungChi {
-  id        String            @id @default(cuid())
-  soHieu    String?           @unique
-  hocVienId String
-  hocVien   HocVien           @relation(fields: [hocVienId], references: [id])
-  khoaId    String
-  khoa      Khoa              @relation(fields: [khoaId], references: [id])
-  ngayCap   DateTime?
-  nguoiKy   String?
-  soVaoSo   String?
-  kenhNhan  String?
-  trangThai TrangThaiChungChi @default(CHO_KY_DUYET)
+  id           String            @id @default(cuid())
+  hocVienId    String
+  hocVien      HocVien           @relation(fields: [hocVienId], references: [id])
+  khoaId       String
+  khoa         Khoa              @relation(fields: [khoaId], references: [id])
+  trangThai    TrangThaiChungChi @default(DE_NGHI)
+  // CC-01
+  nguoiDeNghi  String?
+  createdAt    DateTime          @default(now())
+  // CC-02: số hiệu theo sổ cấp, tăng dần, không trùng
+  soHieu       String?           @unique
+  ngayInSoHieu DateTime?
+  // CC-03: ký duyệt
+  soQuyetDinh  String?
+  ngayCap      DateTime?
+  nguoiKy      String?
+  // CC-04: vào sổ cấp + trả chứng chỉ
+  soVaoSo      String?           @unique
+  kenhNhan     KenhNhanChungChi?
+  nguoiNhan    String?
+  ngayNhan     DateTime?
+  banGiaoId    String?
+  banGiao      BanGiaoChungChi?  @relation(fields: [banGiaoId], references: [id])
+  // hủy (trước khi cấp)
+  lyDoHuy      String?
+  ngayHuy      DateTime?
 
+  @@index([khoaId])
   @@map("chung_chi")
+}
+
+// CC-04: 1 lô bàn giao chứng chỉ về đơn vị liên kết theo hợp đồng - chỉ lập
+// được sau khi hợp đồng đã thanh lý (DVLK-06).
+model BanGiaoChungChi {
+  id               String         @id @default(cuid())
+  maLo             String         @unique
+  hopDongLienKetId String
+  hopDongLienKet   HopDongLienKet @relation(fields: [hopDongLienKetId], references: [id])
+  ngayBanGiao      DateTime
+  nguoiDaiDienNhan String
+  nguoiBanGiao     String
+  ghiChu           String?
+  createdAt        DateTime       @default(now())
+
+  chungChis ChungChi[]
+
+  @@map("ban_giao_chung_chi")
 }
 
 model DonViLienKet {
@@ -738,7 +787,8 @@ model HopDongLienKet {
   ngayQuyetToan   DateTime?
   soTienQuyetToan Decimal?         @db.Decimal(12, 2)
 
-  dangKys DangKyHoc[]
+  dangKys  DangKyHoc[]
+  banGiaos BanGiaoChungChi[]
 
   @@map("hop_dong_lien_ket")
 }
