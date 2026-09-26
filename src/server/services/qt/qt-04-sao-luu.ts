@@ -44,6 +44,7 @@ const THU_TU_BANG = [
   "giangVienHocPhan",
   "buoiHoc",
   "hopDongLienKet",
+  "loNopHoSo",
   "dangKyHoc",
   "lichSuChuyenLop",
   "diemDanh",

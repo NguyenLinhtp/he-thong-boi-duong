@@ -2,6 +2,7 @@ import type { TrangThaiDangKy } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { donViLienKetCuaTaiKhoan } from "@/server/services/dvlk/dvlk-02-tai-khoan";
 import { KhongPhaiTaiKhoanDvlkError } from "@/server/services/dvlk/loi-dvlk";
+import { tuDongHuyQuaHan } from "@/server/services/dvlk/dvlk-05-xac-nhan-thu-ho-so";
 
 export type BoLocHoSo = { hopDongId?: string | null; trangThai?: TrangThaiDangKy | null; tuKhoa?: string | null };
 
@@ -23,6 +24,7 @@ export async function hoSoCuaDonVi(nguoiDungId: string, boLoc: BoLocHoSo = {}) {
     orderBy: { maHopDong: "asc" },
   });
   const idsHopDong = dsHopDong.map((hd) => hd.id);
+  await tuDongHuyQuaHan(idsHopDong); // DVLK-05: quá hạn thu hồ sơ -> tự hủy
 
   const dsHoSo = await prisma.dangKyHoc.findMany({
     where: {
@@ -47,6 +49,7 @@ export async function hoSoCuaDonVi(nguoiDungId: string, boLoc: BoLocHoSo = {}) {
       ngayDangKy: true,
       hanNopGiay: true,
       hopDongLienKetId: true,
+      loNopHoSo: { select: { maLo: true } },
       khoa: { select: { id: true, maKhoa: true } },
       hocVien: {
         select: {

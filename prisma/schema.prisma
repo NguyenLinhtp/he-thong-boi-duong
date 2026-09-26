@@ -527,6 +527,9 @@ model DangKyHoc {
   // phí/chứng chỉ gắn theo khóa nên đổi lớp không ảnh hưởng tới chúng.
   lopId            String?
   lop              LopHoc?         @relation(fields: [lopId], references: [id])
+  // DVLK-05: lô đơn vị liên kết tổng hợp gửi về trường khi xác nhận đã thu hồ sơ giấy
+  loNopHoSoId      String?
+  loNopHoSo        LoNopHoSo?      @relation(fields: [loNopHoSoId], references: [id])
 
   lichSuChuyenLops LichSuChuyenLop[]
 
@@ -813,8 +816,8 @@ model DonViLienKet {
   trangThaiHopTac TrangThaiHopTac @default(DANG_HOP_TAC)
   createdAt       DateTime        @default(now())
   // 1 tài khoản/đơn vị liên kết, chỉ thao tác trên các khóa được phân công qua hợp đồng
-  taiKhoanId   String?    @unique
-  taiKhoan     NguoiDung? @relation("TaiKhoanDonViLienKet", fields: [taiKhoanId], references: [id])
+  taiKhoanId      String?         @unique
+  taiKhoan        NguoiDung?      @relation("TaiKhoanDonViLienKet", fields: [taiKhoanId], references: [id])
 
   hopDongs HopDongLienKet[]
 
@@ -837,10 +840,30 @@ model HopDongLienKet {
   ghiChu          String?
   createdAt       DateTime         @default(now())
 
-  dangKys  DangKyHoc[]
-  banGiaos BanGiaoChungChi[]
+  dangKys    DangKyHoc[]
+  banGiaos   BanGiaoChungChi[]
+  loNopHoSos LoNopHoSo[]
 
   @@map("hop_dong_lien_ket")
+}
+
+// DVLK-05: 1 lần đơn vị liên kết xác nhận đã thu đủ đơn giấy và tổng hợp
+// gửi về trường (bản giấy/scan). Ngày gửi, hình thức, ghi chú chỉ để quản lý,
+// không bắt buộc.
+model LoNopHoSo {
+  id               String         @id @default(cuid())
+  maLo             String         @unique
+  hopDongLienKetId String
+  hopDongLienKet   HopDongLienKet @relation(fields: [hopDongLienKetId], references: [id])
+  ngayGui          DateTime       @default(now())
+  hinhThuc         String?
+  ghiChu           String?
+  nguoiXacNhan     String
+  createdAt        DateTime       @default(now())
+
+  dangKys DangKyHoc[]
+
+  @@map("lo_nop_ho_so")
 }
 
 // QT-04: nhật ký sao lưu - mỗi lần chạy backup (thủ công qua nút bấm admin

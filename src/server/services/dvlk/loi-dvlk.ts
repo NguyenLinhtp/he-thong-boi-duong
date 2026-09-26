@@ -116,3 +116,10 @@ export class SoLieuHopDongKhongHopLeError extends LoiDonViLienKet {
     super(`Số liệu hợp đồng không hợp lệ: ${chiTiet}`);
   }
 }
+
+// DVLK-05
+export class HoSoKhongChoThuError extends LoiDonViLienKet {
+  constructor(dsHoSo: string[]) {
+    super(`Hồ sơ không còn chờ đơn vị liên kết thu - không xác nhận lượt này: ${dsHoSo.join("; ")}`);
+  }
+}

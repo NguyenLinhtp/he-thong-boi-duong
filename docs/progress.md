@@ -112,7 +112,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 - [x] **DVLK-02** — Cấp và quản lý tài khoản đơn vị liên kết
 - [x] **DVLK-03** — Quản lý hợp đồng liên kết tuyển sinh theo khóa
 - [x] **DVLK-04** — Đăng ký và tiếp nhận hồ sơ học viên qua đơn vị liên kết
-- [ ] **DVLK-05** — Xác nhận đơn vị liên kết đã thu hồ sơ và tổng hợp gửi trường
+- [x] **DVLK-05** — Xác nhận đơn vị liên kết đã thu hồ sơ và tổng hợp gửi trường
 - [ ] **DVLK-06** — Thanh lý hợp đồng liên kết tuyển sinh cuối khóa
 
 ## Đợt 3 (6 chức năng)

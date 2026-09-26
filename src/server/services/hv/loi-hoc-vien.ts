@@ -34,6 +34,13 @@ export class SaiTrangThaiXacNhanNopGiayError extends Error {
   }
 }
 
+// DVLK-05: hồ sơ gắn hợp đồng liên kết do đơn vị liên kết thu giấy, xác nhận theo lô ở DVLK-05
+export class HoSoQuaDonViLienKetError extends Error {
+  constructor() {
+    super("Hồ sơ đăng ký qua đơn vị liên kết - xác nhận thu hồ sơ giấy theo lô ở DVLK-05");
+  }
+}
+
 export class DaQuaHanNopGiayError extends Error {
   constructor() {
     super("Hồ sơ đã quá hạn nộp bản giấy, đăng ký đã tự động bị hủy");

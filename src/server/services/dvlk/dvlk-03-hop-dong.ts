@@ -3,6 +3,7 @@ import type { TrangThaiDangKy, TrangThaiHopDong } from "@/generated/prisma/clien
 import { prisma } from "@/lib/db/prisma";
 import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
 import type { NguoiThucHien } from "@/server/services/dvlk/dvlk-01-danh-muc";
+import { tuDongHuyQuaHan } from "@/server/services/dvlk/dvlk-05-xac-nhan-thu-ho-so";
 import {
   KhongTimThayDonViLienKetError,
   KhongTimThayKhoaDvlkError,
@@ -169,13 +170,15 @@ export async function danhSachHopDong(boLoc: BoLocHopDong = {}) {
 }
 
 export async function layHopDong(id: string) {
+  await tuDongHuyQuaHan([id]); // DVLK-05: quá hạn thu hồ sơ -> tự hủy
   const hopDong = await prisma.hopDongLienKet.findUnique({
     where: { id },
     include: {
       donViLienKet: true,
       khoa: { include: { chuongTrinh: true } },
-      dangKys: { include: { hocVien: true }, orderBy: { hocVien: { hoTen: "asc" } } },
+      dangKys: { include: { hocVien: true, loNopHoSo: true }, orderBy: { hocVien: { hoTen: "asc" } } },
       banGiaos: { orderBy: { createdAt: "asc" } },
+      loNopHoSos: { include: { _count: { select: { dangKys: true } } }, orderBy: { createdAt: "asc" } },
     },
   });
   if (!hopDong) throw new KhongTimThayHopDongDvlkError();

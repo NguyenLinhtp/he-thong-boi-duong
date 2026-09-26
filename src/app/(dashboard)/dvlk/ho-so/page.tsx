@@ -7,8 +7,20 @@ import { KhongPhaiTaiKhoanDvlkError } from "@/server/services/dvlk/loi-dvlk";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { NHAN_TRANG_THAI_HO_SO, NHAN_TRANG_THAI_HOP_DONG } from "../../don-vi-lien-ket/nhan";
+import { FormXacNhanThuHoSo, ID_FORM_XAC_NHAN } from "../../don-vi-lien-ket/form-xac-nhan-thu-ho-so";
+import { xacNhanThuHoSoDvlkAction } from "./actions";
 
 const TRANG_THAI_LOC = ["CHO_NOP_GIAY", "DA_NOP_GIAY", "HUY_QUA_HAN_NOP_GIAY", "HOP_LE", "KHONG_HOP_LE", "CHINH_THUC", "HOAN_THANH", "THOI_HOC"] as const;
+
+async function coQuyen(maCN: string): Promise<boolean> {
+  try {
+    await requirePermission(maCN);
+    return true;
+  } catch (error) {
+    if (error instanceof KhongCoQuyenError) return false;
+    throw error;
+  }
+}
 
 // DVLK-04 (tiếp nhận): cán bộ đơn vị liên kết xem hồ sơ thuộc các hợp đồng của đơn vị mình
 export default async function HoSoDonViLienKetPage({
@@ -43,6 +55,10 @@ export default async function HoSoDonViLienKetPage({
   }
   const { donVi, dsHopDong, dsHoSo } = duLieu;
   const hopDongTheoId = new Map(dsHopDong.map((hd) => [hd.id, hd]));
+  const choPhepDVLK05 = await coQuyen("DVLK-05");
+  // hợp đồng đã thanh lý không nhận xác nhận thu thêm
+  const choThu = (hs: (typeof dsHoSo)[number]) =>
+    hs.trangThai === "CHO_NOP_GIAY" && hopDongTheoId.get(hs.hopDongLienKetId!)?.trangThai === "DANG_TRIEN_KHAI";
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -58,6 +74,16 @@ export default async function HoSoDonViLienKetPage({
         Gồm hồ sơ đơn vị đăng ký hộ và hồ sơ học viên tự đăng ký trực tuyến chọn đơn vị thu hồ sơ giấy.
         Học viên in đơn, ký và nộp bản giấy về đơn vị trước hạn.
       </p>
+
+      {choPhepDVLK05 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold">DVLK-05 · Xác nhận đã thu hồ sơ giấy, gửi về trường theo lô</h2>
+          <p className="text-xs text-muted-foreground">
+            Hồ sơ chưa được xác nhận thu trước hạn nộp giấy sẽ tự động bị hủy đăng ký.
+          </p>
+          <FormXacNhanThuHoSo action={xacNhanThuHoSoDvlkAction} soChoThu={dsHoSo.filter(choThu).length} />
+        </section>
+      )}
 
       <form method="get" className="flex flex-wrap items-end gap-2">
         <select name="hopDong" defaultValue={hopDong ?? ""} className="h-8 rounded-lg border px-2 text-sm">
@@ -85,6 +111,7 @@ export default async function HoSoDonViLienKetPage({
       <Table>
         <TableHeader>
           <TableRow>
+            {choPhepDVLK05 && <TableHead className="w-8" />}
             <TableHead>Họ tên</TableHead>
             <TableHead>CCCD</TableHead>
             <TableHead>Liên hệ</TableHead>
@@ -99,13 +126,26 @@ export default async function HoSoDonViLienKetPage({
         <TableBody>
           {dsHoSo.length === 0 && (
             <TableRow>
-              <TableCell colSpan={9} className="text-muted-foreground">
+              <TableCell colSpan={10} className="text-muted-foreground">
                 Chưa có hồ sơ phù hợp.
               </TableCell>
             </TableRow>
           )}
           {dsHoSo.map((hs) => (
             <TableRow key={hs.id}>
+              {choPhepDVLK05 && (
+                <TableCell>
+                  {choThu(hs) && (
+                    <input
+                      type="checkbox"
+                      name="dangKyIds"
+                      value={hs.id}
+                      form={ID_FORM_XAC_NHAN}
+                      aria-label={"Chọn " + hs.hocVien.hoTen}
+                    />
+                  )}
+                </TableCell>
+              )}
               <TableCell>
                 <b>{hs.hocVien.hoTen}</b>
                 <div className="text-xs text-muted-foreground">{hs.hocVien.maHocVien}</div>
@@ -121,7 +161,10 @@ export default async function HoSoDonViLienKetPage({
               </TableCell>
               <TableCell>{hs.ngayDangKy.toLocaleDateString("vi-VN")}</TableCell>
               <TableCell>{hs.hanNopGiay ? hs.hanNopGiay.toLocaleDateString("vi-VN") : "—"}</TableCell>
-              <TableCell>{NHAN_TRANG_THAI_HO_SO[hs.trangThai] ?? hs.trangThai}</TableCell>
+              <TableCell>
+                {NHAN_TRANG_THAI_HO_SO[hs.trangThai] ?? hs.trangThai}
+                {hs.loNopHoSo && <div className="text-xs text-muted-foreground">Lô {hs.loNopHoSo.maLo}</div>}
+              </TableCell>
               <TableCell>
                 <a href={`/khoa/${hs.khoa.maKhoa}/don-dang-ky/${hs.id}`} target="_blank" className="text-sm underline">
                   In đơn

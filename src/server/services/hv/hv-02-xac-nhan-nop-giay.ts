@@ -3,6 +3,7 @@ import {
   KhongTimThayDangKyError,
   SaiTrangThaiXacNhanNopGiayError,
   DaQuaHanNopGiayError,
+  HoSoQuaDonViLienKetError,
 } from "@/server/services/hv/loi-hoc-vien";
 
 const INCLUDE_DANG_KY = {
@@ -36,6 +37,7 @@ async function tuDongHuyNeuQuaHan(dangKyId: string) {
 export async function xacNhanNopGiay(dangKyId: string) {
   const dangKy = await tuDongHuyNeuQuaHan(dangKyId);
 
+  if (dangKy.hopDongLienKetId) throw new HoSoQuaDonViLienKetError();
   if (dangKy.trangThai === "HUY_QUA_HAN_NOP_GIAY") throw new DaQuaHanNopGiayError();
   if (dangKy.trangThai !== "CHO_NOP_GIAY") throw new SaiTrangThaiXacNhanNopGiayError();
 
@@ -53,7 +55,8 @@ export async function xacNhanNopGiay(dangKyId: string) {
  */
 export async function danhSachChoNopGiay(khoaId: string) {
   const dsChoNopGiay = await prisma.dangKyHoc.findMany({
-    where: { khoaId, trangThai: "CHO_NOP_GIAY" },
+    // hồ sơ qua đơn vị liên kết theo dõi ở DVLK-04/05, không thuộc danh sách HV-02
+    where: { khoaId, trangThai: "CHO_NOP_GIAY", hopDongLienKetId: null },
     include: INCLUDE_DANG_KY,
   });
 

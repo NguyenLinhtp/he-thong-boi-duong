@@ -4,6 +4,7 @@ import { xacNhanNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import {
   KhongTimThayDangKyError,
   SaiTrangThaiXacNhanNopGiayError,
+  HoSoQuaDonViLienKetError,
   DaQuaHanNopGiayError,
 } from "@/server/services/hv/loi-hoc-vien";
 
@@ -16,7 +17,11 @@ export const POST = apiRoute(async (_req: Request, { params }: Params) => {
   try {
     return NextResponse.json(await xacNhanNopGiay(id));
   } catch (error) {
-    if (error instanceof SaiTrangThaiXacNhanNopGiayError || error instanceof DaQuaHanNopGiayError) {
+    if (
+      error instanceof SaiTrangThaiXacNhanNopGiayError ||
+      error instanceof DaQuaHanNopGiayError ||
+      error instanceof HoSoQuaDonViLienKetError
+    ) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
     if (error instanceof KhongTimThayDangKyError) {
