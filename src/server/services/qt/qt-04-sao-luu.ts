@@ -43,6 +43,7 @@ const THU_TU_BANG = [
   "lopHoc",
   "giangVienHocPhan",
   "buoiHoc",
+  "taiLieuHocTap",
   "hopDongLienKet",
   "loNopHoSo",
   "dangKyHoc",
