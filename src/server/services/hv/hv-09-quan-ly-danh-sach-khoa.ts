@@ -20,21 +20,19 @@ export async function danhSachHocVienTheoKhoa(khoaId: string) {
 
 /**
  * HV-09: "Học viên đã có điểm/chứng chỉ không được xóa khỏi khóa" - điểm
- * (KetQuaHocTap) gắn theo học phần nên tính chung theo chương trình của
- * khóa (1 học phần có thể dùng lại ở nhiều khóa cùng chương trình); chứng
- * chỉ (ChungChi) gắn thẳng theo khóa.
+ * học phần (KetQuaHocTap, KQ-01), kết quả toàn khóa/điểm thi (KetQuaKhoa,
+ * KQ-02/KQ-06) và chứng chỉ (ChungChi) đều gắn thẳng theo khóa.
  */
 async function coDiemHoacChungChiOKhoa(
   hocVienId: string,
-  khoa: { id: string; chuongTrinhId: string },
+  khoa: { id: string },
 ): Promise<boolean> {
-  const [soKetQua, soChungChi] = await Promise.all([
-    prisma.ketQuaHocTap.count({
-      where: { hocVienId, hocPhan: { chuongTrinhId: khoa.chuongTrinhId } },
-    }),
+  const [soKetQua, soKetQuaKhoa, soChungChi] = await Promise.all([
+    prisma.ketQuaHocTap.count({ where: { hocVienId, khoaId: khoa.id } }),
+    prisma.ketQuaKhoa.count({ where: { hocVienId, khoaId: khoa.id } }),
     prisma.chungChi.count({ where: { hocVienId, khoaId: khoa.id } }),
   ]);
-  return soKetQua > 0 || soChungChi > 0;
+  return soKetQua > 0 || soKetQuaKhoa > 0 || soChungChi > 0;
 }
 
 export type ThemHocVienVaoKhoaInput = ThongTinHocVienInput & { khoaId: string; lyDo?: string | null };

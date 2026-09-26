@@ -154,6 +154,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   );
 
   const choPhepHocPhi = await coQuyen("HP-01");
+  const choPhepKetQua = (await coQuyen("KQ-02")) || (await coQuyen("KQ-03"));
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -161,11 +162,18 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
         <h1 className="text-lg font-semibold">
           {khoa.maKhoa} · {khoa.chuongTrinh.ten}
         </h1>
-        {choPhepHocPhi && (
-          <a href={`/khoa-hoc/${khoa.id}/hoc-phi`} className="text-sm underline">
-            Quản lý học phí (HP)
-          </a>
-        )}
+        <div className="flex gap-4">
+          {choPhepKetQua && (
+            <a href={`/khoa-hoc/${khoa.id}/ket-qua`} className="text-sm underline">
+              Kết quả học tập (KQ)
+            </a>
+          )}
+          {choPhepHocPhi && (
+            <a href={`/khoa-hoc/${khoa.id}/hoc-phi`} className="text-sm underline">
+              Quản lý học phí (HP)
+            </a>
+          )}
+        </div>
       </div>
       <div className="rounded-lg border p-4 text-sm">
         <p>Chương trình: {khoa.chuongTrinh.maCT} · {khoa.chuongTrinh.ten}</p>

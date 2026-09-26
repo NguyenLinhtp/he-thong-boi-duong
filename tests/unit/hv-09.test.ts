@@ -22,6 +22,7 @@ const hocVienTaoTrongTest: string[] = [];
 
 afterAll(async () => {
   await prisma.ketQuaHocTap.deleteMany({ where: { hocVienId: { in: hocVienTaoTrongTest } } });
+  await prisma.ketQuaKhoa.deleteMany({ where: { hocVienId: { in: hocVienTaoTrongTest } } });
   await prisma.chungChi.deleteMany({ where: { hocVienId: { in: hocVienTaoTrongTest } } });
   await prisma.dangKyHoc.deleteMany({ where: { khoaId: { in: khoaTaoTrongTest } } });
   await prisma.hocVien.deleteMany({ where: { id: { in: hocVienTaoTrongTest } } });
@@ -101,7 +102,7 @@ describe("HV-09 quản lý danh sách học viên theo khóa", () => {
     expect(ds.map((dk) => dk.id)).not.toContain(dangKy.id);
   });
 
-  it("chặn xóa học viên đã có điểm (KetQuaHocTap) ở chương trình của khóa", async () => {
+  it("chặn xóa học viên đã có điểm (KetQuaHocTap) ở khóa", async () => {
     const { khoa, chuongTrinh } = await taoKhoa();
     const hocPhan = await prisma.hocPhan.create({
       data: { chuongTrinhId: chuongTrinh.id, ten: "Học phần 1", soTiet: 30, thuTu: 1 },
@@ -113,7 +114,7 @@ describe("HV-09 quản lý danh sách học viên theo khóa", () => {
     });
     hocVienTaoTrongTest.push(dangKy.hocVienId);
     await prisma.ketQuaHocTap.create({
-      data: { hocVienId: dangKy.hocVienId, hocPhanId: hocPhan.id, diemKetThuc: 8 },
+      data: { hocVienId: dangKy.hocVienId, khoaId: khoa.id, hocPhanId: hocPhan.id, diemKetThuc: 8 },
     });
 
     await expect(xoaHocVienKhoiKhoa(dangKy.id)).rejects.toThrow(KhongTheXoaHocVienCoKetQuaError);
@@ -185,7 +186,7 @@ describe("HV-09 quản lý danh sách học viên theo khóa", () => {
     });
     hocVienTaoTrongTest.push(dangKy.hocVienId);
     await prisma.ketQuaHocTap.create({
-      data: { hocVienId: dangKy.hocVienId, hocPhanId: hocPhan.id, diemKetThuc: 9 },
+      data: { hocVienId: dangKy.hocVienId, khoaId: khoa1.id, hocPhanId: hocPhan.id, diemKetThuc: 9 },
     });
 
     await expect(chuyenHocVienSangKhoa(dangKy.id, khoa2.id)).rejects.toThrow(

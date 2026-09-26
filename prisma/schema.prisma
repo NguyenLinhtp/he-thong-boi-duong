@@ -340,33 +340,35 @@ model HocPhan {
 }
 
 model Khoa {
-  id                String           @id @default(cuid())
-  maKhoa            String           @unique
-  chuongTrinhId     String
-  chuongTrinh       ChuongTrinh      @relation(fields: [chuongTrinhId], references: [id])
-  dotTuyenSinhId    String?
-  dotTuyenSinh      DotTuyenSinh?    @relation(fields: [dotTuyenSinhId], references: [id])
-  thoiGianKhaiGiang DateTime?
-  thoiGianBeGiang   DateTime?
-  siSoToiDa         Int
-  hinhThucGiangDay  HinhThucGiangDay @default(TRUC_TIEP)
-  mucHocPhi         Decimal?         @db.Decimal(12, 2)
+  id                  String           @id @default(cuid())
+  maKhoa              String           @unique
+  chuongTrinhId       String
+  chuongTrinh         ChuongTrinh      @relation(fields: [chuongTrinhId], references: [id])
+  dotTuyenSinhId      String?
+  dotTuyenSinh        DotTuyenSinh?    @relation(fields: [dotTuyenSinhId], references: [id])
+  thoiGianKhaiGiang   DateTime?
+  thoiGianBeGiang     DateTime?
+  siSoToiDa           Int
+  hinhThucGiangDay    HinhThucGiangDay @default(TRUC_TIEP)
+  mucHocPhi           Decimal?         @db.Decimal(12, 2)
   // HP-01: chính sách miễn giảm áp dụng chung cho khóa (dạng mô tả tự do,
   // việc miễn giảm cho từng học viên cụ thể được xác nhận riêng ở HP-02).
-  chinhSachMienGiam String?
+  chinhSachMienGiam   String?
   // HP-01: "mức học phí không đổi sau khi khóa đã có học viên đăng ký, trừ
   // khi có quyết định điều chỉnh" - lưu lý do lần điều chỉnh gần nhất.
   lyDoDieuChinhHocPhi String?
-  trangThai         TrangThaiKhoa    @default(CHUAN_BI)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  trangThai           TrangThaiKhoa    @default(CHUAN_BI)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
-  buoiHocs   BuoiHoc[]
-  dangKys    DangKyHoc[]
-  hocPhis    HocPhi[]
-  chungChis  ChungChi[]
-  hopDongs   HopDongLienKet[]
-  giangViens GiangVienHocPhan[]
+  buoiHocs    BuoiHoc[]
+  dangKys     DangKyHoc[]
+  hocPhis     HocPhi[]
+  chungChis   ChungChi[]
+  hopDongs    HopDongLienKet[]
+  giangViens  GiangVienHocPhan[]
+  ketQuas     KetQuaHocTap[]
+  ketQuaKhoas KetQuaKhoa[]
 
   @@map("khoa")
 }
@@ -424,12 +426,13 @@ model HocVien {
   soDienThoai     String?
   email           String?
 
-  dangKys   DangKyHoc[]
-  diemDanhs DiemDanh[]
-  ketQuas   KetQuaHocTap[]
-  hocPhis   HocPhi[]
-  chungChis ChungChi[]
-  thongBaos ThongBao[]
+  dangKys     DangKyHoc[]
+  diemDanhs   DiemDanh[]
+  ketQuas     KetQuaHocTap[]
+  ketQuaKhoas KetQuaKhoa[]
+  hocPhis     HocPhi[]
+  chungChis   ChungChi[]
+  thongBaos   ThongBao[]
 
   @@map("hoc_vien")
 }
@@ -441,17 +444,17 @@ model HocVien {
 // trong 2 khóa ngoại hocVienId/giangVienId có giá trị (ràng buộc kiểm tra ở
 // tầng ứng dụng, guiThongBao()/guiThongBaoGiangVien() không cho gọi thiếu).
 model ThongBao {
-  id           String              @id @default(cuid())
-  hocVienId    String?
-  hocVien      HocVien?            @relation(fields: [hocVienId], references: [id], onDelete: Cascade)
-  giangVienId  String?
-  giangVien    GiangVien?          @relation(fields: [giangVienId], references: [id], onDelete: Cascade)
-  loaiSuKien   LoaiSuKienThongBao
-  tieuDe       String
-  noiDung      String
-  daGuiEmail   Boolean             @default(false)
-  loiGuiEmail  String?
-  createdAt    DateTime            @default(now())
+  id          String             @id @default(cuid())
+  hocVienId   String?
+  hocVien     HocVien?           @relation(fields: [hocVienId], references: [id], onDelete: Cascade)
+  giangVienId String?
+  giangVien   GiangVien?         @relation(fields: [giangVienId], references: [id], onDelete: Cascade)
+  loaiSuKien  LoaiSuKienThongBao
+  tieuDe      String
+  noiDung     String
+  daGuiEmail  Boolean            @default(false)
+  loiGuiEmail String?
+  createdAt   DateTime           @default(now())
 
   @@map("thong_bao")
 }
@@ -460,13 +463,13 @@ model ThongBao {
 // admin nhập/sửa qua UI. Mật khẩu lưu ở dạng đã mã hóa (AES-256-GCM), không
 // lưu plaintext trong DB.
 model CauHinhSmtp {
-  id            String   @id @default(cuid())
-  host          String
-  port          Int
-  taiKhoan      String
-  matKhauMaHoa  String
-  tuDiaChi      String
-  capNhatLuc    DateTime @updatedAt
+  id           String   @id @default(cuid())
+  host         String
+  port         Int
+  taiKhoan     String
+  matKhauMaHoa String
+  tuDiaChi     String
+  capNhatLuc   DateTime @updatedAt
 
   @@map("cau_hinh_smtp")
 }
@@ -498,25 +501,25 @@ model DangKyHoc {
 }
 
 model BuoiHoc {
-  id            String    @id @default(cuid())
-  khoaId        String
-  khoa          Khoa      @relation(fields: [khoaId], references: [id], onDelete: Cascade)
-  hocPhanId     String?
-  hocPhan       HocPhan?  @relation(fields: [hocPhanId], references: [id])
-  ngayHoc       DateTime
-  gioBatDau     String?
-  gioKetThuc    String?
-  phongHocId    String?
-  phongHoc      PhongHoc? @relation(fields: [phongHocId], references: [id])
-  linkTrucTuyen String?
+  id             String    @id @default(cuid())
+  khoaId         String
+  khoa           Khoa      @relation(fields: [khoaId], references: [id], onDelete: Cascade)
+  hocPhanId      String?
+  hocPhan        HocPhan?  @relation(fields: [hocPhanId], references: [id])
+  ngayHoc        DateTime
+  gioBatDau      String?
+  gioKetThuc     String?
+  phongHocId     String?
+  phongHoc       PhongHoc? @relation(fields: [phongHocId], references: [id])
+  linkTrucTuyen  String?
   // GD-03: "nghỉ học" - buổi bị hủy hẳn, không tổ chức (khác học bù, là 1
   // buổi mới tạo qua KH-03 thietLapBuoiHoc). lyDoThayDoi dùng chung cho cả
   // hủy lẫn đổi lịch (ghi lại lần thay đổi gần nhất).
-  daHuy         Boolean   @default(false)
-  lyDoThayDoi   String?
+  daHuy          Boolean   @default(false)
+  lyDoThayDoi    String?
   // GD-02: nhật ký buổi học - không bắt buộc, giảng viên tự ghi sau buổi.
   noiDungDaGiang String?
-  nhanXet       String?
+  nhanXet        String?
 
   diemDanhs DiemDanh[]
 
@@ -537,19 +540,57 @@ model DiemDanh {
   @@map("diem_danh")
 }
 
+// KQ-01: điểm học phần gắn theo cả khóa (không chỉ học phần) vì học phần
+// thuộc chương trình, 1 học viên có thể học lại cùng chương trình ở khóa khác.
 model KetQuaHocTap {
-  id            String   @id @default(cuid())
-  hocVienId     String
-  hocVien       HocVien  @relation(fields: [hocVienId], references: [id])
-  hocPhanId     String
-  hocPhan       HocPhan  @relation(fields: [hocPhanId], references: [id])
-  diemThanhPhan Decimal? @db.Decimal(4, 2)
-  diemKetThuc   Decimal? @db.Decimal(4, 2)
-  dat           Boolean?
-  daPheDuyet    Boolean  @default(false)
+  id                  String   @id @default(cuid())
+  hocVienId           String
+  hocVien             HocVien  @relation(fields: [hocVienId], references: [id])
+  khoaId              String
+  khoa                Khoa     @relation(fields: [khoaId], references: [id])
+  hocPhanId           String
+  hocPhan             HocPhan  @relation(fields: [hocPhanId], references: [id])
+  diemThanhPhan       Decimal? @db.Decimal(4, 2)
+  diemKetThuc         Decimal? @db.Decimal(4, 2)
+  // điểm học phần = tổ hợp thành phần/kết thúc theo tỷ lệ QT-05, tính lại mỗi
+  // lần nhập điểm (KQ-01) hoặc sửa theo phúc khảo (KQ-04).
+  diemHocPhan         Decimal? @db.Decimal(4, 2)
+  dat                 Boolean?
+  daPheDuyet          Boolean  @default(false)
+  // KQ-04: "không sửa điểm sau khi đã phê duyệt, trừ khi có quyết định phúc
+  // khảo" - số quyết định của lần phúc khảo gần nhất.
+  soQuyetDinhPhucKhao String?
 
-  @@unique([hocVienId, hocPhanId])
+  @@unique([hocVienId, khoaId, hocPhanId])
   @@map("ket_qua_hoc_tap")
+}
+
+// KQ-02/KQ-06: kết quả toàn khóa của 1 học viên - từ tổng hợp điểm học phần +
+// chuyên cần (khóa có giảng dạy) hoặc nhập thẳng điểm thi (Phương thức 3).
+// KQ-03 ghi duDieuKienHocPhi/hoanThanh; KQ-04 phê duyệt kèm số quyết định.
+model KetQuaKhoa {
+  id               String    @id @default(cuid())
+  hocVienId        String
+  hocVien          HocVien   @relation(fields: [hocVienId], references: [id])
+  khoaId           String
+  khoa             Khoa      @relation(fields: [khoaId], references: [id])
+  diemTongKet      Decimal?  @db.Decimal(4, 2)
+  // % buổi có mặt (0-100); null với khóa Phương thức 3 hoặc khóa chưa điểm
+  // danh buổi nào.
+  tyLeChuyenCan    Decimal?  @db.Decimal(5, 2)
+  datHocTap        Boolean?
+  // null = chưa xét KQ-03 (hoặc cần xét lại sau khi tổng hợp/nhập điểm lại).
+  duDieuKienHocPhi Boolean?
+  hoanThanh        Boolean?
+  ghiChu           String?
+  daPheDuyet       Boolean   @default(false)
+  soQuyetDinh      String?
+  ngayPheDuyet     DateTime?
+  nguoiPheDuyet    String?
+  capNhatLuc       DateTime  @updatedAt
+
+  @@unique([hocVienId, khoaId])
+  @@map("ket_qua_khoa")
 }
 
 model HocPhi {
@@ -583,15 +624,15 @@ model HocPhi {
 // đúng 1 phiếu thu, số phiếu tăng dần không trùng (retry giống mã học viên ở
 // hv/dung-chung.ts).
 model PhieuThu {
-  id           String   @id @default(cuid())
-  soPhieu      String   @unique
-  hocPhiId     String
-  hocPhi       HocPhi   @relation(fields: [hocPhiId], references: [id])
-  soTien       Decimal  @db.Decimal(12, 2)
-  hinhThucNop  String?
-  ngayLap      DateTime @default(now())
-  nguoiLapId   String?
-  nguoiLapTen  String?
+  id          String   @id @default(cuid())
+  soPhieu     String   @unique
+  hocPhiId    String
+  hocPhi      HocPhi   @relation(fields: [hocPhiId], references: [id])
+  soTien      Decimal  @db.Decimal(12, 2)
+  hinhThucNop String?
+  ngayLap     DateTime @default(now())
+  nguoiLapId  String?
+  nguoiLapTen String?
 
   @@map("phieu_thu")
 }
@@ -650,11 +691,11 @@ model HopDongLienKet {
 // QT-04: nhật ký sao lưu - mỗi lần chạy backup (thủ công qua nút bấm admin
 // hoặc tự động qua lịch bên ngoài gọi API) ghi lại đúng 1 dòng ở đây.
 model SaoLuu {
-  id              String              @id @default(cuid())
-  thoiGianBatDau  DateTime            @default(now())
+  id              String             @id @default(cuid())
+  thoiGianBatDau  DateTime           @default(now())
   thoiGianKetThuc DateTime?
-  trangThai       TrangThaiSaoLuu     @default(DANG_CHAY)
-  loaiKichHoat    LoaiKichHoatSaoLuu  @default(THU_CONG)
+  trangThai       TrangThaiSaoLuu    @default(DANG_CHAY)
+  loaiKichHoat    LoaiKichHoatSaoLuu @default(THU_CONG)
   // tên người bấm "Sao lưu ngay"; null nếu chạy tự động theo lịch
   nguoiKichHoat   String?
   duongDanFile    String?

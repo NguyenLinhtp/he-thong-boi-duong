@@ -46,6 +46,7 @@ const THU_TU_BANG = [
   "dangKyHoc",
   "diemDanh",
   "ketQuaHocTap",
+  "ketQuaKhoa",
   "hocPhi",
   "phieuThu",
   "chungChi",

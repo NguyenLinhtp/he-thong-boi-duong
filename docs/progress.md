@@ -69,12 +69,12 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 6. Quản lý điểm và kết quả học tập
 
-- [ ] **KQ-01** — Nhập điểm thành phần/điểm kết thúc học phần
-- [ ] **KQ-02** — Tổng hợp kết quả toàn khóa
-- [ ] **KQ-03** — Xét điều kiện hoàn thành khóa
-- [ ] **KQ-04** — Phê duyệt kết quả cuối cùng
-- [ ] **KQ-05** — Tra cứu điểm
-- [ ] **KQ-06** — Nhập kết quả thi trực tiếp (Phương thức 3)
+- [x] **KQ-01** — Nhập điểm thành phần/điểm kết thúc học phần
+- [x] **KQ-02** — Tổng hợp kết quả toàn khóa
+- [x] **KQ-03** — Xét điều kiện hoàn thành khóa
+- [x] **KQ-04** — Phê duyệt kết quả cuối cùng
+- [x] **KQ-05** — Tra cứu điểm
+- [x] **KQ-06** — Nhập kết quả thi trực tiếp (Phương thức 3)
 
 ### 7. Quản lý học phí
 
