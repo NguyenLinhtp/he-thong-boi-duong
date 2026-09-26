@@ -119,7 +119,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 5. Quản lý giảng dạy
 
-- [ ] **GD-04** — Quản lý tài liệu học tập/học liệu số
+- [x] **GD-04** — Quản lý tài liệu học tập/học liệu số
 
 ### 8. Quản lý chứng chỉ/chứng nhận
 

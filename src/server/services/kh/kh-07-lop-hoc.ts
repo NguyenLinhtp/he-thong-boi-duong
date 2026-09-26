@@ -112,7 +112,7 @@ export async function capNhatLop(lopId: string, input: TaoLopInput) {
 export async function xoaLop(lopId: string) {
   const lop = await prisma.lopHoc.findUnique({
     where: { id: lopId },
-    include: { _count: { select: { dangKys: true, buoiHocs: true, phanCongs: true, lichSuDens: true, lichSuTus: true } } },
+    include: { _count: { select: { dangKys: true, buoiHocs: true, phanCongs: true, lichSuDens: true, lichSuTus: true, taiLieus: true } } },
   });
   if (!lop) throw new KhongTimThayLopError();
   if (Object.values(lop._count).some((so) => so > 0)) throw new LopDangSuDungError();

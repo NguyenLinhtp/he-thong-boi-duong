@@ -412,7 +412,7 @@
     "nhom_chuc_nang": "5. Quản lý giảng dạy",
     "ten_chuc_nang": "Quản lý tài liệu học tập/học liệu số",
     "mo_ta_chi_tiet": "Tải lên, chia sẻ tài liệu học tập theo học phần cho học viên trong khóa",
-    "actor": "Giảng viên",
+    "actor": "Giảng viên (tải lên) / Học viên trong khóa (xem, tải - bổ sung 27/09/2026 theo quy tắc nghiệp vụ)",
     "input": "File tài liệu, học phần gắn kèm",
     "output": "Tài liệu hiển thị cho học viên của khóa",
     "quy_tac_nghiep_vu": "Chỉ học viên trong khóa mới xem/tải được tài liệu",

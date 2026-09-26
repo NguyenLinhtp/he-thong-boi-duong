@@ -355,6 +355,7 @@ model HocPhan {
   giangViens GiangVienHocPhan[]
   buoiHocs   BuoiHoc[]
   ketQuas    KetQuaHocTap[]
+  taiLieus   TaiLieuHocTap[]
 
   @@map("hoc_phan")
 }
@@ -391,6 +392,7 @@ model Khoa {
   ketQuaKhoas          KetQuaKhoa[]
   lopHocs              LopHoc[]
   quyetDinhCapVanBangs QuyetDinhCapVanBang[]
+  taiLieus             TaiLieuHocTap[]
 
   @@map("khoa")
 }
@@ -414,6 +416,7 @@ model GiangVien {
   hocPhans  GiangVienHocPhan[]
   diemDanhs DiemDanh[]
   thongBaos ThongBao[]
+  taiLieus  TaiLieuHocTap[]
 
   @@map("giang_vien")
 }
@@ -553,6 +556,7 @@ model LopHoc {
   lichSuDens           LichSuChuyenLop[]     @relation("LichSuDenLop")
   lichSuTus            LichSuChuyenLop[]     @relation("LichSuTuLop")
   quyetDinhCapVanBangs QuyetDinhCapVanBang[]
+  taiLieus             TaiLieuHocTap[]
 
   @@map("lop_hoc")
 }
@@ -575,6 +579,34 @@ model LichSuChuyenLop {
 
   @@index([dangKyId])
   @@map("lich_su_chuyen_lop")
+}
+
+// GD-04: học liệu số theo học phần của khóa. lopId null = cả khóa, có giá
+// trị = chỉ học viên của lớp đó (KH-07). Là tệp tải lên (lưu ngoài thư mục
+// public, tải qua API có kiểm tra quyền) hoặc đường link học liệu bên ngoài.
+model TaiLieuHocTap {
+  id          String     @id @default(cuid())
+  khoaId      String
+  khoa        Khoa       @relation(fields: [khoaId], references: [id])
+  hocPhanId   String
+  hocPhan     HocPhan    @relation(fields: [hocPhanId], references: [id])
+  lopId       String?
+  lop         LopHoc?    @relation(fields: [lopId], references: [id], onDelete: Restrict)
+  tieuDe      String
+  moTa        String?
+  // tệp: tên gốc, kiểu MIME, kích thước (byte), khóa lưu trữ; link: duongLink
+  tenFile     String?
+  loaiFile    String?
+  kichThuoc   Int?
+  khoaLuuTru  String?    @unique
+  duongLink   String?
+  giangVienId String?
+  giangVien   GiangVien? @relation(fields: [giangVienId], references: [id])
+  nguoiDang   String
+  createdAt   DateTime   @default(now())
+
+  @@index([khoaId])
+  @@map("tai_lieu_hoc_tap")
 }
 
 model BuoiHoc {
