@@ -19,6 +19,7 @@ import {
 } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
 import { danhSachHocVienTheoKhoa } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
 import { buoiHocDaKetThuc } from "@/server/services/gd/gd-05-link-truc-tuyen";
+import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FormPhanCong } from "./form-phan-cong";
@@ -154,6 +155,10 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   );
 
   const choPhepHocPhi = await coQuyen("HP-01");
+  const choPhepLop = await coQuyen("KH-07");
+  const dsLop = (await danhSachLop(khoa.id)).map((l) => ({ id: l.id, maLop: l.maLop, ten: l.ten }));
+  // khóa có lớp: mỗi học phần có thể phân công thêm theo từng lớp nên luôn hiện đủ học phần
+  const hocPhanDePhanCong = dsLop.length > 0 ? khoa.chuongTrinh.hocPhans : hocPhanChuaPhanCong;
   const choPhepKetQua = (await coQuyen("KQ-02")) || (await coQuyen("KQ-03"));
 
   return (
@@ -163,6 +168,11 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           {khoa.maKhoa} · {khoa.chuongTrinh.ten}
         </h1>
         <div className="flex gap-4">
+          {choPhepLop && (
+            <a href={`/khoa-hoc/${khoa.id}/lop-hoc`} className="text-sm underline">
+              Lớp học (KH-07)
+            </a>
+          )}
           {choPhepKetQua && (
             <a href={`/khoa-hoc/${khoa.id}/ket-qua`} className="text-sm underline">
               Kết quả học tập (KQ)
@@ -489,11 +499,12 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">KH-02 · Phân công giảng viên phụ trách học phần</h2>
 
-        {hocPhanChuaPhanCong.length > 0 && dsGiangVien.length > 0 ? (
+        {hocPhanDePhanCong.length > 0 && dsGiangVien.length > 0 ? (
           <FormPhanCong
             khoaId={khoa.id}
-            dsHocPhan={hocPhanChuaPhanCong.map((hp) => ({ id: hp.id, ten: hp.ten }))}
+            dsHocPhan={hocPhanDePhanCong.map((hp) => ({ id: hp.id, ten: hp.ten }))}
             dsGiangVien={dsGiangVien.map((gv) => ({ id: gv.id, hoTen: gv.hoTen }))}
+            dsLop={dsLop}
           />
         ) : (
           <p className="rounded-lg border p-4 text-sm text-muted-foreground">
@@ -507,6 +518,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           <TableHeader>
             <TableRow>
               <TableHead>Học phần</TableHead>
+              <TableHead>Phạm vi</TableHead>
               <TableHead>Giảng viên</TableHead>
             </TableRow>
           </TableHeader>
@@ -514,12 +526,13 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
             {dsPhanCong.map((pc) => (
               <TableRow key={pc.id}>
                 <TableCell>{pc.hocPhan.ten}</TableCell>
+                <TableCell>{pc.lop ? `Lớp ${pc.lop.maLop}` : "Cả khóa"}</TableCell>
                 <TableCell>{pc.giangVien.hoTen}</TableCell>
               </TableRow>
             ))}
             {dsPhanCong.length === 0 && (
               <TableRow>
-                <TableCell colSpan={2} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
                   Chưa phân công giảng viên nào
                 </TableCell>
               </TableRow>
@@ -562,6 +575,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           khoaId={khoa.id}
           dsHocPhan={khoa.chuongTrinh.hocPhans.map((hp) => ({ id: hp.id, ten: hp.ten }))}
           dsPhongHoc={dsPhongHoc.map((ph) => ({ id: ph.id, ten: `${ph.ma} · ${ph.ten}` }))}
+          dsLop={dsLop}
         />
 
         <Table>
@@ -586,6 +600,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
                   gioKetThuc: bh.gioKetThuc,
                   hocPhanId: bh.hocPhanId,
                   hocPhanTen: bh.hocPhan?.ten ?? null,
+                  maLop: bh.lop?.maLop ?? null,
                   phongHocId: bh.phongHocId,
                   phongHocTen: bh.phongHoc?.ten ?? null,
                   linkTrucTuyen: bh.linkTrucTuyen,

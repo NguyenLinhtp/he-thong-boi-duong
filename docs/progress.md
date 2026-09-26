@@ -1,4 +1,4 @@
-# Tiến độ triển khai 69 chức năng
+# Tiến độ triển khai 70 chức năng (69 gốc + 1 mở rộng)
 
 Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + review diff + commit `feat(<Mã CN>): ...` (bước 6 trong quy trình 6 bước, xem CLAUDE.md).
 
@@ -48,11 +48,15 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 - [x] **QT-02** — Phân quyền theo vai trò (RBAC)
 - [x] **QT-04** — Sao lưu và phục hồi dữ liệu
 
-## Đợt 2 (34 chức năng)
+## Đợt 2 (35 chức năng)
 
 ### 2. Quản lý chương trình bồi dưỡng
 
 - [x] **CT-06** — Ngừng hiệu lực/lưu trữ chương trình
+
+### 3. Quản lý khóa bồi dưỡng
+
+- [x] **KH-07** — Quản lý lớp trong khóa *(mở rộng ngoài 69 chức năng gốc, bổ sung theo yêu cầu 26/09/2026)*
 
 ### 4. Tuyển sinh & Quản lý học viên
 
@@ -132,4 +136,4 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 - [ ] **DVLK-07** — Báo cáo công nợ và doanh thu theo đơn vị liên kết
 
 
-Tổng cộng: 69 chức năng.
+Tổng cộng: 70 chức năng (69 gốc + KH-07 mở rộng).

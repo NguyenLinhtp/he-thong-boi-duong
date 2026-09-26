@@ -53,6 +53,8 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
   const daPheDuyet = dsTongHop.some((kq) => kq.daPheDuyet);
   const quyetDinh = dsTongHop.find((kq) => kq.daPheDuyet);
   const tongHopTheoHocVien = new Map(dsTongHop.map((kq) => [kq.hocVienId, kq]));
+  // KH-07: lớp chỉ là thông tin hiển thị - kết quả và phê duyệt vẫn theo khóa
+  const maLopTheoHocVien = new Map(dsDangKy.map((dk) => [dk.hocVienId, dk.lop?.maLop ?? null]));
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -161,7 +163,12 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
           <TableBody>
             {dsTongHop.map((kq) => (
               <TableRow key={kq.id}>
-                <TableCell>{kq.hocVien.hoTen}</TableCell>
+                <TableCell>
+                  {kq.hocVien.hoTen}
+                  {maLopTheoHocVien.get(kq.hocVienId) && (
+                    <span className="ml-1 text-xs text-muted-foreground">({maLopTheoHocVien.get(kq.hocVienId)})</span>
+                  )}
+                </TableCell>
                 <TableCell>{kq.diemTongKet?.toString() ?? "—"}</TableCell>
                 {!chiDuThi && (
                   <TableCell>{kq.tyLeChuyenCan != null ? `${kq.tyLeChuyenCan.toString()}%` : "—"}</TableCell>

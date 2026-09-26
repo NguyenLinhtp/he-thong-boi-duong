@@ -5,7 +5,7 @@
 Tin học hóa toàn bộ quy trình quản lý hoạt động bồi dưỡng của 1 trung tâm/phòng bồi dưỡng thuộc trường đại học sư phạm: xây dựng chương trình → mở khóa → tuyển sinh → giảng dạy → thu học phí → đánh giá kết quả → cấp chứng chỉ → báo cáo/lưu trữ.
 
 **Đặc tả gốc — nguồn sự thật duy nhất, không tự diễn giải thêm:**
-@docs/functions.json — 69 chức năng chi tiết (mã CN, actor, input, output, quy tắc nghiệp vụ, độ ưu tiên, giai đoạn triển khai). Luôn tra cứu file này trước khi code bất kỳ chức năng nào.
+@docs/functions.json — 69 chức năng gốc + KH-07 (mở rộng: lớp trong khóa) chi tiết (mã CN, actor, input, output, quy tắc nghiệp vụ, độ ưu tiên, giai đoạn triển khai). Luôn tra cứu file này trước khi code bất kỳ chức năng nào.
 @docs/dac-ta-nghiep-vu.docx — đặc tả nghiệp vụ đầy đủ (quy trình, mô hình dữ liệu 13 thực thể, phân quyền 6 vai trò, mục 3.5 tham khảo bố cục/màu sắc giao diện).
 @docs/progress.md — checklist tiến độ 69 chức năng theo Đợt 1/2/3, cập nhật sau mỗi lần hoàn thành 1 chức năng.
 
@@ -30,6 +30,7 @@ Kế hoạch triển khai tổng thể (giai đoạn 0-4, quy trình lặp) nằ
 - Mỗi chương trình bồi dưỡng gắn đúng 1 trong 4 phương thức đăng ký (CT-07); mọi khóa mở theo chương trình kế thừa phương thức đó.
 - Học viên qua đơn vị liên kết (Phương thức 4) chỉ gắn với đúng 1 hợp đồng liên kết.
 - Điều kiện cấp chứng chỉ rẽ nhánh: học phí cá nhân đã nộp đủ (thông thường) **hoặc** hợp đồng liên kết đã thanh lý (nếu qua đơn vị liên kết) — không áp cả hai cùng lúc.
+- KH-07: 1 khóa chia nhiều lớp; kết quả/học phí/chứng chỉ gắn theo **khóa** (không theo lớp) nên chuyển lớp trong cùng khóa không mất dữ liệu; phê duyệt KQ-04 vẫn theo khóa. Giảng viên hiệu lực = phân công của lớp, không có thì phân công cấp khóa; chuyên cần tính theo lớp học viên thuộc về tại ngày học (LichSuChuyenLop).
 - Học viên đã có điểm/chứng chỉ không được xóa khỏi khóa (HV-09); không sửa điểm sau khi đã phê duyệt trừ khi có quyết định phúc khảo (KQ-04).
 - Cán bộ đơn vị liên kết không xem được học phí cá nhân học viên hay dữ liệu khóa/đơn vị khác.
 

@@ -18,7 +18,7 @@ export async function layBuoiHocNeuDuocPhanCong(giangVienId: string, buoiHocId: 
   if (!buoiHoc) throw new KhongTimThayBuoiHocError();
 
   const giangVienPhuTrach = buoiHoc.hocPhanId
-    ? await timGiangVienChoHocPhan(buoiHoc.khoaId, buoiHoc.hocPhanId)
+    ? await timGiangVienChoHocPhan(buoiHoc.khoaId, buoiHoc.hocPhanId, buoiHoc.lopId)
     : null;
   if (!giangVienPhuTrach || giangVienPhuTrach !== giangVienId) {
     throw new KhongDuocPhanCongBuoiHocError();

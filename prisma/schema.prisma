@@ -369,6 +369,7 @@ model Khoa {
   giangViens  GiangVienHocPhan[]
   ketQuas     KetQuaHocTap[]
   ketQuaKhoas KetQuaKhoa[]
+  lopHocs     LopHoc[]
 
   @@map("khoa")
 }
@@ -397,16 +398,22 @@ model GiangVien {
 }
 
 // bảng nối phân công giảng viên phụ trách học phần trong 1 khóa cụ thể (KH-02)
+// KH-07: lopId null = phân công cấp khóa, áp dụng cho buổi chung và mọi lớp
+// chưa có phân công riêng cho học phần đó. Postgres coi NULL là khác nhau
+// trong unique nên "1 phân công cấp khóa/học phần" được đảm bảo ở tầng
+// service (phanCongGiangVien), không dựa vào ràng buộc này.
 model GiangVienHocPhan {
   id          String    @id @default(cuid())
   khoaId      String
   khoa        Khoa      @relation(fields: [khoaId], references: [id], onDelete: Cascade)
+  lopId       String?
+  lop         LopHoc?   @relation(fields: [lopId], references: [id])
   hocPhanId   String
   hocPhan     HocPhan   @relation(fields: [hocPhanId], references: [id], onDelete: Cascade)
   giangVienId String
   giangVien   GiangVien @relation(fields: [giangVienId], references: [id])
 
-  @@unique([khoaId, hocPhanId])
+  @@unique([khoaId, lopId, hocPhanId])
   @@map("giang_vien_hoc_phan")
 }
 
@@ -495,15 +502,63 @@ model DangKyHoc {
   // mỗi học viên qua ĐVLK gắn đúng 1 hợp đồng liên kết.
   hopDongLienKetId String?
   hopDongLienKet   HopDongLienKet? @relation(fields: [hopDongLienKetId], references: [id])
+  // KH-07: lớp hiện tại trong khóa (null = chưa xếp lớp). Kết quả học tập/học
+  // phí/chứng chỉ gắn theo khóa nên đổi lớp không ảnh hưởng tới chúng.
+  lopId            String?
+  lop              LopHoc?         @relation(fields: [lopId], references: [id])
+
+  lichSuChuyenLops LichSuChuyenLop[]
 
   @@unique([hocVienId, khoaId])
   @@map("dang_ky_hoc")
+}
+
+// KH-07: 1 khóa chia thành nhiều lớp, mỗi lớp có thời khóa biểu/giảng viên riêng.
+model LopHoc {
+  id        String   @id @default(cuid())
+  khoaId    String
+  khoa      Khoa     @relation(fields: [khoaId], references: [id], onDelete: Cascade)
+  maLop     String   @unique
+  ten       String
+  siSoToiDa Int?
+  createdAt DateTime @default(now())
+
+  dangKys    DangKyHoc[]
+  buoiHocs   BuoiHoc[]
+  phanCongs  GiangVienHocPhan[]
+  lichSuDens LichSuChuyenLop[]  @relation("LichSuDenLop")
+  lichSuTus  LichSuChuyenLop[]  @relation("LichSuTuLop")
+
+  @@map("lop_hoc")
+}
+
+// KH-07: mỗi lần xếp/chuyển lớp ghi 1 dòng - vừa là lịch sử, vừa là căn cứ
+// xác định học viên thuộc lớp nào tại 1 ngày học (điểm danh GD-01, chuyên cần
+// KQ-02): lớp tại ngày D = denLopId của dòng có ngayHieuLuc <= D gần nhất.
+model LichSuChuyenLop {
+  id               String    @id @default(cuid())
+  dangKyId         String
+  dangKy           DangKyHoc @relation(fields: [dangKyId], references: [id], onDelete: Cascade)
+  tuLopId          String?
+  tuLop            LopHoc?   @relation("LichSuTuLop", fields: [tuLopId], references: [id])
+  denLopId         String
+  denLop           LopHoc    @relation("LichSuDenLop", fields: [denLopId], references: [id])
+  ngayHieuLuc      DateTime
+  lyDo             String?
+  nguoiThucHienTen String
+  createdAt        DateTime  @default(now())
+
+  @@index([dangKyId])
+  @@map("lich_su_chuyen_lop")
 }
 
 model BuoiHoc {
   id             String    @id @default(cuid())
   khoaId         String
   khoa           Khoa      @relation(fields: [khoaId], references: [id], onDelete: Cascade)
+  // KH-07: buổi của 1 lớp; null = buổi chung cả khóa (khai giảng, bế giảng...).
+  lopId          String?
+  lop            LopHoc?   @relation(fields: [lopId], references: [id])
   hocPhanId      String?
   hocPhan        HocPhan?  @relation(fields: [hocPhanId], references: [id])
   ngayHoc        DateTime

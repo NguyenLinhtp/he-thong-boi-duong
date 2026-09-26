@@ -36,6 +36,7 @@ export default async function HocPhanNhapDiemPage() {
             <TableHead>Khóa</TableHead>
             <TableHead>Chương trình</TableHead>
             <TableHead>Học phần</TableHead>
+            <TableHead>Lớp phụ trách</TableHead>
             <TableHead>Số tiết</TableHead>
             <TableHead />
           </TableRow>
@@ -46,6 +47,7 @@ export default async function HocPhanNhapDiemPage() {
               <TableCell>{pc.khoa.maKhoa}</TableCell>
               <TableCell>{pc.khoa.chuongTrinh.ten}</TableCell>
               <TableCell>{pc.hocPhan.ten}</TableCell>
+              <TableCell>{pc.tenLops.join(", ")}</TableCell>
               <TableCell>{pc.hocPhan.soTiet}</TableCell>
               <TableCell>
                 <Link href={`/giang-vien/nhap-diem/${pc.khoaId}/${pc.hocPhanId}`} className="text-sm underline">
@@ -56,7 +58,7 @@ export default async function HocPhanNhapDiemPage() {
           ))}
           {dsPhanCong.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                 Chưa được phân công học phần nào
               </TableCell>
             </TableRow>

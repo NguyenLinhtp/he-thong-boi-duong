@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { timGiangVienChoHocPhan } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
+import { giangVienHieuLuc } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import {
   thamSoKetQua,
   kiemTraDiem,
@@ -21,50 +21,67 @@ export type DongNhapDiemInput = {
   diemKetThuc: number | null;
 };
 
-/** Học phần giảng viên được phân công (KH-02) ở các khóa có giảng dạy. */
+/**
+ * Học phần giảng viên được phân công (KH-02) ở các khóa có giảng dạy - gom
+ * theo (khóa, học phần) vì 1 giảng viên có thể được phân công ở nhiều lớp
+ * (KH-07) của cùng học phần; tên các lớp đi kèm để hiển thị.
+ */
 export async function hocPhanPhuTrach(giangVienId: string) {
   const dsPhanCong = await prisma.giangVienHocPhan.findMany({
     where: { giangVienId, khoa: { trangThai: { not: "HUY" } } },
-    include: { khoa: { include: { chuongTrinh: true } }, hocPhan: true },
+    include: { khoa: { include: { chuongTrinh: true } }, hocPhan: true, lop: true },
     orderBy: [{ khoa: { maKhoa: "asc" } }, { hocPhan: { thuTu: "asc" } }],
   });
-  return dsPhanCong.filter((pc) => !laKhoaChiDuThi(pc.khoa));
+  const theoKhoaHocPhan = new Map<string, (typeof dsPhanCong)[number] & { tenLops: string[] }>();
+  for (const pc of dsPhanCong.filter((pc) => !laKhoaChiDuThi(pc.khoa))) {
+    const khoa = `${pc.khoaId}|${pc.hocPhanId}`;
+    const daCo = theoKhoaHocPhan.get(khoa) ?? { ...pc, tenLops: [] };
+    daCo.tenLops.push(pc.lop?.maLop ?? "Cả khóa");
+    theoKhoaHocPhan.set(khoa, daCo);
+  }
+  return [...theoKhoaHocPhan.values()];
 }
 
 /**
  * KQ-01: "Chỉ nhập được cho học phần mình phụ trách" - phụ trách xác định qua
- * phân công KH-02 (GiangVienHocPhan theo khóa + học phần).
+ * phân công KH-02. Khi khóa chia lớp (KH-07), mỗi học viên theo giảng viên
+ * hiệu lực của lớp hiện tại của mình; điểm vẫn gắn theo khóa nên học viên
+ * chuyển lớp giữa chừng giữ nguyên điểm đã nhập, giảng viên lớp mới nhập tiếp.
  */
 async function kiemTraPhuTrach(giangVienId: string, khoaId: string, hocPhanId: string) {
   const khoa = await layKhoaKemChuongTrinh(khoaId);
   if (laKhoaChiDuThi(khoa)) throw new KhoaChiDuThiError();
 
-  const giangVienPhuTrach = await timGiangVienChoHocPhan(khoaId, hocPhanId);
-  if (!giangVienPhuTrach || giangVienPhuTrach !== giangVienId) {
-    throw new KhongPhuTrachHocPhanError();
-  }
-  return khoa;
+  const [dsDangKy, dsPhanCong] = await Promise.all([
+    hocVienTinhKetQua(khoaId),
+    prisma.giangVienHocPhan.findMany({ where: { khoaId, hocPhanId } }),
+  ]);
+  const dsPhuTrach = dsDangKy.filter(
+    (dk) => giangVienHieuLuc(dsPhanCong, khoaId, hocPhanId, dk.lopId) === giangVienId,
+  );
+  const coPhanCong = dsPhanCong.some((pc) => pc.giangVienId === giangVienId);
+  if (!coPhanCong) throw new KhongPhuTrachHocPhanError();
+
+  return { khoa, dsDangKy, dsPhuTrach };
 }
 
 export async function bangDiemHocPhan(giangVienId: string, khoaId: string, hocPhanId: string) {
-  const khoa = await kiemTraPhuTrach(giangVienId, khoaId, hocPhanId);
+  const { khoa, dsPhuTrach } = await kiemTraPhuTrach(giangVienId, khoaId, hocPhanId);
   const hocPhan = khoa.chuongTrinh.hocPhans.find((hp) => hp.id === hocPhanId)!;
 
-  const [dsDangKy, dsKetQua] = await Promise.all([
-    hocVienTinhKetQua(khoaId),
-    prisma.ketQuaHocTap.findMany({ where: { khoaId, hocPhanId } }),
-  ]);
+  const dsKetQua = await prisma.ketQuaHocTap.findMany({ where: { khoaId, hocPhanId } });
   const ketQuaTheoHocVien = new Map(dsKetQua.map((kq) => [kq.hocVienId, kq]));
 
   return {
     khoa,
     hocPhan,
-    dong: dsDangKy.map((dk) => {
+    dong: dsPhuTrach.map((dk) => {
       const kq = ketQuaTheoHocVien.get(dk.hocVienId);
       return {
         hocVienId: dk.hocVienId,
         maHocVien: dk.hocVien.maHocVien,
         hoTen: dk.hocVien.hoTen,
+        maLop: dk.lop?.maLop ?? null,
         diemThanhPhan: kq?.diemThanhPhan != null ? Number(kq.diemThanhPhan) : null,
         diemKetThuc: kq?.diemKetThuc != null ? Number(kq.diemKetThuc) : null,
         diemHocPhan: kq?.diemHocPhan != null ? Number(kq.diemHocPhan) : null,
@@ -81,16 +98,21 @@ export async function nhapDiemHocPhan(
   hocPhanId: string,
   danhSach: DongNhapDiemInput[],
 ) {
-  await kiemTraPhuTrach(giangVienId, khoaId, hocPhanId);
+  const { dsDangKy, dsPhuTrach } = await kiemTraPhuTrach(giangVienId, khoaId, hocPhanId);
 
   for (const dong of danhSach) {
     kiemTraDiem(dong.diemThanhPhan);
     kiemTraDiem(dong.diemKetThuc);
   }
 
-  const hocVienHopLe = new Set((await hocVienTinhKetQua(khoaId)).map((dk) => dk.hocVienId));
-  if (danhSach.some((dong) => !hocVienHopLe.has(dong.hocVienId))) {
+  const hocVienTrongKhoa = new Set(dsDangKy.map((dk) => dk.hocVienId));
+  if (danhSach.some((dong) => !hocVienTrongKhoa.has(dong.hocVienId))) {
     throw new HocVienKhongThuocKhoaError();
+  }
+  // học viên ở lớp do giảng viên khác phụ trách học phần này
+  const hocVienPhuTrach = new Set(dsPhuTrach.map((dk) => dk.hocVienId));
+  if (danhSach.some((dong) => !hocVienPhuTrach.has(dong.hocVienId))) {
+    throw new KhongPhuTrachHocPhanError();
   }
 
   const daDuyet = await prisma.ketQuaHocTap.count({

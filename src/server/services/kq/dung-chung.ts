@@ -63,7 +63,7 @@ export function laKhoaChiDuThi(khoa: { chuongTrinh: { phuongThucDangKy: string |
 export async function hocVienTinhKetQua(khoaId: string) {
   return prisma.dangKyHoc.findMany({
     where: { khoaId, trangThai: { in: ["CHINH_THUC", "HOAN_THANH"] } },
-    include: { hocVien: true, hopDongLienKet: true },
+    include: { hocVien: true, hopDongLienKet: true, lop: true },
     orderBy: { hocVien: { hoTen: "asc" } },
   });
 }

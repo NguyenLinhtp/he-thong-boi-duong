@@ -4,12 +4,15 @@ import {
   KhongTimThayGiangVienError,
   HocPhanKhongThuocChuongTrinhError,
   TrungLichGiangVienError,
+  LopKhongThuocKhoaError,
 } from "@/server/services/kh/loi-khoa";
 
 export type PhanCongGiangVienInput = {
   khoaId: string;
   hocPhanId: string;
   giangVienId: string;
+  // KH-07: null/bỏ trống = phân công cấp khóa (áp dụng cho lớp chưa có phân công riêng)
+  lopId?: string | null;
 };
 
 type KhoangThoiGian = { batDau: Date | null; ketThuc: Date | null };
@@ -45,6 +48,12 @@ export async function phanCongGiangVien(input: PhanCongGiangVienInput) {
   const giangVien = await prisma.giangVien.findUnique({ where: { id: input.giangVienId } });
   if (!giangVien) throw new KhongTimThayGiangVienError();
 
+  const lopId = input.lopId || null;
+  if (lopId) {
+    const lop = await prisma.lopHoc.findUnique({ where: { id: lopId } });
+    if (!lop || lop.khoaId !== input.khoaId) throw new LopKhongThuocKhoaError();
+  }
+
   const phanCongKhoaKhac = await prisma.giangVienHocPhan.findMany({
     where: {
       giangVienId: input.giangVienId,
@@ -62,18 +71,29 @@ export async function phanCongGiangVien(input: PhanCongGiangVienInput) {
   );
   if (trungLich) throw new TrungLichGiangVienError();
 
-  return prisma.giangVienHocPhan.upsert({
-    where: { khoaId_hocPhanId: { khoaId: input.khoaId, hocPhanId: input.hocPhanId } },
-    create: input,
-    update: { giangVienId: input.giangVienId },
-    include: { giangVien: true, hocPhan: true },
+  // Không dùng upsert theo unique (khoaId, lopId, hocPhanId): Postgres coi NULL
+  // là khác nhau nên phân công cấp khóa (lopId null) phải tự tìm rồi cập nhật.
+  const daCo = await prisma.giangVienHocPhan.findFirst({
+    where: { khoaId: input.khoaId, hocPhanId: input.hocPhanId, lopId },
+  });
+  const include = { giangVien: true, hocPhan: true, lop: true } as const;
+  if (daCo) {
+    return prisma.giangVienHocPhan.update({
+      where: { id: daCo.id },
+      data: { giangVienId: input.giangVienId },
+      include,
+    });
+  }
+  return prisma.giangVienHocPhan.create({
+    data: { khoaId: input.khoaId, hocPhanId: input.hocPhanId, giangVienId: input.giangVienId, lopId },
+    include,
   });
 }
 
 export async function danhSachPhanCong(khoaId: string) {
   return prisma.giangVienHocPhan.findMany({
     where: { khoaId },
-    include: { giangVien: true, hocPhan: true },
-    orderBy: { hocPhan: { thuTu: "asc" } },
+    include: { giangVien: true, hocPhan: true, lop: true },
+    orderBy: [{ hocPhan: { thuTu: "asc" } }, { lop: { maLop: "asc" } }],
   });
 }

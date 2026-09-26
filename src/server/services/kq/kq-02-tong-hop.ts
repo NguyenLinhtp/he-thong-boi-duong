@@ -9,6 +9,7 @@ import {
   chanNeuDaPheDuyet,
 } from "@/server/services/kq/dung-chung";
 import { KhoaChiDuThiError } from "@/server/services/kq/loi-ket-qua";
+import { lichSuLopTheoHocVien, lopTaiNgay } from "@/server/services/kh/kh-07-lop-hoc";
 
 type HocPhanTinhDiem = { id: string; ten: string; soTiet: number };
 
@@ -63,31 +64,38 @@ export function danhGiaHocTap(
 }
 
 /**
- * Tỷ lệ chuyên cần (%) = số buổi có mặt / số buổi đã tổ chức. "Đã tổ chức" =
- * buổi không bị hủy (GD-03) và đã được điểm danh (GD-01) - buổi chưa điểm danh
- * (chưa diễn ra) không tính. Học viên không có dòng điểm danh ở buổi đã điểm
- * danh coi như vắng (mặc định VANG_KHONG_PHEP của DiemDanh). Vắng có phép vẫn
- * là vắng khi tính tỷ lệ có mặt.
+ * Tỷ lệ chuyên cần (%) = số buổi có mặt / số buổi của học viên đã tổ chức.
+ * "Đã tổ chức" = buổi không bị hủy (GD-03) và đã được điểm danh (GD-01) - buổi
+ * chưa điểm danh (chưa diễn ra) không tính. "Buổi của học viên" (KH-07) =
+ * buổi chung cả khóa + buổi của lớp học viên thuộc về tại ngày học (theo lịch
+ * sử chuyển lớp) + buổi học viên có dòng điểm danh (vd học bù ở lớp khác).
+ * Buổi của học viên mà không có dòng điểm danh coi như vắng (mặc định
+ * VANG_KHONG_PHEP của DiemDanh). Vắng có phép vẫn là vắng khi tính tỷ lệ.
+ * Học viên không có buổi nào đã tổ chức -> null (chưa đủ căn cứ, không xét).
  */
-async function tyLeChuyenCanTheoHocVien(khoaId: string): Promise<Map<string, number> | null> {
-  const dsBuoiDaToChuc = await prisma.buoiHoc.findMany({
-    where: { khoaId, daHuy: false, diemDanhs: { some: {} } },
-    include: { diemDanhs: true },
-  });
-  if (dsBuoiDaToChuc.length === 0) return null;
+async function tyLeChuyenCanTheoHocVien(khoaId: string, dsHocVienId: string[]) {
+  const [dsBuoiDaToChuc, lichSuLop] = await Promise.all([
+    prisma.buoiHoc.findMany({
+      where: { khoaId, daHuy: false, diemDanhs: { some: {} } },
+      include: { diemDanhs: true },
+    }),
+    lichSuLopTheoHocVien(khoaId),
+  ]);
 
-  const soBuoiCoMat = new Map<string, number>();
-  for (const buoi of dsBuoiDaToChuc) {
-    for (const dd of buoi.diemDanhs) {
-      if (dd.trangThai === "CO_MAT") {
-        soBuoiCoMat.set(dd.hocVienId, (soBuoiCoMat.get(dd.hocVienId) ?? 0) + 1);
-      }
+  const ketQua = new Map<string, number | null>();
+  for (const hocVienId of dsHocVienId) {
+    const lichSu = lichSuLop.get(hocVienId) ?? [];
+    let soBuoi = 0;
+    let soBuoiCoMat = 0;
+    for (const buoi of dsBuoiDaToChuc) {
+      const diemDanh = buoi.diemDanhs.find((dd) => dd.hocVienId === hocVienId);
+      const thuocHocVien =
+        buoi.lopId === null || lopTaiNgay(lichSu, buoi.ngayHoc) === buoi.lopId || diemDanh !== undefined;
+      if (!thuocHocVien) continue;
+      soBuoi++;
+      if (diemDanh?.trangThai === "CO_MAT") soBuoiCoMat++;
     }
-  }
-
-  const ketQua = new Map<string, number>();
-  for (const [hocVienId, soBuoi] of soBuoiCoMat) {
-    ketQua.set(hocVienId, lamTron2((soBuoi / dsBuoiDaToChuc.length) * 100));
+    ketQua.set(hocVienId, soBuoi === 0 ? null : lamTron2((soBuoiCoMat / soBuoi) * 100));
   }
   return ketQua;
 }
@@ -102,12 +110,15 @@ export async function tongHopKetQuaKhoa(khoaId: string) {
   if (laKhoaChiDuThi(khoa)) throw new KhoaChiDuThiError();
   await chanNeuDaPheDuyet(khoaId);
 
-  const [dsDangKy, dsKetQuaHocPhan, chuyenCan, { diemDat, chuyenCanToiThieu }] = await Promise.all([
+  const [dsDangKy, dsKetQuaHocPhan, { diemDat, chuyenCanToiThieu }] = await Promise.all([
     hocVienTinhKetQua(khoaId),
     prisma.ketQuaHocTap.findMany({ where: { khoaId } }),
-    tyLeChuyenCanTheoHocVien(khoaId),
     thamSoKetQua(),
   ]);
+  const chuyenCan = await tyLeChuyenCanTheoHocVien(
+    khoaId,
+    dsDangKy.map((dk) => dk.hocVienId),
+  );
   const hocPhans = khoa.chuongTrinh.hocPhans;
 
   await prisma.$transaction(
@@ -118,7 +129,7 @@ export async function tongHopKetQuaKhoa(khoaId: string) {
           .map((kq) => [kq.hocPhanId, soHoacNull(kq.diemHocPhan)]),
       );
       const { diemTongKet, hocPhanThieuDiem } = tinhDiemTongKet(hocPhans, diemTheoHocPhan);
-      const tyLeChuyenCan = chuyenCan === null ? null : (chuyenCan.get(dk.hocVienId) ?? 0);
+      const tyLeChuyenCan = chuyenCan.get(dk.hocVienId) ?? null;
 
       const data = {
         diemTongKet,

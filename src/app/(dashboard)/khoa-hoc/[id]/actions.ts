@@ -41,6 +41,7 @@ export async function phanCongGiangVienAction(
       khoaId,
       hocPhanId: String(formData.get("hocPhanId")),
       giangVienId: String(formData.get("giangVienId")),
+      lopId: String(formData.get("lopId") || "") || null,
     });
   } catch (error) {
     if (error instanceof Error) return error.message;
@@ -66,6 +67,7 @@ export async function themBuoiHocAction(
   try {
     await thietLapBuoiHoc({
       khoaId,
+      lopId: String(formData.get("lopId") || "") || null,
       hocPhanId: hocPhanId || null,
       ngayHoc: String(formData.get("ngayHoc")),
       gioBatDau: gioBatDau || null,

@@ -5,6 +5,7 @@ import {
   KhongTimThayKhoaError,
   TrungLichGiangVienTheoBuoiError,
   TrungPhongHocError,
+  LopKhongThuocKhoaError,
 } from "@/server/services/kh/loi-khoa";
 
 type Params = { params: Promise<{ id: string }> };
@@ -24,6 +25,7 @@ export const POST = apiRoute(async (req: Request, { params }: Params) => {
     return NextResponse.json(
       await thietLapBuoiHoc({
         khoaId: id,
+        lopId: body.lopId ?? null,
         hocPhanId: body.hocPhanId ?? null,
         ngayHoc: body.ngayHoc,
         gioBatDau: body.gioBatDau ?? null,
@@ -34,7 +36,11 @@ export const POST = apiRoute(async (req: Request, { params }: Params) => {
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof TrungLichGiangVienTheoBuoiError || error instanceof TrungPhongHocError) {
+    if (
+      error instanceof TrungLichGiangVienTheoBuoiError ||
+      error instanceof TrungPhongHocError ||
+      error instanceof LopKhongThuocKhoaError
+    ) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
     if (error instanceof KhongTimThayKhoaError) {

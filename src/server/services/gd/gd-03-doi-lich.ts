@@ -8,24 +8,30 @@ import {
 import { KhongTimThayBuoiHocError } from "@/server/services/kh/loi-khoa";
 import { guiThongBao, guiThongBaoGiangVien } from "@/server/services/hv/hv-10-thong-bao";
 import { ThieuLyDoThayDoiError } from "@/server/services/gd/loi-giang-day";
+import { hocVienThuocBuoi } from "@/server/services/kh/kh-07-lop-hoc";
 
-type BuoiHocVoiKhoa = { id: string; khoaId: string; hocPhanId: string | null; ngayHoc: Date; khoa: Khoa };
+type BuoiHocVoiKhoa = {
+  id: string;
+  khoaId: string;
+  lopId: string | null;
+  hocPhanId: string | null;
+  ngayHoc: Date;
+  khoa: Khoa;
+};
 
 /**
  * GD-03: "thông báo gửi học viên/giảng viên" khi có thay đổi lịch - gửi cho
- * mọi học viên Chính thức của khóa và giảng viên phụ trách học phần của
- * buổi (nếu buổi có gắn học phần và đã phân công).
+ * học viên Chính thức thuộc buổi (cả khóa, hoặc lớp của buổi - KH-07) và
+ * giảng viên phụ trách hiệu lực của buổi (nếu có gắn học phần và đã phân công).
  */
 async function thongBaoThayDoiLich(buoiHoc: BuoiHocVoiKhoa, tieuDe: string, noiDung: string) {
-  const dsChinhThuc = await prisma.dangKyHoc.findMany({
-    where: { khoaId: buoiHoc.khoaId, trangThai: "CHINH_THUC" },
-  });
+  const dsChinhThuc = await hocVienThuocBuoi(buoiHoc);
   for (const dk of dsChinhThuc) {
     await guiThongBao(dk.hocVienId, "LICH_HOC_LICH_THI", tieuDe, noiDung);
   }
 
   if (buoiHoc.hocPhanId) {
-    const giangVienId = await timGiangVienChoHocPhan(buoiHoc.khoaId, buoiHoc.hocPhanId);
+    const giangVienId = await timGiangVienChoHocPhan(buoiHoc.khoaId, buoiHoc.hocPhanId, buoiHoc.lopId);
     if (giangVienId) {
       await guiThongBaoGiangVien(giangVienId, "LICH_HOC_LICH_THI", tieuDe, noiDung);
     }

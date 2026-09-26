@@ -10,6 +10,7 @@ export type DongDiem = {
   hocVienId: string;
   maHocVien: string;
   hoTen: string;
+  maLop: string | null;
   diemThanhPhan: number | null;
   diemKetThuc: number | null;
   diemHocPhan: number | null;
@@ -49,7 +50,10 @@ export function FormNhapDiem({
           {dsDong.map((d) => (
             <TableRow key={d.hocVienId}>
               <TableCell>{d.maHocVien}</TableCell>
-              <TableCell>{d.hoTen}</TableCell>
+              <TableCell>
+                {d.hoTen}
+                {d.maLop && <span className="ml-1 text-xs text-muted-foreground">({d.maLop})</span>}
+              </TableCell>
               {d.daPheDuyet ? (
                 <>
                   <TableCell>{d.diemThanhPhan ?? "—"}</TableCell>

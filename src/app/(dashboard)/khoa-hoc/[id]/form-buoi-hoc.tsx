@@ -10,16 +10,31 @@ export function FormBuoiHoc({
   khoaId,
   dsHocPhan,
   dsPhongHoc,
+  dsLop = [],
 }: {
   khoaId: string;
   dsHocPhan: { id: string; ten: string }[];
   dsPhongHoc: { id: string; ten: string }[];
+  dsLop?: { id: string; maLop: string; ten: string }[];
 }) {
   const [loi, formAction, dangXuLy] = useActionState(themBuoiHocAction, undefined);
 
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
       <input type="hidden" name="khoaId" value={khoaId} />
+      {dsLop.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="lopId">Lớp (KH-07)</Label>
+          <select id="lopId" name="lopId" className="h-8 rounded-lg border px-2 text-sm">
+            <option value="">— Cả khóa —</option>
+            {dsLop.map((lop) => (
+              <option key={lop.id} value={lop.id}>
+                {lop.maLop} · {lop.ten}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="hocPhanId">Học phần</Label>
         <select id="hocPhanId" name="hocPhanId" className="h-8 rounded-lg border px-2 text-sm">

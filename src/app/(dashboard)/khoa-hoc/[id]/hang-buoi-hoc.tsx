@@ -19,6 +19,7 @@ export type BuoiHocDong = {
   gioKetThuc: string | null;
   hocPhanId: string | null;
   hocPhanTen: string | null;
+  maLop?: string | null;
   phongHocId: string | null;
   phongHocTen: string | null;
   linkTrucTuyen: string | null;
@@ -58,7 +59,10 @@ export function HangBuoiHoc({
         <TableCell>
           {buoiHoc.gioBatDau && buoiHoc.gioKetThuc ? `${buoiHoc.gioBatDau} – ${buoiHoc.gioKetThuc}` : "—"}
         </TableCell>
-        <TableCell>{buoiHoc.hocPhanTen ?? "—"}</TableCell>
+        <TableCell>
+          {buoiHoc.hocPhanTen ?? "—"}
+          {buoiHoc.maLop && <span className="ml-1 text-xs text-muted-foreground">({buoiHoc.maLop})</span>}
+        </TableCell>
         <TableCell>
           {buoiHoc.phongHocTen ??
             (buoiHoc.linkTrucTuyen

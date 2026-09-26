@@ -1,32 +1,36 @@
 import { prisma } from "@/lib/db/prisma";
 import type { TrangThaiDiemDanh } from "@/generated/prisma/client";
 import { layBuoiHocNeuDuocPhanCong } from "@/server/services/gd/dung-chung";
+import { hocVienThuocBuoi } from "@/server/services/kh/kh-07-lop-hoc";
 
 export type DongDiemDanhInput = { hocVienId: string; trangThai: TrangThaiDiemDanh };
 
 /**
- * Danh sách học viên để điểm danh 1 buổi học = mọi học viên đang Chính thức
- * (HV-07) của khóa, kèm trạng thái điểm danh đã ghi trước đó (nếu có) để
- * giảng viên sửa lại thay vì luôn nhập lại từ đầu.
+ * Danh sách học viên để điểm danh 1 buổi học = học viên Chính thức (HV-07)
+ * thuộc buổi đó (cả khóa, hoặc lớp của buổi tại ngày học - KH-07), kèm trạng
+ * thái điểm danh đã ghi trước đó (nếu có) để giảng viên sửa lại thay vì luôn
+ * nhập lại từ đầu. Học viên đã có dòng điểm danh ở buổi này (vd học bù từ lớp
+ * khác, hoặc đã chuyển lớp sau đó) vẫn hiện để không "mất" dữ liệu đã ghi.
  */
 export async function dsHocVienDeDiemDanh(giangVienId: string, buoiHocId: string) {
   const buoiHoc = await layBuoiHocNeuDuocPhanCong(giangVienId, buoiHocId);
 
-  const [dsChinhThuc, dsDaDiemDanh] = await Promise.all([
-    prisma.dangKyHoc.findMany({
-      where: { khoaId: buoiHoc.khoaId, trangThai: "CHINH_THUC" },
-      include: { hocVien: true },
-    }),
-    prisma.diemDanh.findMany({ where: { buoiHocId } }),
+  const [dsThuocBuoi, dsDaDiemDanh] = await Promise.all([
+    hocVienThuocBuoi(buoiHoc),
+    prisma.diemDanh.findMany({ where: { buoiHocId }, include: { hocVien: true } }),
   ]);
   const trangThaiTheoHocVien = new Map(dsDaDiemDanh.map((dd) => [dd.hocVienId, dd.trangThai]));
+  const hocVienTheoId = new Map([
+    ...dsDaDiemDanh.map((dd) => [dd.hocVienId, dd.hocVien] as const),
+    ...dsThuocBuoi.map((dk) => [dk.hocVienId, dk.hocVien] as const),
+  ]);
 
-  return dsChinhThuc
-    .map((dk) => ({
-      hocVienId: dk.hocVienId,
-      hoTen: dk.hocVien.hoTen,
-      maHocVien: dk.hocVien.maHocVien,
-      trangThaiHienTai: trangThaiTheoHocVien.get(dk.hocVienId) ?? null,
+  return [...hocVienTheoId.values()]
+    .map((hv) => ({
+      hocVienId: hv.id,
+      hoTen: hv.hoTen,
+      maHocVien: hv.maHocVien,
+      trangThaiHienTai: trangThaiTheoHocVien.get(hv.id) ?? null,
     }))
     .sort((a, b) => a.hoTen.localeCompare(b.hoTen));
 }

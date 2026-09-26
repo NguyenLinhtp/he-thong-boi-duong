@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { layPhienDangNhap } from "@/lib/auth/permissions";
 import { capNhatQuyen, layMaTranPhanQuyen } from "@/server/services/qt/qt-02-phan-quyen";
 import { taoTaiKhoan } from "@/server/services/qt/qt-01-quan-ly-tai-khoan";
+import functions from "../../docs/functions.json";
 
 const taiKhoanTaoTrongTest: string[] = [];
 
@@ -54,9 +55,10 @@ describe("QT-02 phân quyền theo vai trò (RBAC)", () => {
     expect((await layPhienDangNhap(taiKhoan.id))?.maCNDuocPhep).not.toContain(MA_CN_TEST);
   });
 
-  it("ma trận phân quyền trả về đủ 6 vai trò và 69 chức năng đã seed", async () => {
+  it("ma trận phân quyền trả về đủ 6 vai trò và mọi chức năng trong functions.json đã seed", async () => {
     const maTran = await layMaTranPhanQuyen();
     expect(maTran.vaiTros).toHaveLength(6);
-    expect(maTran.chucNangs).toHaveLength(69);
+    // 69 chức năng gốc + mở rộng (vd KH-07) - luôn bám đúng functions.json
+    expect(maTran.chucNangs).toHaveLength(functions.length);
   });
 });

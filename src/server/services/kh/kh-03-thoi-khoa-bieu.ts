@@ -5,10 +5,13 @@ import {
   KhongTimThayBuoiHocError,
   TrungLichGiangVienTheoBuoiError,
   TrungPhongHocError,
+  LopKhongThuocKhoaError,
 } from "@/server/services/kh/loi-khoa";
 
 export type ThietLapBuoiHocInput = {
   khoaId: string;
+  // KH-07: buổi của 1 lớp; null = buổi chung cả khóa
+  lopId?: string | null;
   hocPhanId?: string | null;
   ngayHoc: Date | string;
   gioBatDau?: string | null;
@@ -26,14 +29,66 @@ function coTrungGio(aBatDau: string, aKetThuc: string, bBatDau: string, bKetThuc
   return aBatDau < bKetThuc && bBatDau < aKetThuc;
 }
 
+type PhanCongRutGon = { khoaId: string; hocPhanId: string; lopId: string | null; giangVienId: string };
+
+/**
+ * KH-07: giảng viên hiệu lực của (khóa, học phần, lớp) = phân công riêng của
+ * lớp nếu có, không thì phân công cấp khóa. Buổi chung (lopId null) chỉ dùng
+ * phân công cấp khóa.
+ */
+export function giangVienHieuLuc(
+  dsPhanCong: PhanCongRutGon[],
+  khoaId: string,
+  hocPhanId: string,
+  lopId: string | null | undefined,
+): string | null {
+  const cua = (lop: string | null) =>
+    dsPhanCong.find((pc) => pc.khoaId === khoaId && pc.hocPhanId === hocPhanId && pc.lopId === lop);
+  return ((lopId ? cua(lopId) : undefined) ?? cua(null))?.giangVienId ?? null;
+}
+
 export async function timGiangVienChoHocPhan(
   khoaId: string,
   hocPhanId: string,
+  lopId?: string | null,
 ): Promise<string | null> {
-  const phanCong = await prisma.giangVienHocPhan.findUnique({
-    where: { khoaId_hocPhanId: { khoaId, hocPhanId } },
+  const dsPhanCong = await prisma.giangVienHocPhan.findMany({ where: { khoaId, hocPhanId } });
+  return giangVienHieuLuc(dsPhanCong, khoaId, hocPhanId, lopId);
+}
+
+/**
+ * Mọi buổi học (có học phần) mà giảng viên đang là người phụ trách hiệu lực,
+ * ở các khóa chưa hủy - dùng cho kiểm tra trùng lịch (KH-03) và lịch dạy.
+ */
+async function buoiCuaGiangVien(giangVienId: string, boQuaBuoiHocId?: string) {
+  const phanCongCuaGiangVien = await prisma.giangVienHocPhan.findMany({
+    // khóa đã hủy không còn "vận hành" nên không tính là chiếm lịch giảng viên
+    where: { giangVienId, khoa: { trangThai: { not: "HUY" } } },
   });
-  return phanCong?.giangVienId ?? null;
+  const capKhoaHocPhan = [
+    ...new Map(
+      phanCongCuaGiangVien.map((pc) => [`${pc.khoaId}|${pc.hocPhanId}`, { khoaId: pc.khoaId, hocPhanId: pc.hocPhanId }]),
+    ).values(),
+  ];
+  if (capKhoaHocPhan.length === 0) return [];
+
+  const [dsPhanCong, dsBuoi] = await Promise.all([
+    prisma.giangVienHocPhan.findMany({ where: { OR: capKhoaHocPhan } }),
+    prisma.buoiHoc.findMany({
+      where: { id: boQuaBuoiHocId ? { not: boQuaBuoiHocId } : undefined, OR: capKhoaHocPhan },
+      include: { khoa: { include: { chuongTrinh: true } }, hocPhan: true, phongHoc: true, lop: true },
+      orderBy: [{ ngayHoc: "asc" }, { gioBatDau: "asc" }],
+    }),
+  ]);
+  return dsBuoi.filter(
+    (bh) => giangVienHieuLuc(dsPhanCong, bh.khoaId, bh.hocPhanId!, bh.lopId) === giangVienId,
+  );
+}
+
+async function kiemTraLopThuocKhoa(khoaId: string, lopId: string | null | undefined) {
+  if (!lopId) return;
+  const lop = await prisma.lopHoc.findUnique({ where: { id: lopId } });
+  if (!lop || lop.khoaId !== khoaId) throw new LopKhongThuocKhoaError();
 }
 
 /**
@@ -49,33 +104,18 @@ async function kiemTraTrungLichGiangVien(
 ) {
   if (!input.hocPhanId || !input.gioBatDau || !input.gioKetThuc) return;
 
-  const giangVienId = await timGiangVienChoHocPhan(input.khoaId, input.hocPhanId);
+  const giangVienId = await timGiangVienChoHocPhan(input.khoaId, input.hocPhanId, input.lopId);
   if (!giangVienId) return;
 
-  const phanCongCuaGiangVien = await prisma.giangVienHocPhan.findMany({
-    // khóa đã hủy không còn "vận hành" nên không tính là chiếm lịch giảng viên
-    where: { giangVienId, khoa: { trangThai: { not: "HUY" } } },
-  });
-  const capKhoaHocPhan = phanCongCuaGiangVien.map((pc) => ({
-    khoaId: pc.khoaId,
-    hocPhanId: pc.hocPhanId,
-  }));
-  if (capKhoaHocPhan.length === 0) return;
-
   const ngay = ngayThanhChuoi(input.ngayHoc);
-  const buoiHocKhac = await prisma.buoiHoc.findMany({
-    where: {
-      id: boQuaBuoiHocId ? { not: boQuaBuoiHocId } : undefined,
-      OR: capKhoaHocPhan.map((c) => ({ khoaId: c.khoaId, hocPhanId: c.hocPhanId })),
-      gioBatDau: { not: null },
-      gioKetThuc: { not: null },
-    },
-  });
+  const buoiHocKhac = await buoiCuaGiangVien(giangVienId, boQuaBuoiHocId);
 
   const trung = buoiHocKhac.some(
     (bh) =>
+      bh.gioBatDau !== null &&
+      bh.gioKetThuc !== null &&
       ngayThanhChuoi(bh.ngayHoc) === ngay &&
-      coTrungGio(input.gioBatDau!, input.gioKetThuc!, bh.gioBatDau!, bh.gioKetThuc!),
+      coTrungGio(input.gioBatDau!, input.gioKetThuc!, bh.gioBatDau, bh.gioKetThuc),
   );
   if (trung) throw new TrungLichGiangVienTheoBuoiError();
 }
@@ -98,12 +138,14 @@ export async function thietLapBuoiHoc(input: ThietLapBuoiHocInput) {
   const khoa = await prisma.khoa.findUnique({ where: { id: input.khoaId } });
   if (!khoa) throw new KhongTimThayKhoaError();
 
+  await kiemTraLopThuocKhoa(input.khoaId, input.lopId);
   await kiemTraTrungLichGiangVien(input);
   await kiemTraTrungPhongHoc(input);
 
   return prisma.buoiHoc.create({
     data: {
       khoaId: input.khoaId,
+      lopId: input.lopId || null,
       hocPhanId: input.hocPhanId ?? null,
       ngayHoc: new Date(input.ngayHoc),
       gioBatDau: input.gioBatDau ?? null,
@@ -111,7 +153,7 @@ export async function thietLapBuoiHoc(input: ThietLapBuoiHocInput) {
       phongHocId: input.phongHocId ?? null,
       linkTrucTuyen: input.linkTrucTuyen ?? null,
     },
-    include: { hocPhan: true, phongHoc: true },
+    include: { hocPhan: true, phongHoc: true, lop: true },
   });
 }
 
@@ -127,13 +169,17 @@ export async function capNhatBuoiHoc(
   const buoiHoc = await prisma.buoiHoc.findUnique({ where: { id } });
   if (!buoiHoc) throw new KhongTimThayBuoiHocError();
 
-  const inputDayDu: ThietLapBuoiHocInput = { ...input, khoaId: buoiHoc.khoaId };
+  // lopId không truyền (vd GD-03 đổi lịch) = giữ nguyên lớp của buổi
+  const lopId = input.lopId !== undefined ? input.lopId || null : buoiHoc.lopId;
+  const inputDayDu: ThietLapBuoiHocInput = { ...input, lopId, khoaId: buoiHoc.khoaId };
+  await kiemTraLopThuocKhoa(buoiHoc.khoaId, lopId);
   await kiemTraTrungLichGiangVien(inputDayDu, id);
   await kiemTraTrungPhongHoc(inputDayDu, id);
 
   return prisma.buoiHoc.update({
     where: { id },
     data: {
+      lopId,
       hocPhanId: input.hocPhanId ?? null,
       ngayHoc: new Date(input.ngayHoc),
       gioBatDau: input.gioBatDau ?? null,
@@ -148,7 +194,7 @@ export async function capNhatBuoiHoc(
 export async function danhSachBuoiHoc(khoaId: string) {
   return prisma.buoiHoc.findMany({
     where: { khoaId },
-    include: { hocPhan: true, phongHoc: true },
+    include: { hocPhan: true, phongHoc: true, lop: true },
     orderBy: [{ ngayHoc: "asc" }, { gioBatDau: "asc" }],
   });
 }
@@ -163,14 +209,5 @@ export async function xoaBuoiHoc(id: string) {
  * học mới cho giảng viên đó ở KH-03, tránh phải thử-và-bị-chặn.
  */
 export async function lichDayGiangVien(giangVienId: string) {
-  const phanCong = await prisma.giangVienHocPhan.findMany({
-    where: { giangVienId, khoa: { trangThai: { not: "HUY" } } },
-  });
-  if (phanCong.length === 0) return [];
-
-  return prisma.buoiHoc.findMany({
-    where: { OR: phanCong.map((pc) => ({ khoaId: pc.khoaId, hocPhanId: pc.hocPhanId })) },
-    include: { khoa: { include: { chuongTrinh: true } }, hocPhan: true, phongHoc: true },
-    orderBy: [{ ngayHoc: "asc" }, { gioBatDau: "asc" }],
-  });
+  return buoiCuaGiangVien(giangVienId);
 }

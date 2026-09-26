@@ -6,6 +6,7 @@ import {
   KhongTimThayGiangVienError,
   HocPhanKhongThuocChuongTrinhError,
   TrungLichGiangVienError,
+  LopKhongThuocKhoaError,
 } from "@/server/services/kh/loi-khoa";
 
 type Params = { params: Promise<{ id: string }> };
@@ -23,11 +24,20 @@ export const POST = apiRoute(async (req: Request, { params }: Params) => {
 
   try {
     return NextResponse.json(
-      await phanCongGiangVien({ khoaId: id, hocPhanId: body.hocPhanId, giangVienId: body.giangVienId }),
+      await phanCongGiangVien({
+        khoaId: id,
+        hocPhanId: body.hocPhanId,
+        giangVienId: body.giangVienId,
+        lopId: body.lopId ?? null,
+      }),
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof TrungLichGiangVienError || error instanceof HocPhanKhongThuocChuongTrinhError) {
+    if (
+      error instanceof TrungLichGiangVienError ||
+      error instanceof HocPhanKhongThuocChuongTrinhError ||
+      error instanceof LopKhongThuocKhoaError
+    ) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
     if (error instanceof KhongTimThayKhoaError || error instanceof KhongTimThayGiangVienError) {
