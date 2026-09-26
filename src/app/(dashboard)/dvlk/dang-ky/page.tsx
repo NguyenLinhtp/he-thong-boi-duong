@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
@@ -20,7 +21,12 @@ export default async function DangKyThayMatDVLKPage() {
 
   return (
     <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">HV-11 · Đăng ký học viên thay mặt đơn vị liên kết</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold">HV-11 · Đăng ký học viên thay mặt đơn vị liên kết</h1>
+        <Link href="/dvlk/ho-so" className="text-sm underline">
+          Hồ sơ của đơn vị (DVLK-04/05) →
+        </Link>
+      </div>
 
       {dsHopDong.length === 0 ? (
         <p className="rounded-lg border p-4 text-sm text-muted-foreground">
