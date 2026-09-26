@@ -91,11 +91,22 @@ export async function lapDanhSachDeNghi(
 ) {
   const { duDieuKien } = await xetDeNghiCapChungChi(khoaId);
   if (duDieuKien.length === 0) return [];
+  // chụp loại văn bằng của chương trình tại thời điểm đề nghị (CT-01 bổ sung)
+  const { chuongTrinh } = await prisma.khoa.findUniqueOrThrow({
+    where: { id: khoaId },
+    include: { chuongTrinh: true },
+  });
 
   const dsTao = await prisma.$transaction(
     duDieuKien.map((kq) =>
       prisma.chungChi.create({
-        data: { hocVienId: kq.hocVienId, khoaId, trangThai: "DE_NGHI", nguoiDeNghi: nguoi.nguoiThucHienTen },
+        data: {
+          hocVienId: kq.hocVienId,
+          khoaId,
+          trangThai: "DE_NGHI",
+          loaiVanBang: chuongTrinh.loaiVanBang,
+          nguoiDeNghi: nguoi.nguoiThucHienTen,
+        },
         include: { hocVien: true },
       }),
     ),

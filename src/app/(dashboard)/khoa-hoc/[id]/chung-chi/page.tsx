@@ -14,7 +14,7 @@ import {
   NutTraTrucTiep,
   FormBanGiaoLo,
 } from "./cac-form";
-import { NHAN_TRANG_THAI_CHUNG_CHI, NHAN_KENH_NHAN } from "./nhan";
+import { NHAN_TRANG_THAI_CHUNG_CHI, NHAN_KENH_NHAN, NHAN_LOAI_VAN_BANG } from "./nhan";
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -66,7 +66,12 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
   return (
     <main className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">CC · Chứng chỉ khóa {khoa.maKhoa}</h1>
+        <h1 className="text-lg font-semibold">
+          CC · Văn bằng khóa {khoa.maKhoa}
+          <span className="ml-2 rounded border px-2 py-0.5 text-sm font-normal">
+            {NHAN_LOAI_VAN_BANG[khoa.chuongTrinh.loaiVanBang]}
+          </span>
+        </h1>
         <a href={`/khoa-hoc/${khoa.id}`} className="text-sm underline">
           Về trang khóa
         </a>

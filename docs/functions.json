@@ -65,9 +65,9 @@
     "ten_chuc_nang": "Tạo mới chương trình bồi dưỡng",
     "mo_ta_chi_tiet": "Khởi tạo chương trình với mục tiêu, đối tượng áp dụng, tổng thời lượng, loại hình bồi dưỡng",
     "actor": "Cán bộ quản lý đào tạo",
-    "input": "Tên chương trình, mục tiêu, đối tượng, thời lượng, loại hình",
+    "input": "Tên chương trình, mục tiêu, đối tượng, thời lượng, loại hình, loại văn bằng cấp khi hoàn thành (chứng chỉ hoặc giấy chứng nhận - bổ sung 26/09/2026)",
     "output": "Chương trình ở trạng thái \"Dự thảo\"",
-    "quy_tac_nghiep_vu": "Mã chương trình sinh tự động, không trùng",
+    "quy_tac_nghiep_vu": "Mã chương trình sinh tự động, không trùng; (bổ sung 26/09/2026) mỗi chương trình xác định cấp chứng chỉ hay giấy chứng nhận - quyết định tiêu đề in, dãy số hiệu và sổ cấp riêng; không đổi loại khi đã có văn bằng (chưa hủy) được lập cho khóa của chương trình",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 1"
   },

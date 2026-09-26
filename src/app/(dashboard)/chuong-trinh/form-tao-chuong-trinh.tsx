@@ -35,6 +35,13 @@ export function FormTaoChuongTrinh({
         </select>
       </div>
       <div className="flex flex-col gap-1.5">
+        <Label htmlFor="loaiVanBang">Văn bằng cấp khi hoàn thành</Label>
+        <select id="loaiVanBang" name="loaiVanBang" defaultValue="CHUNG_CHI" className="h-8 rounded-lg border px-2 text-sm">
+          <option value="CHUNG_CHI">Chứng chỉ</option>
+          <option value="CHUNG_NHAN">Giấy chứng nhận</option>
+        </select>
+      </div>
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="tongThoiLuong">Tổng thời lượng (tiết)</Label>
         <Input id="tongThoiLuong" name="tongThoiLuong" type="number" min={0} className="w-32" />
       </div>

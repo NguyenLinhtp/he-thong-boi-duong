@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 import { SaiTrangThaiChungChiError, ThieuThongTinError } from "@/server/services/cc/loi-chung-chi";
+import { nhanVanBang } from "@/server/services/cc/van-bang";
 
 export type KyDuyetInput = {
   soQuyetDinh: string;
@@ -67,14 +68,16 @@ export async function kyDuyetChungChi(khoaId: string, input: KyDuyetInput) {
   );
   for (const cc of dsChungChi) {
     const donViLienKet = donViLienKetTheoHocVien.get(cc.hocVienId);
+    const nhan = nhanVanBang(cc.loaiVanBang);
+    const Nhan = nhan.charAt(0).toUpperCase() + nhan.slice(1);
     await guiThongBao(
       cc.hocVienId,
       "CAP_CHUNG_CHI",
-      `Chứng chỉ khóa ${cc.khoa.maKhoa} đã được ký duyệt`,
-      `Chứng chỉ số hiệu ${cc.soHieu} của bạn đã được ký duyệt theo quyết định ${input.soQuyetDinh.trim()}. ` +
+      `${Nhan} khóa ${cc.khoa.maKhoa} đã được ký duyệt`,
+      `${Nhan} số hiệu ${cc.soHieu} của bạn đã được ký duyệt theo quyết định ${input.soQuyetDinh.trim()}. ` +
         (donViLienKet
-          ? `Chứng chỉ sẽ được bàn giao về ${donViLienKet} để phát lại cho bạn.`
-          : "Vui lòng liên hệ Phòng/Trung tâm bồi dưỡng để nhận chứng chỉ."),
+          ? `${Nhan} sẽ được bàn giao về ${donViLienKet} để phát lại cho bạn.`
+          : `Vui lòng liên hệ Phòng/Trung tâm bồi dưỡng để nhận ${nhan}.`),
     );
   }
 

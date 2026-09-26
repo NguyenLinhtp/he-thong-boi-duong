@@ -4,6 +4,7 @@ import { xetDeNghiCapChungChi, lapDanhSachDeNghi } from "@/server/services/cc/cc
 import { sinhSoHieu, huyChungChi, duLieuInChungChi } from "@/server/services/cc/cc-02-so-hieu";
 import { kyDuyetChungChi } from "@/server/services/cc/cc-03-ky-duyet";
 import { traTrucTiep, banGiaoTheoLo, soCapChungChi } from "@/server/services/cc/cc-04-so-cap";
+import { thietLapLoaiVanBang, DoiLoaiVanBangKhiDaLapError } from "@/server/services/ct/ct-01-loai-van-bang";
 import {
   ChuaPheDuyetKetQuaError,
   SaiTrangThaiChungChiError,
@@ -44,11 +45,17 @@ const NGUOI = { nguoiThucHienTen: "Cán bộ test CC" };
  *  quaDvlk   - đạt, qua đơn vị liên kết, CHƯA có dòng HocPhi, hợp đồng chưa thanh lý
  *  thoiHoc   - đạt nhưng đã thôi học
  */
-async function taoKhoaDaPheDuyet(opts: { pheDuyet?: boolean } = {}) {
+async function taoKhoaDaPheDuyet(opts: { pheDuyet?: boolean; loaiVanBang?: "CHUNG_CHI" | "CHUNG_NHAN" } = {}) {
   const lh = await prisma.loaiHinhBoiDuong.create({ data: { ma: `LH_CC_${uid()}`, ten: "LH CC" } });
   loaiHinhIds.push(lh.id);
   const ct = await prisma.chuongTrinh.create({
-    data: { maCT: `CT_CC_${uid()}`, ten: "Chương trình CC", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH" },
+    data: {
+      maCT: `CT_CC_${uid()}`,
+      ten: "Chương trình CC",
+      loaiHinhBoiDuongId: lh.id,
+      trangThai: "DA_BAN_HANH",
+      loaiVanBang: opts.loaiVanBang ?? "CHUNG_CHI",
+    },
   });
   chuongTrinhIds.push(ct.id);
   const khoa = await prisma.khoa.create({
@@ -145,8 +152,8 @@ describe("CC-01 lập danh sách đề nghị cấp chứng chỉ", () => {
 const soThuTu = (soHieu: string | null) => Number(soHieu!.split("-").at(-1));
 
 /** Khóa đã phê duyệt có n học viên đạt, khóa miễn phí (không có học phí) -> đều đủ điều kiện. */
-async function taoKhoaDuDieuKien(soHocVien: number) {
-  const f = await taoKhoaDaPheDuyet();
+async function taoKhoaDuDieuKien(soHocVien: number, loaiVanBang: "CHUNG_CHI" | "CHUNG_NHAN" = "CHUNG_CHI") {
+  const f = await taoKhoaDaPheDuyet({ loaiVanBang });
   await prisma.hopDongLienKet.update({ where: { id: f.hopDong.id }, data: { trangThai: "DA_THANH_LY" } });
   await prisma.hocPhi.updateMany({ where: { khoaId: f.khoa.id }, data: { trangThai: "DA_NOP_DU" } });
   await prisma.ketQuaKhoa.updateMany({ where: { khoaId: f.khoa.id }, data: { datHocTap: true } });
@@ -366,5 +373,54 @@ describe("CC-04 vào sổ cấp chứng chỉ, trao/bàn giao", () => {
     const theoSoHieu = await soCapChungChi({ tuKhoa: a.soHieu });
     expect(theoSoHieu.map((cc) => cc.id)).toEqual([f.ccA.id]);
     expect((await soCapChungChi({ khoaId: f.khoa.id })).map((cc) => cc.soVaoSo)).toEqual([a.soVaoSo, d.soVaoSo]);
+  });
+});
+
+describe("Loại văn bằng theo chương trình (chứng chỉ / giấy chứng nhận)", () => {
+  const KY = { soQuyetDinh: "QĐ-CN", ngayKy: "2026-11-02", nguoiKy: "Hiệu trưởng", nguoiThucHienTen: "Cán bộ test CC" };
+
+  it("chương trình cấp giấy chứng nhận: văn bằng loại chứng nhận, dãy số hiệu/sổ cấp và tiêu đề riêng", async () => {
+    const f = await taoKhoaDuDieuKien(1, "CHUNG_NHAN");
+    const cc = await prisma.chungChi.findFirstOrThrow({ where: { khoaId: f.khoa.id } });
+    expect(cc.loaiVanBang).toBe("CHUNG_NHAN");
+
+    const { daCapSo } = await sinhSoHieu(f.khoa.id, NGUOI);
+    expect(daCapSo[0].soHieu).toMatch(/^CN\d{4}-\d{5}$/);
+
+    const dsIn = await duLieuInChungChi([cc.id]);
+    expect(dsIn.dsChungChi[0].tieuDe).toBe("GIẤY CHỨNG NHẬN");
+
+    await kyDuyetChungChi(f.khoa.id, KY);
+    const tb = await prisma.thongBao.findFirstOrThrow({ where: { hocVienId: cc.hocVienId, loaiSuKien: "CAP_CHUNG_CHI" } });
+    expect(tb.tieuDe).toContain("Giấy chứng nhận");
+
+    const sau = await traTrucTiep(cc.id, { ...NGUOI, nguoiNhan: "A" });
+    expect(sau.soVaoSo).toMatch(/^SN\d{4}-\d{5}$/);
+  });
+
+  it("chương trình cấp chứng chỉ giữ dãy CC/SC, tiêu đề chứng chỉ", async () => {
+    const f = await taoKhoaDuDieuKien(1);
+    const { daCapSo } = await sinhSoHieu(f.khoa.id, NGUOI);
+    expect(daCapSo[0].soHieu).toMatch(/^CC\d{4}-\d{5}$/);
+    const dsIn = await duLieuInChungChi([daCapSo[0].chungChiId]);
+    expect(dsIn.dsChungChi[0].tieuDe).toBe("CHỨNG CHỈ BỒI DƯỠNG");
+  });
+
+  it("đổi loại văn bằng được khi chưa có văn bằng nào; bị chặn khi đã lập (chưa hủy)", async () => {
+    const f = await taoKhoaDaPheDuyet();
+
+    const doi = await thietLapLoaiVanBang(f.khoa.chuongTrinhId, "CHUNG_NHAN");
+    expect(doi.loaiVanBang).toBe("CHUNG_NHAN");
+
+    await lapDanhSachDeNghi(f.khoa.id, NGUOI);
+    await expect(thietLapLoaiVanBang(f.khoa.chuongTrinhId, "CHUNG_CHI")).rejects.toThrow(
+      DoiLoaiVanBangKhiDaLapError,
+    );
+
+    // hủy hết văn bằng đã lập thì đổi lại được
+    for (const cc of await prisma.chungChi.findMany({ where: { khoaId: f.khoa.id } })) {
+      await huyChungChi(cc.id, "Lập nhầm loại", NGUOI);
+    }
+    expect((await thietLapLoaiVanBang(f.khoa.chuongTrinhId, "CHUNG_CHI")).loaiVanBang).toBe("CHUNG_CHI");
   });
 });

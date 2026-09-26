@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { layThamSo } from "@/server/services/qt/qt-05-tham-so";
+import type { LoaiVanBang } from "@/generated/prisma/client";
+import { tienToSoVaoSo } from "@/server/services/cc/van-bang";
 import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
 import { lyDoKhongDuDieuKien } from "@/server/services/cc/cc-01-de-nghi";
 import {
@@ -19,14 +20,16 @@ type Tx = Prisma.TransactionClient;
 
 /**
  * Chạy 1 thao tác vào sổ trong transaction, cấp liên tiếp các số vào sổ
- * <tiền tố><năm>-<5 chữ số> (QT-05 CC_TIEN_TO_SO_VAO_SO, mặc định "SC") bắt
+ * <tiền tố><năm>-<5 chữ số> - sổ cấp riêng cho chứng chỉ (mặc định "SC") và
+ * giấy chứng nhận (mặc định "SN"), tiền tố cấu hình ở QT-05 (van-bang.ts) - bắt
  * đầu từ số lớn nhất đã có + 1. Trùng số do thao tác đồng thời (P2002) ->
  * làm lại CẢ transaction (không để 1 lô vào sổ dở dang).
  */
 async function vaoSoTrongTransaction<T>(
+  loai: LoaiVanBang,
   thaoTac: (tx: Tx, soVaoSoKeTiep: () => string) => Promise<T>,
 ): Promise<T> {
-  const tienTo = `${(await layThamSo("CC_TIEN_TO_SO_VAO_SO")) ?? "SC"}${new Date().getFullYear()}-`;
+  const tienTo = `${await tienToSoVaoSo(loai)}${new Date().getFullYear()}-`;
   for (let lanThu = 0; lanThu < 5; lanThu++) {
     try {
       return await prisma.$transaction(async (tx) => {
@@ -65,7 +68,7 @@ export async function traTrucTiep(chungChiId: string, input: TraTrucTiepInput) {
   const lyDo = await lyDoKhongDuDieuKien(chungChi.hocVienId, chungChi.khoaId);
   if (lyDo) throw new KhongConDuDieuKienError(lyDo);
 
-  const sau = await vaoSoTrongTransaction((tx, soKeTiep) =>
+  const sau = await vaoSoTrongTransaction(chungChi.loaiVanBang, (tx, soKeTiep) =>
     tx.chungChi.update({
       where: { id: chungChiId, trangThai: "DA_KY_DUYET" },
       data: {
@@ -134,7 +137,8 @@ export async function banGiaoTheoLo(hopDongLienKetId: string, input: BanGiaoLoIn
   if (dsGiao.length === 0) throw new LoTrongError();
 
   const ngayBanGiao = input.ngayBanGiao ? new Date(input.ngayBanGiao) : new Date();
-  const lo = await vaoSoTrongTransaction(async (tx, soKeTiep) => {
+  // cùng 1 hợp đồng = cùng 1 khóa = cùng 1 chương trình -> cùng 1 loại văn bằng
+  const lo = await vaoSoTrongTransaction(dsGiao[0].loaiVanBang, async (tx, soKeTiep) => {
     const soLoDaCo = await tx.banGiaoChungChi.count({ where: { hopDongLienKetId } });
     const banGiao = await tx.banGiaoChungChi.create({
       data: {

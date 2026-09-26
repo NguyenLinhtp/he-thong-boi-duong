@@ -108,6 +108,11 @@ enum TrangThaiChungChi {
 
 // CC-04: "trao trực tiếp cho học viên tự đăng ký, hoặc bàn giao theo lô về
 // đơn vị liên kết" - kênh bắt buộc khớp nguồn đăng ký của học viên.
+enum LoaiVanBang {
+  CHUNG_CHI
+  CHUNG_NHAN
+}
+
 enum KenhNhanChungChi {
   TRUC_TIEP
   BAN_GIAO_DVLK
@@ -293,6 +298,9 @@ model ChuongTrinh {
   // CT-07: mỗi chương trình gắn đúng 1 trong 4 phương thức đăng ký;
   // mọi khóa mở theo chương trình kế thừa phương thức này.
   phuongThucDangKy   PhuongThucDangKy?
+  // CT-01 (bổ sung): chương trình cấp CHỨNG CHỈ hay GIẤY CHỨNG NHẬN khi học
+  // viên hoàn thành - quyết định tiêu đề in, dãy số hiệu và sổ cấp (CC-02/04).
+  loaiVanBang        LoaiVanBang          @default(CHUNG_CHI)
   // CT-03: quy trình Dự thảo -> Chờ thẩm định -> Đã ban hành.
   // CT-03: "Chỉ chương trình Đã ban hành mới được dùng để mở khóa" - ràng
   // buộc này áp dụng ở KH-01 (khởi tạo khóa) khi module đó được xây dựng.
@@ -373,15 +381,16 @@ model Khoa {
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
 
-  buoiHocs    BuoiHoc[]
-  dangKys     DangKyHoc[]
-  hocPhis     HocPhi[]
-  chungChis   ChungChi[]
-  hopDongs    HopDongLienKet[]
-  giangViens  GiangVienHocPhan[]
-  ketQuas     KetQuaHocTap[]
-  ketQuaKhoas KetQuaKhoa[]
-  lopHocs     LopHoc[]
+  buoiHocs             BuoiHoc[]
+  dangKys              DangKyHoc[]
+  hocPhis              HocPhi[]
+  chungChis            ChungChi[]
+  hopDongs             HopDongLienKet[]
+  giangViens           GiangVienHocPhan[]
+  ketQuas              KetQuaHocTap[]
+  ketQuaKhoas          KetQuaKhoa[]
+  lopHocs              LopHoc[]
+  quyetDinhCapVanBangs QuyetDinhCapVanBang[]
 
   @@map("khoa")
 }
@@ -535,11 +544,12 @@ model LopHoc {
   siSoToiDa Int?
   createdAt DateTime @default(now())
 
-  dangKys    DangKyHoc[]
-  buoiHocs   BuoiHoc[]
-  phanCongs  GiangVienHocPhan[]
-  lichSuDens LichSuChuyenLop[]  @relation("LichSuDenLop")
-  lichSuTus  LichSuChuyenLop[]  @relation("LichSuTuLop")
+  dangKys              DangKyHoc[]
+  buoiHocs             BuoiHoc[]
+  phanCongs            GiangVienHocPhan[]
+  lichSuDens           LichSuChuyenLop[]     @relation("LichSuDenLop")
+  lichSuTus            LichSuChuyenLop[]     @relation("LichSuTuLop")
+  quyetDinhCapVanBangs QuyetDinhCapVanBang[]
 
   @@map("lop_hoc")
 }
@@ -708,35 +718,62 @@ model PhieuThu {
 // chứng chỉ hủy vẫn giữ dòng + số hiệu (CC-02 "không cấp lại số đã hủy").
 // Mỗi (học viên, khóa) chỉ có tối đa 1 chứng chỉ chưa hủy - kiểm tra ở service.
 model ChungChi {
-  id           String            @id @default(cuid())
+  id           String               @id @default(cuid())
   hocVienId    String
-  hocVien      HocVien           @relation(fields: [hocVienId], references: [id])
+  hocVien      HocVien              @relation(fields: [hocVienId], references: [id])
   khoaId       String
-  khoa         Khoa              @relation(fields: [khoaId], references: [id])
-  trangThai    TrangThaiChungChi @default(DE_NGHI)
+  khoa         Khoa                 @relation(fields: [khoaId], references: [id])
+  trangThai    TrangThaiChungChi    @default(DE_NGHI)
+  // chụp lại loại văn bằng của chương trình lúc đề nghị (CC-01) - văn bằng đã
+  // lập không đổi loại theo chương trình
+  loaiVanBang  LoaiVanBang          @default(CHUNG_CHI)
   // CC-01
   nguoiDeNghi  String?
-  createdAt    DateTime          @default(now())
+  createdAt    DateTime             @default(now())
   // CC-02: số hiệu theo sổ cấp, tăng dần, không trùng
-  soHieu       String?           @unique
+  soHieu       String?              @unique
   ngayInSoHieu DateTime?
-  // CC-03: ký duyệt
+  // CC-03: ký duyệt theo quyết định (nhập theo khóa hoặc theo lớp)
+  quyetDinhId  String?
+  quyetDinh    QuyetDinhCapVanBang? @relation(fields: [quyetDinhId], references: [id])
   soQuyetDinh  String?
   ngayCap      DateTime?
   nguoiKy      String?
   // CC-04: vào sổ cấp + trả chứng chỉ
-  soVaoSo      String?           @unique
+  soVaoSo      String?              @unique
   kenhNhan     KenhNhanChungChi?
   nguoiNhan    String?
   ngayNhan     DateTime?
   banGiaoId    String?
-  banGiao      BanGiaoChungChi?  @relation(fields: [banGiaoId], references: [id])
+  banGiao      BanGiaoChungChi?     @relation(fields: [banGiaoId], references: [id])
   // hủy (trước khi cấp)
   lyDoHuy      String?
   ngayHuy      DateTime?
 
   @@index([khoaId])
   @@map("chung_chi")
+}
+
+// CC-03 (bổ sung): quyết định cấp văn bằng đã ban hành, nhập theo khóa (lopId
+// null) hoặc theo 1 lớp (KH-07) - lưu làm dữ liệu, mỗi văn bằng trỏ về quyết
+// định của nó. Không có thao tác xóa (hồ sơ lưu trữ).
+model QuyetDinhCapVanBang {
+  id          String      @id @default(cuid())
+  soQuyetDinh String
+  ngayKy      DateTime
+  nguoiKy     String
+  loaiVanBang LoaiVanBang
+  khoaId      String
+  khoa        Khoa        @relation(fields: [khoaId], references: [id])
+  lopId       String?
+  lop         LopHoc?     @relation(fields: [lopId], references: [id])
+  nguoiNhap   String
+  createdAt   DateTime    @default(now())
+
+  chungChis ChungChi[]
+
+  @@index([khoaId])
+  @@map("quyet_dinh_cap_van_bang")
 }
 
 // CC-04: 1 lô bàn giao chứng chỉ về đơn vị liên kết theo hợp đồng - chỉ lập

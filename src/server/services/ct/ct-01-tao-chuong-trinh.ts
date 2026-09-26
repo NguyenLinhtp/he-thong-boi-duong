@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import type { LoaiVanBang } from "@/generated/prisma/client";
 import { taoChuongTrinhVoiMaTuSinh } from "@/server/services/ct/dung-chung";
 import {
   SaiTrangThaiChuongTrinhError,
@@ -11,6 +12,8 @@ export type TaoChuongTrinhInput = {
   doiTuongApDung?: string | null;
   tongThoiLuong?: number | null;
   loaiHinhBoiDuongId: string;
+  // bổ sung 26/09/2026: chứng chỉ hay giấy chứng nhận (mặc định chứng chỉ)
+  loaiVanBang?: LoaiVanBang;
 };
 
 export async function taoChuongTrinh(input: TaoChuongTrinhInput) {

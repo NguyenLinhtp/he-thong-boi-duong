@@ -1,6 +1,8 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import type { LoaiVanBang } from "@/generated/prisma/client";
 import { layThamSo } from "@/server/services/qt/qt-05-tham-so";
+import { tienToSoHieu, tieuDeVanBang } from "@/server/services/cc/van-bang";
 import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
 import { lyDoKhongDuDieuKien } from "@/server/services/cc/cc-01-de-nghi";
 import {
@@ -13,13 +15,14 @@ type NguoiThucHien = { nguoiThucHienId?: string | null; nguoiThucHienTen: string
 
 /**
  * CC-02: "Số hiệu tăng dần, không trùng, không cấp lại số đã hủy". Dạng
- * <tiền tố><năm>-<5 chữ số>, tiền tố lấy từ QT-05 (CC_TIEN_TO_SO_HIEU, mặc
- * định "CC"). Số kế tiếp = số LỚN NHẤT đã từng cấp trong năm + 1 - chứng chỉ
+ * <tiền tố><năm>-<5 chữ số>; chứng chỉ và giấy chứng nhận có dãy riêng (tiền
+ * tố QT-05 CC_TIEN_TO_SO_HIEU mặc định "CC" / CN_TIEN_TO_SO_HIEU mặc định
+ * "CN" - xem van-bang.ts). Số kế tiếp = số LỚN NHẤT đã từng cấp trong năm + 1 - chứng chỉ
  * hủy vẫn giữ dòng + số hiệu (không có thao tác xóa) nên số đã hủy không bao
  * giờ bị dùng lại; unique(soHieu) + thử lại khi trùng chặn tranh chấp đồng thời.
  */
-async function capSoHieu(ganSo: (soHieu: string) => Promise<unknown>) {
-  const tienTo = `${(await layThamSo("CC_TIEN_TO_SO_HIEU")) ?? "CC"}${new Date().getFullYear()}-`;
+async function capSoHieu(loai: LoaiVanBang, ganSo: (soHieu: string) => Promise<unknown>) {
+  const tienTo = `${await tienToSoHieu(loai)}${new Date().getFullYear()}-`;
   const lonNhat = await prisma.chungChi.findFirst({
     where: { soHieu: { startsWith: tienTo } },
     orderBy: { soHieu: "desc" },
@@ -60,7 +63,7 @@ export async function sinhSoHieu(khoaId: string, nguoi: NguoiThucHien, chungChiI
       boQua.push({ chungChiId: cc.id, hoTen: cc.hocVien.hoTen, lyDo });
       continue;
     }
-    const soHieu = await capSoHieu((so) =>
+    const soHieu = await capSoHieu(cc.loaiVanBang, (so) =>
       prisma.chungChi.update({
         // điều kiện trạng thái trong where: không gán số 2 lần nếu bấm trùng
         where: { id: cc.id, trangThai: "DE_NGHI" },
@@ -111,20 +114,26 @@ export async function huyChungChi(chungChiId: string, lyDo: string, nguoi: Nguoi
   return sau;
 }
 
-/** Dữ liệu in chứng chỉ theo mẫu (tên cơ quan cấp/tiêu đề cấu hình ở QT-05). */
+/**
+ * Dữ liệu in văn bằng theo mẫu: tên cơ quan cấp (QT-05 CC_TEN_CO_QUAN_CAP) và
+ * tiêu đề theo loại văn bằng của từng bản (chứng chỉ / giấy chứng nhận).
+ */
 export async function duLieuInChungChi(chungChiIds: string[]) {
-  const [dsChungChi, tenCoQuan, tieuDe] = await Promise.all([
+  const [dsChungChi, tenCoQuan, tieuDeChungChi, tieuDeChungNhan] = await Promise.all([
     prisma.chungChi.findMany({
       where: { id: { in: chungChiIds }, soHieu: { not: null }, trangThai: { not: "DA_HUY" } },
       include: { hocVien: true, khoa: { include: { chuongTrinh: true } } },
       orderBy: { soHieu: "asc" },
     }),
     layThamSo("CC_TEN_CO_QUAN_CAP"),
-    layThamSo("CC_TIEU_DE_CHUNG_CHI"),
+    tieuDeVanBang("CHUNG_CHI"),
+    tieuDeVanBang("CHUNG_NHAN"),
   ]);
   return {
-    dsChungChi,
+    dsChungChi: dsChungChi.map((cc) => ({
+      ...cc,
+      tieuDe: cc.loaiVanBang === "CHUNG_NHAN" ? tieuDeChungNhan : tieuDeChungChi,
+    })),
     tenCoQuan: tenCoQuan ?? "CƠ SỞ ĐÀO TẠO, BỒI DƯỠNG",
-    tieuDe: tieuDe ?? "CHỨNG CHỈ BỒI DƯỠNG",
   };
 }

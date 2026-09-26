@@ -7,8 +7,8 @@ import { NutIn } from "./nut-in";
 
 // CC-02: "xuất bản in/PDF theo mẫu" - như phiếu thu HP-04, dùng trang HTML in
 // được (Ctrl+P / Lưu thành PDF) vì dự án chưa có thư viện sinh PDF. Tên cơ
-// quan cấp / tiêu đề lấy từ tham số hệ thống QT-05 (CC_TEN_CO_QUAN_CAP,
-// CC_TIEU_DE_CHUNG_CHI). Mỗi chứng chỉ 1 trang in.
+// quan cấp (QT-05 CC_TEN_CO_QUAN_CAP) + tiêu đề theo loại văn bằng của chương
+// trình (chứng chỉ / giấy chứng nhận - xem cc/van-bang.ts). Mỗi bản 1 trang in.
 export default async function InChungChiPage({
   params,
   searchParams,
@@ -31,7 +31,7 @@ export default async function InChungChiPage({
   // chỉ in chứng chỉ thuộc đúng khóa này (không cho truyền id khóa khác qua URL)
   const idsCuaKhoa = new Set((await danhSachChungChiCuaKhoa(id)).map((cc) => cc.id));
   const idsIn = ids ? ids.split(",").filter((x) => idsCuaKhoa.has(x)) : [...idsCuaKhoa];
-  const { dsChungChi, tenCoQuan, tieuDe } = await duLieuInChungChi(idsIn);
+  const { dsChungChi, tenCoQuan } = await duLieuInChungChi(idsIn);
 
   return (
     <main className="flex flex-col items-center gap-6 p-6 print:p-0">
@@ -47,7 +47,7 @@ export default async function InChungChiPage({
           <p className="text-sm font-semibold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
           <p className="text-sm">Độc lập - Tự do - Hạnh phúc</p>
           <p className="mt-4 text-sm font-semibold uppercase">{tenCoQuan}</p>
-          <h1 className="mt-2 text-2xl font-bold uppercase">{tieuDe}</h1>
+          <h1 className="mt-2 text-2xl font-bold uppercase">{cc.tieuDe}</h1>
           <div className="mt-4 flex flex-col gap-1.5 text-left">
             <p>
               Chứng nhận ông/bà: <b>{cc.hocVien.hoTen}</b>
