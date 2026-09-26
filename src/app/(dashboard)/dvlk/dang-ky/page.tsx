@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
-import { khoaDuocPhanCongChoTaiKhoan } from "@/server/services/hv/lien-ket-ho-tro";
+import { khoaDuocPhanCong } from "@/server/services/dvlk/dvlk-02-tai-khoan";
 import { FormDangKyThayMat } from "./form-dang-ky-thay-mat";
 
 export default async function DangKyThayMatDVLKPage() {
@@ -16,7 +16,7 @@ export default async function DangKyThayMatDVLKPage() {
     throw error;
   }
 
-  const dsHopDong = await khoaDuocPhanCongChoTaiKhoan(phien.userId);
+  const dsHopDong = await khoaDuocPhanCong(phien.userId, { conHieuLuc: true });
 
   return (
     <main className="flex flex-col gap-6 p-6">

@@ -9,6 +9,11 @@ import {
   xoaDonViLienKet,
   type DonViLienKetInput,
 } from "@/server/services/dvlk/dvlk-01-danh-muc";
+import {
+  capTaiKhoanDonViLienKet,
+  ganTaiKhoanDonViLienKet,
+  thuHoiTaiKhoanDonViLienKet,
+} from "@/server/services/dvlk/dvlk-02-tai-khoan";
 import { thucHienDvlk, type KetQuaThaoTacDvlk } from "./thuc-hien";
 
 const DUONG_DAN = "/don-vi-lien-ket";
@@ -67,4 +72,44 @@ export async function xoaDonViLienKetAction(_prev: KetQuaThaoTacDvlk, formData: 
   });
   if (ketQua?.loi) return ketQua;
   redirect(DUONG_DAN);
+}
+
+// DVLK-02 (Quản trị hệ thống): cấp / gắn / thu hồi tài khoản đơn vị liên kết
+export async function capTaiKhoanAction(_prev: KetQuaThaoTacDvlk, formData: FormData): Promise<KetQuaThaoTacDvlk> {
+  const phien = await requirePermission("DVLK-02");
+  const id = String(formData.get("id"));
+  return thucHienDvlk([DUONG_DAN, `${DUONG_DAN}/${id}`], async () => {
+    const tk = await capTaiKhoanDonViLienKet(
+      id,
+      {
+        tenDangNhap: String(formData.get("tenDangNhap") ?? ""),
+        matKhau: String(formData.get("matKhau") ?? ""),
+        hoTen: String(formData.get("hoTen") ?? ""),
+        email: String(formData.get("email") ?? ""),
+      },
+      { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen },
+    );
+    return `Đã cấp tài khoản ${tk.tenDangNhap} cho đơn vị.`;
+  });
+}
+
+export async function ganTaiKhoanAction(_prev: KetQuaThaoTacDvlk, formData: FormData): Promise<KetQuaThaoTacDvlk> {
+  const phien = await requirePermission("DVLK-02");
+  const id = String(formData.get("id"));
+  return thucHienDvlk([DUONG_DAN, `${DUONG_DAN}/${id}`], async () => {
+    await ganTaiKhoanDonViLienKet(id, String(formData.get("nguoiDungId") ?? ""), {
+      nguoiThucHienId: phien.userId,
+      nguoiThucHienTen: phien.hoTen,
+    });
+    return "Đã gắn tài khoản cho đơn vị.";
+  });
+}
+
+export async function thuHoiTaiKhoanAction(_prev: KetQuaThaoTacDvlk, formData: FormData): Promise<KetQuaThaoTacDvlk> {
+  const phien = await requirePermission("DVLK-02");
+  const id = String(formData.get("id"));
+  return thucHienDvlk([DUONG_DAN, `${DUONG_DAN}/${id}`], async () => {
+    await thuHoiTaiKhoanDonViLienKet(id, { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen });
+    return "Đã thu hồi và tạm khóa tài khoản.";
+  });
 }

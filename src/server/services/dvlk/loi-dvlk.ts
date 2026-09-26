@@ -31,3 +31,38 @@ export class DonViConHopDongError extends LoiDonViLienKet {
     );
   }
 }
+
+// DVLK-02
+export class DonViDaCoTaiKhoanError extends LoiDonViLienKet {
+  constructor() {
+    super("Đơn vị liên kết đã có tài khoản - thu hồi tài khoản cũ trước khi cấp tài khoản mới");
+  }
+}
+
+/** Lỗi chính sách tài khoản của QT-01 (tên đăng nhập trùng, mật khẩu yếu) khi cấp tài khoản DVLK. */
+export class TaiKhoanKhongHopLeError extends LoiDonViLienKet {}
+
+export class TaiKhoanKhongPhaiCanBoDonViLienKetError extends LoiDonViLienKet {
+  constructor() {
+    super("Tài khoản được chọn không có vai trò Cán bộ đơn vị liên kết");
+  }
+}
+
+export class TaiKhoanDaGanDonViKhacError extends LoiDonViLienKet {
+  constructor() {
+    super("Tài khoản này đã gán cho 1 đơn vị liên kết khác");
+  }
+}
+
+export class KhongPhaiTaiKhoanDvlkError extends LoiDonViLienKet {
+  constructor() {
+    super("Tài khoản chưa được gắn với đơn vị liên kết nào");
+  }
+}
+
+// "không xem được dữ liệu của khóa/đơn vị khác" - không tiết lộ hợp đồng có tồn tại hay không
+export class NgoaiPhamViDonViLienKetError extends LoiDonViLienKet {
+  constructor() {
+    super("Không tìm thấy hợp đồng liên kết trong phạm vi đơn vị của bạn");
+  }
+}

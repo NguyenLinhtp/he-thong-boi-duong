@@ -109,7 +109,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 ### 11. Quản lý đơn vị liên kết
 
 - [x] **DVLK-01** — Quản lý danh mục đơn vị liên kết
-- [ ] **DVLK-02** — Cấp và quản lý tài khoản đơn vị liên kết
+- [x] **DVLK-02** — Cấp và quản lý tài khoản đơn vị liên kết
 - [ ] **DVLK-03** — Quản lý hợp đồng liên kết tuyển sinh theo khóa
 - [ ] **DVLK-04** — Đăng ký và tiếp nhận hồ sơ học viên qua đơn vị liên kết
 - [ ] **DVLK-05** — Xác nhận đơn vị liên kết đã thu hồ sơ và tổng hợp gửi trường

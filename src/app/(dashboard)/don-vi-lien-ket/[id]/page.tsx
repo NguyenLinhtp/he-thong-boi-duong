@@ -4,9 +4,23 @@ import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layDonViLienKet } from "@/server/services/dvlk/dvlk-01-danh-muc";
 import { KhongTimThayDonViLienKetError } from "@/server/services/dvlk/loi-dvlk";
+import { danhSachTaiKhoanChuaGan } from "@/server/services/dvlk/dvlk-02-tai-khoan";
+import { FormCapTaiKhoan, NutThuHoiTaiKhoan } from "./form-tai-khoan";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { FormSuaDonViLienKet, NutTrangThaiHopTac, NutXoaDonViLienKet } from "../cac-form";
 import { NHAN_TRANG_THAI_HOP_TAC, NHAN_TRANG_THAI_HOP_DONG } from "../nhan";
+
+async function coQuyen(maCN: string): Promise<boolean> {
+  try {
+    await requirePermission(maCN);
+    return true;
+  } catch (error) {
+    if (error instanceof KhongCoQuyenError) return false;
+    throw error;
+  }
+}
+
+const NHAN_TRANG_THAI_TAI_KHOAN: Record<string, string> = { HOAT_DONG: "Hoạt động", TAM_KHOA: "Tạm khóa" };
 
 export default async function ChiTietDonViLienKetPage({ params }: { params: Promise<{ id: string }> }) {
   try {
@@ -27,6 +41,8 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
     if (error instanceof KhongTimThayDonViLienKetError) return <p className="p-6 text-destructive">{error.message}</p>;
     throw error;
   }
+  const choPhepDVLK02 = await coQuyen("DVLK-02");
+  const dsTaiKhoanChuaGan = choPhepDVLK02 && !dv.taiKhoan ? await danhSachTaiKhoanChuaGan() : [];
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -55,8 +71,33 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
         </p>
       </section>
 
+      <section className="flex flex-col gap-3 rounded-lg border p-4">
+        <h2 className="text-sm font-semibold">DVLK-02 · Tài khoản đơn vị liên kết</h2>
+        <p className="text-xs text-muted-foreground">
+          Tài khoản chỉ đăng ký hộ và xem/xác nhận hồ sơ trên các khóa có hợp đồng với đơn vị này; không
+          xem được học phí cá nhân của học viên hay dữ liệu khóa/đơn vị khác.
+        </p>
+        {dv.taiKhoan ? (
+          <div className="flex flex-wrap items-start gap-4 text-sm">
+            <p>
+              <b>{dv.taiKhoan.tenDangNhap}</b> · {dv.taiKhoan.hoTen}
+              {dv.taiKhoan.email ? ` · ${dv.taiKhoan.email}` : ""} ·{" "}
+              {NHAN_TRANG_THAI_TAI_KHOAN[dv.taiKhoan.trangThai] ?? dv.taiKhoan.trangThai}
+            </p>
+            {choPhepDVLK02 && <NutThuHoiTaiKhoan donViId={dv.id} tenDangNhap={dv.taiKhoan.tenDangNhap} />}
+          </div>
+        ) : choPhepDVLK02 ? (
+          <FormCapTaiKhoan
+            donViId={dv.id}
+            dsTaiKhoanChuaGan={dsTaiKhoanChuaGan.map((tk) => ({ id: tk.id, tenDangNhap: tk.tenDangNhap, hoTen: tk.hoTen }))}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">Chưa có tài khoản (Quản trị hệ thống cấp).</p>
+        )}
+      </section>
+
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Hợp đồng liên kết</h2>
+        <h2 className="text-sm font-semibold">Hợp đồng liên kết (các khóa được phân công)</h2>
         <Table>
           <TableHeader>
             <TableRow>

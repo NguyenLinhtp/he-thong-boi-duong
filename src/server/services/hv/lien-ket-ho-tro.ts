@@ -1,9 +1,19 @@
 import { prisma } from "@/lib/db/prisma";
-import { KhongTimThayDonViLienKetError } from "@/server/services/dvlk/loi-dvlk";
 
 // DVLK-01 đã chuyển sang services/dvlk - giữ export cũ cho nơi đang dùng
 export { taoDonViLienKet, danhSachDonViLienKet } from "@/server/services/dvlk/dvlk-01-danh-muc";
-export { MaDonViLienKetTrungError, KhongTimThayDonViLienKetError } from "@/server/services/dvlk/loi-dvlk";
+export {
+  MaDonViLienKetTrungError,
+  KhongTimThayDonViLienKetError,
+  TaiKhoanKhongPhaiCanBoDonViLienKetError,
+  TaiKhoanDaGanDonViKhacError,
+} from "@/server/services/dvlk/loi-dvlk";
+// DVLK-02 đã chuyển sang services/dvlk
+export {
+  ganTaiKhoanDonViLienKet,
+  danhSachTaiKhoanChuaGan,
+  donViLienKetCuaTaiKhoan,
+} from "@/server/services/dvlk/dvlk-02-tai-khoan";
 
 // HV-11/HV-12 (Phương thức 4a/4b) cần "đơn vị liên kết" + "hợp đồng liên
 // kết" đã tồn tại để hoạt động, nhưng module quản lý đầy đủ các thực thể
@@ -13,50 +23,6 @@ export { MaDonViLienKetTrungError, KhongTimThayDonViLienKetError } from "@/serve
 // QT-01, tạo hợp đồng) - KHÔNG thay thế DVLK-01/02/03, các ràng buộc đầy đủ
 // của DVLK-01 (vd "không xóa được đơn vị đang có hợp đồng chưa thanh lý")
 // sẽ được hoàn thiện khi làm đúng module đó.
-
-export class TaiKhoanKhongPhaiCanBoDonViLienKetError extends Error {
-  constructor() {
-    super("Tài khoản được chọn không có vai trò Cán bộ đơn vị liên kết");
-  }
-}
-
-export class TaiKhoanDaGanDonViKhacError extends Error {
-  constructor() {
-    super("Tài khoản này đã gán cho 1 đơn vị liên kết khác");
-  }
-}
-
-/** Gán 1 tài khoản (đã tạo sẵn qua QT-01 với vai trò CAN_BO_DON_VI_LIEN_KET) cho 1 đơn vị liên kết. */
-export async function ganTaiKhoanDonViLienKet(donViLienKetId: string, nguoiDungId: string) {
-  const donVi = await prisma.donViLienKet.findUnique({ where: { id: donViLienKetId } });
-  if (!donVi) throw new KhongTimThayDonViLienKetError();
-
-  const nguoiDung = await prisma.nguoiDung.findUnique({
-    where: { id: nguoiDungId },
-    include: { vaiTros: { include: { vaiTro: true } } },
-  });
-  const coVaiTroDung = nguoiDung?.vaiTros.some((v) => v.vaiTro.ma === "CAN_BO_DON_VI_LIEN_KET");
-  if (!coVaiTroDung) throw new TaiKhoanKhongPhaiCanBoDonViLienKetError();
-
-  const daGanChoDonViKhac = await prisma.donViLienKet.findFirst({
-    where: { taiKhoanId: nguoiDungId, id: { not: donViLienKetId } },
-  });
-  if (daGanChoDonViKhac) throw new TaiKhoanDaGanDonViKhacError();
-
-  return prisma.donViLienKet.update({
-    where: { id: donViLienKetId },
-    data: { taiKhoanId: nguoiDungId },
-  });
-}
-
-/** Danh sách tài khoản vai trò Cán bộ đơn vị liên kết chưa gán cho đơn vị nào - để chọn khi gán. */
-export async function danhSachTaiKhoanChuaGan() {
-  const taiKhoans = await prisma.nguoiDung.findMany({
-    where: { vaiTros: { some: { vaiTro: { ma: "CAN_BO_DON_VI_LIEN_KET" } } } },
-    include: { donViLienKet: true },
-  });
-  return taiKhoans.filter((tk) => !tk.donViLienKet);
-}
 
 export type TaoHopDongLienKetInput = {
   maHopDong: string;
@@ -78,18 +44,3 @@ export async function hopDongConHieuLucTheoKhoa(khoaId: string) {
   });
 }
 
-/** HV-11: khóa nào đang có hợp đồng còn hiệu lực với đơn vị liên kết của 1 tài khoản. */
-export async function khoaDuocPhanCongChoTaiKhoan(nguoiDungId: string) {
-  const donVi = await prisma.donViLienKet.findUnique({ where: { taiKhoanId: nguoiDungId } });
-  if (!donVi) return [];
-
-  const hopDongs = await prisma.hopDongLienKet.findMany({
-    where: { donViLienKetId: donVi.id, trangThai: "DANG_TRIEN_KHAI" },
-    include: { khoa: { include: { chuongTrinh: true } } },
-  });
-  return hopDongs;
-}
-
-export async function donViLienKetCuaTaiKhoan(nguoiDungId: string) {
-  return prisma.donViLienKet.findUnique({ where: { taiKhoanId: nguoiDungId } });
-}
