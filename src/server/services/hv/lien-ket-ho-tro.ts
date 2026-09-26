@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/db/prisma";
+import { KhongTimThayDonViLienKetError } from "@/server/services/dvlk/loi-dvlk";
+
+// DVLK-01 đã chuyển sang services/dvlk - giữ export cũ cho nơi đang dùng
+export { taoDonViLienKet, danhSachDonViLienKet } from "@/server/services/dvlk/dvlk-01-danh-muc";
+export { MaDonViLienKetTrungError, KhongTimThayDonViLienKetError } from "@/server/services/dvlk/loi-dvlk";
 
 // HV-11/HV-12 (Phương thức 4a/4b) cần "đơn vị liên kết" + "hợp đồng liên
 // kết" đã tồn tại để hoạt động, nhưng module quản lý đầy đủ các thực thể
@@ -8,18 +13,6 @@ import { prisma } from "@/lib/db/prisma";
 // QT-01, tạo hợp đồng) - KHÔNG thay thế DVLK-01/02/03, các ràng buộc đầy đủ
 // của DVLK-01 (vd "không xóa được đơn vị đang có hợp đồng chưa thanh lý")
 // sẽ được hoàn thiện khi làm đúng module đó.
-
-export class MaDonViLienKetTrungError extends Error {
-  constructor(ma: string) {
-    super(`Mã đơn vị liên kết "${ma}" đã tồn tại`);
-  }
-}
-
-export class KhongTimThayDonViLienKetError extends Error {
-  constructor() {
-    super("Không tìm thấy đơn vị liên kết");
-  }
-}
 
 export class TaiKhoanKhongPhaiCanBoDonViLienKetError extends Error {
   constructor() {
@@ -31,28 +24,6 @@ export class TaiKhoanDaGanDonViKhacError extends Error {
   constructor() {
     super("Tài khoản này đã gán cho 1 đơn vị liên kết khác");
   }
-}
-
-export type TaoDonViLienKetInput = {
-  ma: string;
-  ten: string;
-  diaChi?: string | null;
-  nguoiDaiDien?: string | null;
-  soDienThoai?: string | null;
-};
-
-export async function taoDonViLienKet(input: TaoDonViLienKetInput) {
-  const daTonTai = await prisma.donViLienKet.findUnique({ where: { ma: input.ma } });
-  if (daTonTai) throw new MaDonViLienKetTrungError(input.ma);
-
-  return prisma.donViLienKet.create({ data: input });
-}
-
-export async function danhSachDonViLienKet() {
-  return prisma.donViLienKet.findMany({
-    include: { taiKhoan: true, hopDongs: { include: { khoa: true } } },
-    orderBy: { ten: "asc" },
-  });
 }
 
 /** Gán 1 tài khoản (đã tạo sẵn qua QT-01 với vai trò CAN_BO_DON_VI_LIEN_KET) cho 1 đơn vị liên kết. */

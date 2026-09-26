@@ -795,13 +795,23 @@ model BanGiaoChungChi {
   @@map("ban_giao_chung_chi")
 }
 
+// DVLK-01: trạng thái hợp tác - Tạm ngừng thì không lập hợp đồng liên kết mới
+// (DVLK-03), hợp đồng đang có vẫn được theo dõi/thanh lý bình thường.
+enum TrangThaiHopTac {
+  DANG_HOP_TAC
+  TAM_NGUNG
+}
+
 model DonViLienKet {
-  id           String     @id @default(cuid())
-  ma           String     @unique
-  ten          String
-  diaChi       String?
-  nguoiDaiDien String?
-  soDienThoai  String?
+  id              String          @id @default(cuid())
+  ma              String          @unique
+  ten             String
+  diaChi          String?
+  nguoiDaiDien    String?
+  soDienThoai     String?
+  email           String?
+  trangThaiHopTac TrangThaiHopTac @default(DANG_HOP_TAC)
+  createdAt       DateTime        @default(now())
   // 1 tài khoản/đơn vị liên kết, chỉ thao tác trên các khóa được phân công qua hợp đồng
   taiKhoanId   String?    @unique
   taiKhoan     NguoiDung? @relation("TaiKhoanDonViLienKet", fields: [taiKhoanId], references: [id])
