@@ -5,6 +5,8 @@ import { xacNhanThanhToan, xacNhanMienGiam } from "@/server/services/hp/hp-02-th
 import { danhSachCongNo, datHanNop, guiNhacNoHocPhi } from "@/server/services/hp/hp-03-cong-no";
 import { danhSachPhieuThu } from "@/server/services/hp/hp-04-phieu-thu";
 import { baoCaoDoanhThu, baoCaoCongNo } from "@/server/services/hp/hp-05-bao-cao";
+import { khoangNgay } from "@/server/services/bc/khoang-ngay";
+import { KhoangNgayKhongHopLeError } from "@/server/services/bc/loi-bao-cao";
 import { daHoanTatNghiaVuTaiChinh, boQuaDieuKienHocPhi } from "@/server/services/hp/hp-06-dieu-kien";
 import {
   ThieuLyDoDieuChinhHocPhiError,
@@ -313,5 +315,21 @@ describe("HP-05 báo cáo doanh thu và công nợ", () => {
 
     const congNo = await baoCaoCongNo({ khoaId: khoa.id });
     expect(congNo.tongConNo).toBe(700_000);
+  });
+
+  it("lọc 'đến ngày' tính hết ngày đó: phiếu thu lập trong ngày cuối kỳ vẫn được tính", async () => {
+    const { khoa } = await taoKhoaVoiHocVienChinhThuc();
+    await thietLapHocPhi(khoa.id, { mucHocPhi: 1_000_000 });
+    const [hocPhi] = await hocPhiCuaKhoa(khoa.id);
+    await xacNhanThanhToan(hocPhi.id, { soTien: 400_000, hinhThucNop: "Chuyển khoản", nguoiXacNhanTen: "x" });
+    const d = new Date();
+    const homNay = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+    const ky = khoangNgay(homNay, homNay);
+    expect((await baoCaoDoanhThu({ tuNgay: ky.tu, denNgay: ky.den, khoaId: khoa.id })).tongDoanhThu).toBe(400_000);
+    expect((await baoCaoDoanhThu({ khoaIds: [khoa.id] })).tongDoanhThu).toBe(400_000);
+    expect(() => khoangNgay("2026-12-31", "2026-01-01")).toThrow(KhoangNgayKhongHopLeError);
+    expect(() => khoangNgay("31/12/2026", null)).toThrow(KhoangNgayKhongHopLeError);
+    expect(khoangNgay(null, "")).toEqual({ tu: undefined, den: undefined });
   });
 });

@@ -4,7 +4,14 @@ export type LocBaoCaoHocPhi = {
   tuNgay?: Date;
   denNgay?: Date;
   khoaId?: string;
+  // BC-03: lọc theo nhiều khóa (vd mọi khóa của 1 đợt); khoaId ưu tiên nếu có cả hai
+  khoaIds?: string[];
 };
+
+function locKhoa(loc: { khoaId?: string; khoaIds?: string[] }) {
+  if (loc.khoaId) return loc.khoaId;
+  return loc.khoaIds ? { in: loc.khoaIds } : undefined;
+}
 
 // HP-05: "Số liệu khớp với tổng các phiếu thu đã lập" - doanh thu luôn tính
 // bằng tổng PhieuThu.soTien trong khoảng lọc, không tính lại từ HocPhi.
@@ -12,7 +19,7 @@ export async function baoCaoDoanhThu(loc: LocBaoCaoHocPhi = {}) {
   const dsPhieuThu = await prisma.phieuThu.findMany({
     where: {
       ngayLap: { gte: loc.tuNgay, lte: loc.denNgay },
-      hocPhi: loc.khoaId ? { khoaId: loc.khoaId } : undefined,
+      hocPhi: loc.khoaId || loc.khoaIds ? { khoaId: locKhoa(loc) } : undefined,
     },
     include: { hocPhi: { include: { khoa: true } } },
   });
@@ -35,9 +42,9 @@ export async function baoCaoDoanhThu(loc: LocBaoCaoHocPhi = {}) {
   };
 }
 
-export async function baoCaoCongNo(loc: { khoaId?: string } = {}) {
+export async function baoCaoCongNo(loc: { khoaId?: string; khoaIds?: string[] } = {}) {
   const dsConNo = await prisma.hocPhi.findMany({
-    where: { trangThai: { in: ["CHUA_NOP", "CON_NO"] }, khoaId: loc.khoaId },
+    where: { trangThai: { in: ["CHUA_NOP", "CON_NO"] }, khoaId: locKhoa(loc) },
     include: { khoa: true },
   });
 

@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { baoCaoDoanhThu, baoCaoCongNo } from "@/server/services/hp/hp-05-bao-cao";
+import { khoangNgay } from "@/server/services/bc/khoang-ngay";
+import { LoiBaoCao } from "@/server/services/bc/loi-bao-cao";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,11 +22,16 @@ export default async function BaoCaoHocPhiPage({ searchParams }: { searchParams:
   }
 
   const { tuNgay, denNgay } = await searchParams;
+  // "đến ngày" tính hết ngày đó (trước đây so với 00:00 nên bỏ sót phiếu thu lập trong ngày cuối)
+  let ky;
+  try {
+    ky = khoangNgay(tuNgay, denNgay);
+  } catch (error) {
+    if (error instanceof LoiBaoCao) return <p className="p-6 text-destructive">{error.message}</p>;
+    throw error;
+  }
   const [doanhThu, congNo] = await Promise.all([
-    baoCaoDoanhThu({
-      tuNgay: tuNgay ? new Date(tuNgay) : undefined,
-      denNgay: denNgay ? new Date(denNgay) : undefined,
-    }),
+    baoCaoDoanhThu({ tuNgay: ky.tu, denNgay: ky.den }),
     baoCaoCongNo(),
   ]);
 
