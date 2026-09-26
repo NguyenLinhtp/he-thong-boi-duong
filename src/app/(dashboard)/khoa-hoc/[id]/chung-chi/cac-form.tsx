@@ -78,13 +78,40 @@ export function NutHuyChungChi({ khoaId, chungChiId, soHieu }: { khoaId: string;
   );
 }
 
-/** CC-03: ký duyệt mọi chứng chỉ đang chờ ký của khóa theo 1 quyết định. */
-export function FormKyDuyet({ khoaId, soChoKy }: { khoaId: string; soChoKy: number }) {
+/**
+ * CC-03: nhập quyết định cấp văn bằng đã ban hành theo khóa hoặc theo lớp.
+ * Văn bằng còn Đề nghị được cấp số hiệu luôn khi lưu quyết định.
+ */
+export function FormKyDuyet({
+  khoaId,
+  soCaKhoa,
+  dsLop,
+}: {
+  khoaId: string;
+  soCaKhoa: number;
+  dsLop: { id: string; maLop: string; ten: string; soCho: number }[];
+}) {
   const [ketQua, formAction, dangXuLy] = useActionState(kyDuyetAction, undefined);
+  const [lopId, setLopId] = useState("");
+  const soCho = lopId ? (dsLop.find((l) => l.id === lopId)?.soCho ?? 0) : soCaKhoa;
   return (
     <form action={formAction} className="flex flex-col gap-2">
       <div className="flex flex-wrap items-end gap-2">
         <input type="hidden" name="khoaId" value={khoaId} />
+        <select
+          name="lopId"
+          value={lopId}
+          onChange={(e) => setLopId(e.target.value)}
+          className="h-8 rounded-lg border px-2 text-sm"
+          aria-label="Phạm vi quyết định"
+        >
+          <option value="">Cả khóa ({soCaKhoa} văn bằng chờ)</option>
+          {dsLop.map((l) => (
+            <option key={l.id} value={l.id}>
+              Lớp {l.maLop} · {l.ten} ({l.soCho} chờ)
+            </option>
+          ))}
+        </select>
         <Input name="soQuyetDinh" placeholder="Số quyết định cấp" required className="w-48" />
         <Input
           name="ngayKy"
@@ -94,8 +121,8 @@ export function FormKyDuyet({ khoaId, soChoKy }: { khoaId: string; soChoKy: numb
           className="w-40"
         />
         <Input name="nguoiKy" placeholder="Người ký (họ tên, chức vụ)" required className="w-64" />
-        <Button type="submit" size="sm" disabled={dangXuLy || soChoKy === 0}>
-          {dangXuLy ? "Đang lưu..." : `Ghi nhận ký duyệt ${soChoKy} chứng chỉ`}
+        <Button type="submit" size="sm" disabled={dangXuLy || soCho === 0}>
+          {dangXuLy ? "Đang lưu..." : `Lưu quyết định cho ${soCho} văn bằng`}
         </Button>
       </div>
       <ThongDiep ketQua={ketQua} />

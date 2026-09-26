@@ -4,6 +4,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { xetDeNghiCapChungChi, danhSachChungChiCuaKhoa } from "@/server/services/cc/cc-01-de-nghi";
 import { hopDongChoBanGiao } from "@/server/services/cc/cc-04-so-cap";
+import { danhSachQuyetDinhCuaKhoa, soVanBangChoQuyetDinh } from "@/server/services/cc/cc-03-ky-duyet";
 import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
 import { ChuaPheDuyetKetQuaError } from "@/server/services/cc/loi-chung-chi";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -51,17 +52,18 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
     if (!(error instanceof ChuaPheDuyetKetQuaError)) throw error;
     xet = null;
   }
-  const [dsChungChi, dsLop, dsHopDong, choPhepCC02, choPhepCC03, choPhepCC04] = await Promise.all([
+  const [dsChungChi, dsLop, dsHopDong, dsQuyetDinh, choQuyetDinh, choPhepCC02, choPhepCC03, choPhepCC04] = await Promise.all([
     danhSachChungChiCuaKhoa(id),
     danhSachLop(id),
     hopDongChoBanGiao(id),
+    danhSachQuyetDinhCuaKhoa(id),
+    soVanBangChoQuyetDinh(id),
     coQuyen("CC-02"),
     coQuyen("CC-03"),
     coQuyen("CC-04"),
   ]);
   // học viên do ĐVLK tuyển sinh chỉ nhận qua lô bàn giao, không trao trực tiếp
   const hocVienQuaDvlk = new Set(dsHopDong.flatMap((hd) => hd.hocVienIds));
-  const soChoKy = dsChungChi.filter((cc) => cc.trangThai === "CHO_KY_DUYET").length;
   const soDeNghi = dsChungChi.filter((cc) => cc.trangThai === "DE_NGHI").length;
   const coChungChiDeIn = dsChungChi.some((cc) => cc.soHieu && cc.trangThai !== "DA_HUY");
 
@@ -169,14 +171,47 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
         </section>
       )}
 
-      {choPhepCC03 && (
+      {(choPhepCC03 || dsQuyetDinh.length > 0) && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">CC-03 · Ký duyệt</h2>
+          <h2 className="text-sm font-semibold">CC-03 · Nhập quyết định cấp văn bằng</h2>
           <p className="text-sm text-muted-foreground">
-            Ghi nhận việc lãnh đạo ký, đóng dấu (số quyết định, ngày ký, người ký). Chỉ chứng chỉ đã
-            ký duyệt mới được trả cho học viên (CC-04).
+            Sau khi ban hành quyết định (căn cứ danh sách hoàn thành đã xuất Excel), nhập số quyết
+            định, ngày ký, người ký theo cả khóa hoặc từng lớp. Văn bằng chưa có số hiệu được cấp số
+            khi lưu. Chỉ văn bằng đã ký duyệt mới được trả cho học viên (CC-04).
           </p>
-          <FormKyDuyet khoaId={khoa.id} soChoKy={soChoKy} />
+          {choPhepCC03 && (
+            <FormKyDuyet
+              khoaId={khoa.id}
+              soCaKhoa={choQuyetDinh.caKhoa}
+              dsLop={dsLop.map((l) => ({ id: l.id, maLop: l.maLop, ten: l.ten, soCho: choQuyetDinh.theoLop.get(l.id) ?? 0 }))}
+            />
+          )}
+          {dsQuyetDinh.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Số quyết định</TableHead>
+                  <TableHead>Ngày ký</TableHead>
+                  <TableHead>Người ký</TableHead>
+                  <TableHead>Phạm vi</TableHead>
+                  <TableHead>Số văn bằng</TableHead>
+                  <TableHead>Người nhập</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dsQuyetDinh.map((qd) => (
+                  <TableRow key={qd.id}>
+                    <TableCell className="font-medium">{qd.soQuyetDinh}</TableCell>
+                    <TableCell>{qd.ngayKy.toLocaleDateString("vi-VN")}</TableCell>
+                    <TableCell>{qd.nguoiKy}</TableCell>
+                    <TableCell>{qd.lop ? `Lớp ${qd.lop.maLop} · ${qd.lop.ten}` : "Cả khóa"}</TableCell>
+                    <TableCell>{qd._count.chungChis}</TableCell>
+                    <TableCell>{qd.nguoiNhap}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </section>
       )}
 

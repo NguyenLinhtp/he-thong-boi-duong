@@ -607,7 +607,7 @@
     "actor": "Ban giám hiệu/Cán bộ quản lý đào tạo",
     "input": "Chứng chỉ chờ ký, thông tin người ký",
     "output": "Chứng chỉ ở trạng thái \"Đã ký duyệt\"",
-    "quy_tac_nghiep_vu": "Chỉ chứng chỉ đã ký duyệt mới được trả cho học viên",
+    "quy_tac_nghiep_vu": "Chỉ chứng chỉ đã ký duyệt mới được trả cho học viên; (bổ sung 26/09/2026) sau khi ban hành quyết định, nhập số quyết định/ngày ký/người ký theo cả khóa hoặc theo từng lớp và lưu thành bản ghi quyết định gắn với các văn bằng trong phạm vi; văn bằng còn ở trạng thái đề nghị được cấp số hiệu khi nhập quyết định, người không còn đủ điều kiện bị bỏ qua và báo lại; không nhập quyết định cho văn bằng đã ký duyệt hoặc thuộc lớp/khóa khác",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 2"
   },

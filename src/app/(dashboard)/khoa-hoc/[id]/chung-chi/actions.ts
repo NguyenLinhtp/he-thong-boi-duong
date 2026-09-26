@@ -61,16 +61,23 @@ export async function huyChungChiAction(_prev: KetQuaThaoTacCC, formData: FormDa
 export async function kyDuyetAction(_prev: KetQuaThaoTacCC, formData: FormData): Promise<KetQuaThaoTacCC> {
   const phien = await requirePermission("CC-03");
   const khoaId = String(formData.get("khoaId"));
-  return thucHien(khoaId, async () => {
-    const ds = await kyDuyetChungChi(khoaId, {
+  let boQua: string[] = [];
+  const ketQua = await thucHien(khoaId, async () => {
+    const kq = await kyDuyetChungChi(khoaId, {
       soQuyetDinh: String(formData.get("soQuyetDinh") ?? ""),
       ngayKy: String(formData.get("ngayKy") ?? ""),
       nguoiKy: String(formData.get("nguoiKy") ?? ""),
+      lopId: String(formData.get("lopId") ?? "") || null,
       nguoiThucHienId: phien.userId,
       nguoiThucHienTen: phien.hoTen,
     });
-    return `Đã ghi nhận ký duyệt ${ds.length} chứng chỉ.`;
+    boQua = kq.boQua.map((b) => `${b.hoTen}: ${b.lyDo}`);
+    const phamVi = kq.quyetDinh.lop ? `lớp ${kq.quyetDinh.lop.maLop}` : "cả khóa";
+    return `Đã lưu quyết định ${kq.quyetDinh.soQuyetDinh} (${phamVi}) cho ${kq.dsChungChi.length} văn bằng.`;
   });
+  return boQua.length > 0
+    ? { ...ketQua, loi: `Không đưa vào quyết định (không còn đủ điều kiện) - ${boQua.join("; ")}` }
+    : ketQua;
 }
 
 export async function traTrucTiepAction(_prev: KetQuaThaoTacCC, formData: FormData): Promise<KetQuaThaoTacCC> {

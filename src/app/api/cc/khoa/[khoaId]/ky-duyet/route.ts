@@ -5,7 +5,8 @@ import { phanHoiLoiChungChi } from "@/app/api/cc/_phan-hoi-loi";
 
 type Params = { params: Promise<{ khoaId: string }> };
 
-// CC-03: ghi nhận ký duyệt (body.chungChiIds tùy chọn - bỏ trống = mọi chứng chỉ chờ ký của khóa)
+// CC-03: nhập quyết định cấp văn bằng theo khóa hoặc lớp (body.lopId tùy chọn; body.chungChiIds
+// tùy chọn - bỏ trống = mọi văn bằng Đề nghị/Chờ ký duyệt trong phạm vi)
 export const POST = apiRoute(async (req: Request, { params }: Params) => {
   const phien = await requirePermission("CC-03");
   const { khoaId } = await params;
@@ -16,6 +17,7 @@ export const POST = apiRoute(async (req: Request, { params }: Params) => {
         soQuyetDinh: String(body.soQuyetDinh ?? ""),
         ngayKy: String(body.ngayKy ?? ""),
         nguoiKy: String(body.nguoiKy ?? ""),
+        lopId: body.lopId ? String(body.lopId) : null,
         chungChiIds: Array.isArray(body.chungChiIds) ? body.chungChiIds.map(String) : undefined,
         nguoiThucHienId: phien.userId,
         nguoiThucHienTen: phien.hoTen,
