@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { xetDeNghiCapChungChi, lapDanhSachDeNghi } from "@/server/services/cc/cc-01-de-nghi";
 import { sinhSoHieu, huyChungChi, duLieuInChungChi } from "@/server/services/cc/cc-02-so-hieu";
+import { kyDuyetChungChi } from "@/server/services/cc/cc-03-ky-duyet";
 import {
   ChuaPheDuyetKetQuaError,
   SaiTrangThaiChungChiError,
@@ -215,5 +216,54 @@ describe("CC-02 sinh số hiệu và in chứng chỉ", () => {
     await prisma.chungChi.update({ where: { id: daCapSo[0].chungChiId }, data: { trangThai: "DA_CAP" } });
 
     await expect(huyChungChi(daCapSo[0].chungChiId, "Lý do", NGUOI)).rejects.toThrow(SaiTrangThaiChungChiError);
+  });
+});
+
+describe("CC-03 ký duyệt chứng chỉ", () => {
+  const KY = { soQuyetDinh: "QĐ-CC-01", ngayKy: "2026-10-30", nguoiKy: "Hiệu trưởng", nguoiThucHienTen: "Cán bộ test CC" };
+
+  it("ký toàn bộ chứng chỉ chờ ký của khóa: ghi QĐ/ngày/người ký, báo học viên kèm kênh nhận", async () => {
+    const f = await taoKhoaDuDieuKien(2);
+    await prisma.dangKyHoc.update({
+      where: { hocVienId_khoaId: { hocVienId: f.khongDat.id, khoaId: f.khoa.id } },
+      data: { hopDongLienKetId: f.hopDong.id },
+    });
+    await sinhSoHieu(f.khoa.id, NGUOI);
+
+    const ds = await kyDuyetChungChi(f.khoa.id, KY);
+
+    expect(ds).toHaveLength(2);
+    expect(ds.every((cc) => cc.trangThai === "DA_KY_DUYET" && cc.soQuyetDinh === "QĐ-CC-01" && cc.nguoiKy === "Hiệu trưởng")).toBe(true);
+    expect(ds[0].ngayCap?.toISOString().slice(0, 10)).toBe("2026-10-30");
+    const tb = await prisma.thongBao.findFirstOrThrow({ where: { hocVienId: f.khongDat.id, loaiSuKien: "CAP_CHUNG_CHI" } });
+    expect(tb.noiDung).toContain("ĐVLK CC");
+    const tbCaNhan = await prisma.thongBao.findFirstOrThrow({ where: { hocVienId: f.datCaNhan.id, loaiSuKien: "CAP_CHUNG_CHI" } });
+    expect(tbCaNhan.noiDung).toContain("Phòng/Trung tâm");
+  });
+
+  it("bắt buộc số quyết định/người ký; chặn cả lô nếu có chứng chỉ chưa có số hiệu", async () => {
+    const f = await taoKhoaDuDieuKien(2);
+    const { daCapSo } = await sinhSoHieu(f.khoa.id, NGUOI, [
+      (await prisma.chungChi.findFirstOrThrow({ where: { khoaId: f.khoa.id, hocVienId: f.datCaNhan.id } })).id,
+    ]);
+    const chuaCoSo = await prisma.chungChi.findFirstOrThrow({ where: { khoaId: f.khoa.id, trangThai: "DE_NGHI" } });
+
+    await expect(kyDuyetChungChi(f.khoa.id, { ...KY, soQuyetDinh: " " })).rejects.toThrow(ThieuThongTinError);
+    await expect(kyDuyetChungChi(f.khoa.id, { ...KY, nguoiKy: "" })).rejects.toThrow(ThieuThongTinError);
+    await expect(
+      kyDuyetChungChi(f.khoa.id, { ...KY, chungChiIds: [daCapSo[0].chungChiId, chuaCoSo.id] }),
+    ).rejects.toThrow(SaiTrangThaiChungChiError);
+    const daKy = await prisma.chungChi.findUniqueOrThrow({ where: { id: daCapSo[0].chungChiId } });
+    expect(daKy.trangThai).toBe("CHO_KY_DUYET");
+  });
+
+  it("không ký được chứng chỉ của khóa khác qua danh sách id", async () => {
+    const f1 = await taoKhoaDuDieuKien(1);
+    const f2 = await taoKhoaDuDieuKien(1);
+    const { daCapSo } = await sinhSoHieu(f2.khoa.id, NGUOI);
+
+    await expect(
+      kyDuyetChungChi(f1.khoa.id, { ...KY, chungChiIds: [daCapSo[0].chungChiId] }),
+    ).rejects.toThrow(SaiTrangThaiChungChiError);
   });
 });

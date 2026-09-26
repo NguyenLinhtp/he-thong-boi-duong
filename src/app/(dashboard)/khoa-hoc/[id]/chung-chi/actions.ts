@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/guard";
 import { lapDanhSachDeNghi } from "@/server/services/cc/cc-01-de-nghi";
 import { sinhSoHieu, huyChungChi } from "@/server/services/cc/cc-02-so-hieu";
+import { kyDuyetChungChi } from "@/server/services/cc/cc-03-ky-duyet";
 import { LoiChungChi } from "@/server/services/cc/loi-chung-chi";
 
 export type KetQuaThaoTacCC = { loi?: string; thongBao?: string } | undefined;
@@ -53,5 +54,20 @@ export async function huyChungChiAction(_prev: KetQuaThaoTacCC, formData: FormDa
       nguoiThucHienTen: phien.hoTen,
     });
     return `Đã hủy chứng chỉ ${cc.soHieu ?? ""} - số hiệu này sẽ không được cấp lại.`;
+  });
+}
+
+export async function kyDuyetAction(_prev: KetQuaThaoTacCC, formData: FormData): Promise<KetQuaThaoTacCC> {
+  const phien = await requirePermission("CC-03");
+  const khoaId = String(formData.get("khoaId"));
+  return thucHien(khoaId, async () => {
+    const ds = await kyDuyetChungChi(khoaId, {
+      soQuyetDinh: String(formData.get("soQuyetDinh") ?? ""),
+      ngayKy: String(formData.get("ngayKy") ?? ""),
+      nguoiKy: String(formData.get("nguoiKy") ?? ""),
+      nguoiThucHienId: phien.userId,
+      nguoiThucHienTen: phien.hoTen,
+    });
+    return `Đã ghi nhận ký duyệt ${ds.length} chứng chỉ.`;
   });
 }

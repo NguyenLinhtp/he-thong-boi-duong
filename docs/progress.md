@@ -93,7 +93,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 - [x] **CC-01** — Lập danh sách đề nghị cấp chứng chỉ
 - [x] **CC-02** — Sinh số hiệu và in ấn chứng chỉ
-- [ ] **CC-03** — Ký duyệt và cập nhật trạng thái
+- [x] **CC-03** — Ký duyệt và cập nhật trạng thái
 - [ ] **CC-04** — Vào sổ cấp chứng chỉ, lưu hồ sơ
 
 ### 9. Báo cáo – Thống kê – Dashboard

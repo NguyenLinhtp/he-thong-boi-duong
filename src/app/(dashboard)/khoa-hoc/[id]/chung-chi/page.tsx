@@ -5,7 +5,7 @@ import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { xetDeNghiCapChungChi, danhSachChungChiCuaKhoa } from "@/server/services/cc/cc-01-de-nghi";
 import { ChuaPheDuyetKetQuaError } from "@/server/services/cc/loi-chung-chi";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { NutLapDeNghi, NutSinhSoHieu, NutHuyChungChi } from "./cac-form";
+import { NutLapDeNghi, NutSinhSoHieu, NutHuyChungChi, FormKyDuyet } from "./cac-form";
 import { NHAN_TRANG_THAI_CHUNG_CHI } from "./nhan";
 
 async function coQuyen(maCN: string): Promise<boolean> {
@@ -42,7 +42,12 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
     if (!(error instanceof ChuaPheDuyetKetQuaError)) throw error;
     xet = null;
   }
-  const [dsChungChi, choPhepCC02] = await Promise.all([danhSachChungChiCuaKhoa(id), coQuyen("CC-02")]);
+  const [dsChungChi, choPhepCC02, choPhepCC03] = await Promise.all([
+    danhSachChungChiCuaKhoa(id),
+    coQuyen("CC-02"),
+    coQuyen("CC-03"),
+  ]);
+  const soChoKy = dsChungChi.filter((cc) => cc.trangThai === "CHO_KY_DUYET").length;
   const soDeNghi = dsChungChi.filter((cc) => cc.trangThai === "DE_NGHI").length;
   const coChungChiDeIn = dsChungChi.some((cc) => cc.soHieu && cc.trangThai !== "DA_HUY");
 
@@ -126,6 +131,17 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
         </section>
       )}
 
+      {choPhepCC03 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold">CC-03 · Ký duyệt</h2>
+          <p className="text-sm text-muted-foreground">
+            Ghi nhận việc lãnh đạo ký, đóng dấu (số quyết định, ngày ký, người ký). Chỉ chứng chỉ đã
+            ký duyệt mới được trả cho học viên (CC-04).
+          </p>
+          <FormKyDuyet khoaId={khoa.id} soChoKy={soChoKy} />
+        </section>
+      )}
+
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold">Chứng chỉ của khóa</h2>
         <Table>
@@ -144,6 +160,11 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
                 <TableCell>{cc.hocVien.hoTen}</TableCell>
                 <TableCell>
                   {NHAN_TRANG_THAI_CHUNG_CHI[cc.trangThai]}
+                  {cc.soQuyetDinh && (
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      (QĐ {cc.soQuyetDinh}, {cc.nguoiKy})
+                    </span>
+                  )}
                   {cc.trangThai === "DA_HUY" && (
                     <span className="ml-1 text-xs text-muted-foreground">({cc.lyDoHuy})</span>
                   )}

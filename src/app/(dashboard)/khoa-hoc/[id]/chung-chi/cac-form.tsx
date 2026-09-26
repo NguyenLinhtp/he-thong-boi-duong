@@ -1,7 +1,13 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { lapDeNghiAction, sinhSoHieuAction, huyChungChiAction, type KetQuaThaoTacCC } from "./actions";
+import {
+  lapDeNghiAction,
+  sinhSoHieuAction,
+  huyChungChiAction,
+  kyDuyetAction,
+  type KetQuaThaoTacCC,
+} from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -65,6 +71,31 @@ export function NutHuyChungChi({ khoaId, chungChiId, soHieu }: { khoaId: string;
       <Button type="submit" size="sm" variant="destructive" disabled={dangXuLy}>
         {dangXuLy ? "..." : "Xác nhận hủy"}
       </Button>
+      <ThongDiep ketQua={ketQua} />
+    </form>
+  );
+}
+
+/** CC-03: ký duyệt mọi chứng chỉ đang chờ ký của khóa theo 1 quyết định. */
+export function FormKyDuyet({ khoaId, soChoKy }: { khoaId: string; soChoKy: number }) {
+  const [ketQua, formAction, dangXuLy] = useActionState(kyDuyetAction, undefined);
+  return (
+    <form action={formAction} className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <input type="hidden" name="khoaId" value={khoaId} />
+        <Input name="soQuyetDinh" placeholder="Số quyết định cấp" required className="w-48" />
+        <Input
+          name="ngayKy"
+          type="date"
+          required
+          defaultValue={new Date().toISOString().slice(0, 10)}
+          className="w-40"
+        />
+        <Input name="nguoiKy" placeholder="Người ký (họ tên, chức vụ)" required className="w-64" />
+        <Button type="submit" size="sm" disabled={dangXuLy || soChoKy === 0}>
+          {dangXuLy ? "Đang lưu..." : `Ghi nhận ký duyệt ${soChoKy} chứng chỉ`}
+        </Button>
+      </div>
       <ThongDiep ketQua={ketQua} />
     </form>
   );
