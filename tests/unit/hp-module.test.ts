@@ -278,6 +278,16 @@ describe("HP-06 điều kiện tài chính (dùng cho KQ-03/CC-01)", () => {
     expect(await daHoanTatNghiaVuTaiChinh(hocVien.id, khoa.id)).toBe(true);
   });
 
+  it("học viên qua ĐVLK chưa có dòng HocPhi (HP-01 chưa chạy) vẫn bị chặn tới khi hợp đồng thanh lý", async () => {
+    const { khoa, hocVien, hopDong } = await taoKhoaVoiHocVienQuaDVLK();
+
+    expect(await prisma.hocPhi.count({ where: { hocVienId: hocVien.id, khoaId: khoa.id } })).toBe(0);
+    expect(await daHoanTatNghiaVuTaiChinh(hocVien.id, khoa.id)).toBe(false);
+
+    await prisma.hopDongLienKet.update({ where: { id: hopDong.id }, data: { trangThai: "DA_THANH_LY" } });
+    expect(await daHoanTatNghiaVuTaiChinh(hocVien.id, khoa.id)).toBe(true);
+  });
+
   it("bỏ qua điều kiện thủ công khiến luôn coi là hoàn tất", async () => {
     const { khoa, hocVien } = await taoKhoaVoiHocVienChinhThuc();
     await thietLapHocPhi(khoa.id, { mucHocPhi: 1_000_000 });

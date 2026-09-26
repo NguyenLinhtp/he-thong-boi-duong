@@ -9,26 +9,28 @@ import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
  * riêng học viên qua đơn vị liên kết áp dụng điều kiện thanh lý hợp đồng
  * thay cho điều kiện đã nộp học phí cá nhân.
  *
- * Chưa có dòng HocPhi (khóa miễn phí hoặc HP-01 chưa chạy) coi như không có
- * nghĩa vụ tài chính -> luôn đạt.
+ * Rẽ nhánh theo ĐĂNG KÝ trước (không theo dòng HocPhi) - "không áp cả hai
+ * cùng lúc": đăng ký gắn hợp đồng liên kết -> chỉ xét hợp đồng đã thanh lý
+ * (DVLK-06), kể cả khi chưa có dòng HocPhi; ngược lại xét học phí cá nhân,
+ * chưa có dòng HocPhi (khóa miễn phí hoặc HP-01 chưa chạy) coi như không có
+ * nghĩa vụ tài chính -> đạt. "Bỏ chặn thủ công" (boQuaKiemTra) áp dụng cho
+ * cả 2 nhánh.
  */
 export async function daHoanTatNghiaVuTaiChinh(hocVienId: string, khoaId: string): Promise<boolean> {
-  const hocPhi = await prisma.hocPhi.findUnique({
-    where: { hocVienId_khoaId: { hocVienId, khoaId } },
-  });
-  if (!hocPhi) return true;
-  if (hocPhi.boQuaKiemTra) return true;
-
-  if (hocPhi.trangThai === "CHO_THANH_LY_HOP_DONG" || hocPhi.trangThai === "DA_HOAN_TAT") {
-    const dangKy = await prisma.dangKyHoc.findUnique({
+  const [hocPhi, dangKy] = await Promise.all([
+    prisma.hocPhi.findUnique({ where: { hocVienId_khoaId: { hocVienId, khoaId } } }),
+    prisma.dangKyHoc.findUnique({
       where: { hocVienId_khoaId: { hocVienId, khoaId } },
       include: { hopDongLienKet: true },
-    });
-    return (
-      hocPhi.trangThai === "DA_HOAN_TAT" || dangKy?.hopDongLienKet?.trangThai === "DA_THANH_LY"
-    );
+    }),
+  ]);
+  if (hocPhi?.boQuaKiemTra) return true;
+
+  if (dangKy?.hopDongLienKetId) {
+    return dangKy.hopDongLienKet?.trangThai === "DA_THANH_LY" || hocPhi?.trangThai === "DA_HOAN_TAT";
   }
 
+  if (!hocPhi) return true;
   return hocPhi.trangThai === "DA_NOP_DU" || hocPhi.trangThai === "MIEN_GIAM";
 }
 
