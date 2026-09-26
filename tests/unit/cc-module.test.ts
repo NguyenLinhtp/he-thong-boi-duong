@@ -1,7 +1,12 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { xetDeNghiCapChungChi, lapDanhSachDeNghi } from "@/server/services/cc/cc-01-de-nghi";
-import { ChuaPheDuyetKetQuaError } from "@/server/services/cc/loi-chung-chi";
+import { sinhSoHieu, huyChungChi, duLieuInChungChi } from "@/server/services/cc/cc-02-so-hieu";
+import {
+  ChuaPheDuyetKetQuaError,
+  SaiTrangThaiChungChiError,
+  ThieuThongTinError,
+} from "@/server/services/cc/loi-chung-chi";
 
 const loaiHinhIds: string[] = [];
 const chuongTrinhIds: string[] = [];
@@ -128,5 +133,87 @@ describe("CC-01 lập danh sách đề nghị cấp chứng chỉ", () => {
     expect(
       await prisma.nhatKyThaoTac.count({ where: { hanhDong: "LAP_DE_NGHI_CAP_CHUNG_CHI", doiTuongId: f.khoa.id } }),
     ).toBe(2);
+  });
+});
+
+/** Phần số thứ tự của số hiệu (sau dấu "-" cuối) để so sánh tương đối - dãy số dùng chung toàn hệ thống. */
+const soThuTu = (soHieu: string | null) => Number(soHieu!.split("-").at(-1));
+
+/** Khóa đã phê duyệt có n học viên đạt, khóa miễn phí (không có học phí) -> đều đủ điều kiện. */
+async function taoKhoaDuDieuKien(soHocVien: number) {
+  const f = await taoKhoaDaPheDuyet();
+  await prisma.hopDongLienKet.update({ where: { id: f.hopDong.id }, data: { trangThai: "DA_THANH_LY" } });
+  await prisma.hocPhi.updateMany({ where: { khoaId: f.khoa.id }, data: { trangThai: "DA_NOP_DU" } });
+  await prisma.ketQuaKhoa.updateMany({ where: { khoaId: f.khoa.id }, data: { datHocTap: true } });
+  await prisma.dangKyHoc.updateMany({ where: { khoaId: f.khoa.id, trangThai: "THOI_HOC" }, data: { trangThai: "HOAN_THANH" } });
+  // giữ đúng soHocVien học viên đạt đầu tiên theo họ tên
+  const ds = await prisma.ketQuaKhoa.findMany({ where: { khoaId: f.khoa.id }, include: { hocVien: true }, orderBy: { hocVien: { hoTen: "asc" } } });
+  await prisma.ketQuaKhoa.updateMany({
+    where: { id: { in: ds.slice(soHocVien).map((kq) => kq.id) } },
+    data: { datHocTap: false },
+  });
+  await lapDanhSachDeNghi(f.khoa.id, NGUOI);
+  return f;
+}
+
+describe("CC-02 sinh số hiệu và in chứng chỉ", () => {
+  it("sinh số hiệu tăng dần liên tiếp theo họ tên, chuyển sang Chờ ký duyệt", async () => {
+    const f = await taoKhoaDuDieuKien(3);
+
+    const { daCapSo, boQua } = await sinhSoHieu(f.khoa.id, NGUOI);
+
+    expect(boQua).toHaveLength(0);
+    expect(daCapSo.map((c) => c.hoTen)).toEqual(["A Đạt cá nhân", "B Không đạt", "C Còn nợ"]);
+    expect(daCapSo[0].soHieu).toMatch(/^\D+\d{4}-\d{5}$/);
+    expect(daCapSo[0].soHieu).toContain(`${new Date().getFullYear()}-`);
+    const so = daCapSo.map((c) => soThuTu(c.soHieu));
+    expect(so[1]).toBe(so[0] + 1);
+    expect(so[2]).toBe(so[1] + 1);
+    const dsSau = await prisma.chungChi.findMany({ where: { khoaId: f.khoa.id } });
+    expect(dsSau.every((cc) => cc.trangThai === "CHO_KY_DUYET" && cc.ngayInSoHieu)).toBe(true);
+  });
+
+  it("không cấp lại số đã hủy: đề nghị lại sau khi hủy nhận số mới lớn hơn", async () => {
+    const f = await taoKhoaDuDieuKien(1);
+    const { daCapSo } = await sinhSoHieu(f.khoa.id, NGUOI);
+    const soCu = daCapSo[0].soHieu;
+
+    await expect(huyChungChi(daCapSo[0].chungChiId, "  ", NGUOI)).rejects.toThrow(ThieuThongTinError);
+    const daHuy = await huyChungChi(daCapSo[0].chungChiId, "In sai họ tên", NGUOI);
+    expect(daHuy.trangThai).toBe("DA_HUY");
+    expect(daHuy.soHieu).toBe(soCu);
+
+    const deNghiLai = await lapDanhSachDeNghi(f.khoa.id, NGUOI);
+    expect(deNghiLai).toHaveLength(1);
+    const { daCapSo: capLai } = await sinhSoHieu(f.khoa.id, NGUOI);
+    expect(capLai[0].soHieu).not.toBe(soCu);
+    expect(soThuTu(capLai[0].soHieu)).toBeGreaterThan(soThuTu(soCu));
+
+    const dsIn = await duLieuInChungChi([daCapSo[0].chungChiId, capLai[0].chungChiId]);
+    expect(dsIn.dsChungChi.map((cc) => cc.soHieu)).toEqual([capLai[0].soHieu]);
+  });
+
+  it("kiểm tra lại điều kiện trước khi cấp số: người không còn đủ điều kiện bị bỏ qua kèm lý do", async () => {
+    const f = await taoKhoaDuDieuKien(2);
+    // phúc khảo (KQ-04) hạ điểm sau khi đã lập đề nghị
+    await prisma.ketQuaKhoa.update({
+      where: { hocVienId_khoaId: { hocVienId: f.datCaNhan.id, khoaId: f.khoa.id } },
+      data: { datHocTap: false },
+    });
+
+    const { daCapSo, boQua } = await sinhSoHieu(f.khoa.id, NGUOI);
+
+    expect(daCapSo.map((c) => c.hoTen)).toEqual(["B Không đạt"]);
+    expect(boQua.map((b) => [b.hoTen, b.lyDo.startsWith("Không đạt")])).toEqual([["A Đạt cá nhân", true]]);
+    const cc = await prisma.chungChi.findFirstOrThrow({ where: { khoaId: f.khoa.id, hocVienId: f.datCaNhan.id } });
+    expect([cc.trangThai, cc.soHieu]).toEqual(["DE_NGHI", null]);
+  });
+
+  it("không hủy được chứng chỉ đã cấp", async () => {
+    const f = await taoKhoaDuDieuKien(1);
+    const { daCapSo } = await sinhSoHieu(f.khoa.id, NGUOI);
+    await prisma.chungChi.update({ where: { id: daCapSo[0].chungChiId }, data: { trangThai: "DA_CAP" } });
+
+    await expect(huyChungChi(daCapSo[0].chungChiId, "Lý do", NGUOI)).rejects.toThrow(SaiTrangThaiChungChiError);
   });
 });

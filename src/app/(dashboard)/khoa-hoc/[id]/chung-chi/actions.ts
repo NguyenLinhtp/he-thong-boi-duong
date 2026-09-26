@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/guard";
 import { lapDanhSachDeNghi } from "@/server/services/cc/cc-01-de-nghi";
+import { sinhSoHieu, huyChungChi } from "@/server/services/cc/cc-02-so-hieu";
 import { LoiChungChi } from "@/server/services/cc/loi-chung-chi";
 
 export type KetQuaThaoTacCC = { loi?: string; thongBao?: string } | undefined;
@@ -28,5 +29,29 @@ export async function lapDeNghiAction(_prev: KetQuaThaoTacCC, formData: FormData
     return ds.length > 0
       ? `Đã lập đề nghị cấp chứng chỉ cho ${ds.length} học viên.`
       : "Không có học viên mới đủ điều kiện.";
+  });
+}
+
+export async function sinhSoHieuAction(_prev: KetQuaThaoTacCC, formData: FormData): Promise<KetQuaThaoTacCC> {
+  const phien = await requirePermission("CC-02");
+  const khoaId = String(formData.get("khoaId"));
+  let boQua: string[] = [];
+  const ketQua = await thucHien(khoaId, async () => {
+    const kq = await sinhSoHieu(khoaId, { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen });
+    boQua = kq.boQua.map((b) => `${b.hoTen}: ${b.lyDo}`);
+    return `Đã cấp số hiệu cho ${kq.daCapSo.length} chứng chỉ.`;
+  });
+  return boQua.length > 0 ? { ...ketQua, loi: `Không cấp số (không còn đủ điều kiện) - ${boQua.join("; ")}` } : ketQua;
+}
+
+export async function huyChungChiAction(_prev: KetQuaThaoTacCC, formData: FormData): Promise<KetQuaThaoTacCC> {
+  const phien = await requirePermission("CC-02");
+  const khoaId = String(formData.get("khoaId"));
+  return thucHien(khoaId, async () => {
+    const cc = await huyChungChi(String(formData.get("chungChiId")), String(formData.get("lyDo") ?? ""), {
+      nguoiThucHienId: phien.userId,
+      nguoiThucHienTen: phien.hoTen,
+    });
+    return `Đã hủy chứng chỉ ${cc.soHieu ?? ""} - số hiệu này sẽ không được cấp lại.`;
   });
 }
