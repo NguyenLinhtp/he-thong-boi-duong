@@ -6,11 +6,12 @@ import {
   capNhatLopAction,
   xoaLopAction,
   chiaLopTuDongAction,
-  xepLopAction,
+  xepLopNhieuAction,
+  type KetQuaThaoTacLop,
 } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TableCell, TableRow } from "@/components/ui/table";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 
 export type LopRutGon = { id: string; maLop: string; ten: string; siSoToiDa: number | null; siSoHienTai: number };
 
@@ -29,15 +30,27 @@ export function FormTaoLop({ khoaId }: { khoaId: string }) {
   );
 }
 
+function ThongDiep({ ketQua }: { ketQua: KetQuaThaoTacLop }) {
+  return (
+    <>
+      {ketQua?.thongBao && <p className="text-sm text-muted-foreground">{ketQua.thongBao}</p>}
+      {ketQua?.loi && <p className="text-sm text-destructive">{ketQua.loi}</p>}
+    </>
+  );
+}
+
 export function NutChiaTuDong({ khoaId, soChuaXep }: { khoaId: string; soChuaXep: number }) {
-  const [thongBao, formAction, dangXuLy] = useActionState(chiaLopTuDongAction, undefined);
+  const [ketQua, formAction, dangXuLy] = useActionState(chiaLopTuDongAction, undefined);
   return (
     <form action={formAction} className="flex flex-col gap-1">
       <input type="hidden" name="khoaId" value={khoaId} />
       <Button type="submit" size="sm" variant="secondary" disabled={dangXuLy || soChuaXep === 0} className="self-start">
-        {dangXuLy ? "Đang chia..." : `Chia đều ${soChuaXep} học viên chưa có lớp`}
+        {dangXuLy ? "Đang chia..." : `Chia tự động ${soChuaXep} học viên chưa có lớp (ưu tiên đơn vị công tác)`}
       </Button>
-      {thongBao && <p className="text-sm text-destructive">{thongBao}</p>}
+      <p className="text-xs text-muted-foreground">
+        Học viên cùng đơn vị công tác được xếp chung lớp khi còn chỗ; sĩ số các lớp vẫn được cân bằng.
+      </p>
+      <ThongDiep ketQua={ketQua} />
     </form>
   );
 }
@@ -99,52 +112,129 @@ export function HangLop({ khoaId, lop }: { khoaId: string; lop: LopRutGon }) {
   );
 }
 
-export type HocVienLop = { dangKyId: string; hoTen: string; maHocVien: string; lopId: string | null; maLop: string | null };
+export type HocVienLop = {
+  dangKyId: string;
+  hoTen: string;
+  maHocVien: string;
+  donViCongTac: string | null;
+  donViLienKet: string | null;
+  lopId: string | null;
+  maLop: string | null;
+};
 
-/** Xếp lớp lần đầu hoặc chuyển lớp - cùng 1 form; chuyển lớp cần lý do + ngày hiệu lực. */
-export function HangHocVienLop({ khoaId, hocVien, dsLop }: { khoaId: string; hocVien: HocVienLop; dsLop: LopRutGon[] }) {
-  const [loi, formAction, dangXuLy] = useActionState(xepLopAction, undefined);
-  const dsLopDich = dsLop.filter((l) => l.id !== hocVien.lopId);
-  const laChuyenLop = hocVien.lopId !== null;
+/**
+ * KH-07 chia thủ công: tick học viên (danh sách đã lọc theo ĐVCT/ĐVLK/tên ở
+ * trên) rồi xếp/chuyển cả nhóm vào 1 lớp. Có học viên đang ở lớp khác trong
+ * nhóm chọn = chuyển lớp -> bắt buộc lý do (ghi vào lịch sử chuyển lớp).
+ */
+export function BangChonHocVien({
+  khoaId,
+  dsHocVien,
+  dsLop,
+}: {
+  khoaId: string;
+  dsHocVien: HocVienLop[];
+  dsLop: LopRutGon[];
+}) {
+  const [daChon, setDaChon] = useState<Set<string>>(new Set());
+  const [ketQua, formAction, dangXuLy] = useActionState(
+    async (truoc: KetQuaThaoTacLop, formData: FormData) => {
+      const sau = await xepLopNhieuAction(truoc, formData);
+      if (!sau?.loi) setDaChon(new Set());
+      return sau;
+    },
+    undefined,
+  );
+
+  // chỉ giữ lựa chọn còn nằm trong danh sách đang lọc
+  const dangChon = dsHocVien.filter((hv) => daChon.has(hv.dangKyId));
+  const coChuyenLop = dangChon.some((hv) => hv.lopId !== null);
+  const chonTatCa = dsHocVien.length > 0 && dangChon.length === dsHocVien.length;
+  const doiChon = (dangKyId: string) =>
+    setDaChon((cu) => {
+      const moi = new Set(cu);
+      if (moi.has(dangKyId)) moi.delete(dangKyId);
+      else moi.add(dangKyId);
+      return moi;
+    });
 
   return (
-    <>
-      <TableRow>
-        <TableCell>{hocVien.maHocVien}</TableCell>
-        <TableCell>{hocVien.hoTen}</TableCell>
-        <TableCell>{hocVien.maLop ?? <span className="text-muted-foreground">Chưa xếp</span>}</TableCell>
-        <TableCell>
-          {dsLopDich.length > 0 && (
-            <form action={formAction} className="flex flex-wrap items-end gap-1.5">
-              <input type="hidden" name="khoaId" value={khoaId} />
-              <input type="hidden" name="dangKyId" value={hocVien.dangKyId} />
-              <select name="lopId" className="h-8 rounded-lg border px-2 text-sm">
-                {dsLopDich.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.maLop} ({l.siSoHienTai}/{l.siSoToiDa ?? "∞"})
-                  </option>
-                ))}
-              </select>
-              {laChuyenLop && (
-                <>
-                  <Input name="ngayHieuLuc" type="date" title="Ngày hiệu lực (mặc định hôm nay)" className="w-36" />
-                  <Input name="lyDo" placeholder="Lý do chuyển" required className="w-40" />
-                </>
-              )}
-              <Button type="submit" size="sm" variant="secondary" disabled={dangXuLy}>
-                {dangXuLy ? "..." : laChuyenLop ? "Chuyển lớp" : "Xếp lớp"}
-              </Button>
-            </form>
+    <form action={formAction} className="flex flex-col gap-3">
+      <input type="hidden" name="khoaId" value={khoaId} />
+      {dangChon.map((hv) => (
+        <input key={hv.dangKyId} type="hidden" name="dangKyId" value={hv.dangKyId} />
+      ))}
+
+      <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+        <span className="text-sm">
+          Đã chọn <b>{dangChon.length}</b> học viên
+          {coChuyenLop && " (có người đang ở lớp khác - sẽ chuyển lớp)"}
+        </span>
+        <select name="lopId" required className="h-8 rounded-lg border px-2 text-sm">
+          {dsLop.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.maLop} · {l.ten} ({l.siSoHienTai}/{l.siSoToiDa ?? "∞"})
+            </option>
+          ))}
+        </select>
+        {coChuyenLop && (
+          <>
+            <Input name="ngayHieuLuc" type="date" title="Ngày hiệu lực (mặc định hôm nay)" className="w-36" />
+            <Input name="lyDo" placeholder="Lý do chuyển lớp" required className="w-48" />
+          </>
+        )}
+        <Button type="submit" size="sm" disabled={dangXuLy || dangChon.length === 0 || dsLop.length === 0}>
+          {dangXuLy ? "Đang xếp..." : "Xếp / chuyển vào lớp đã chọn"}
+        </Button>
+      </div>
+      <ThongDiep ketQua={ketQua} />
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-8">
+              <input
+                type="checkbox"
+                aria-label="Chọn tất cả học viên đang hiển thị"
+                checked={chonTatCa}
+                onChange={() => setDaChon(chonTatCa ? new Set() : new Set(dsHocVien.map((hv) => hv.dangKyId)))}
+              />
+            </TableHead>
+            <TableHead>Mã học viên</TableHead>
+            <TableHead>Họ tên</TableHead>
+            <TableHead>Đơn vị công tác</TableHead>
+            <TableHead>Đơn vị liên kết</TableHead>
+            <TableHead>Lớp hiện tại</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {dsHocVien.map((hv) => (
+            <TableRow key={hv.dangKyId} onClick={() => doiChon(hv.dangKyId)} className="cursor-pointer">
+              <TableCell>
+                <input
+                  type="checkbox"
+                  aria-label={`Chọn ${hv.hoTen}`}
+                  checked={daChon.has(hv.dangKyId)}
+                  onChange={() => doiChon(hv.dangKyId)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </TableCell>
+              <TableCell>{hv.maHocVien}</TableCell>
+              <TableCell>{hv.hoTen}</TableCell>
+              <TableCell>{hv.donViCongTac ?? "—"}</TableCell>
+              <TableCell>{hv.donViLienKet ?? "—"}</TableCell>
+              <TableCell>{hv.maLop ?? <span className="text-muted-foreground">Chưa xếp</span>}</TableCell>
+            </TableRow>
+          ))}
+          {dsHocVien.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                Không có học viên chính thức nào khớp bộ lọc
+              </TableCell>
+            </TableRow>
           )}
-        </TableCell>
-      </TableRow>
-      {loi && (
-        <TableRow>
-          <TableCell colSpan={4} className="text-xs text-destructive">
-            {loi}
-          </TableCell>
-        </TableRow>
-      )}
-    </>
+        </TableBody>
+      </Table>
+    </form>
   );
 }

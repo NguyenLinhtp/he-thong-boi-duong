@@ -219,11 +219,11 @@
     "ma_cn": "KH-07",
     "nhom_chuc_nang": "3. Quản lý khóa bồi dưỡng",
     "ten_chuc_nang": "Quản lý lớp trong khóa (mở rộng ngoài 69 chức năng gốc)",
-    "mo_ta_chi_tiet": "Chia 1 khóa thành nhiều lớp (thủ công hoặc chia đều tự động), xếp học viên chính thức vào lớp, chuyển học viên giữa các lớp trong cùng khóa và lưu lịch sử chuyển lớp. Mỗi lớp có thời khóa biểu và giảng viên phụ trách học phần riêng (KH-02/KH-03 theo lớp; phân công cấp khóa áp dụng cho lớp chưa có phân công riêng). Kết quả học tập, học phí, chứng chỉ vẫn gắn theo khóa nên được giữ nguyên khi chuyển lớp; phê duyệt kết quả (KQ-04) vẫn theo khóa",
+    "mo_ta_chi_tiet": "Chia 1 khóa thành nhiều lớp: tự động (ưu tiên giữ học viên cùng đơn vị công tác chung lớp, sau đó cân bằng sĩ số) hoặc thủ công (lọc học viên theo đơn vị công tác, đơn vị liên kết, lớp hiện tại hoặc tìm theo tên/mã/CCCD, chọn nhiều người để xếp/chuyển cùng lúc), xếp học viên chính thức vào lớp, chuyển học viên giữa các lớp trong cùng khóa và lưu lịch sử chuyển lớp. Mỗi lớp có thời khóa biểu và giảng viên phụ trách học phần riêng (KH-02/KH-03 theo lớp; phân công cấp khóa áp dụng cho lớp chưa có phân công riêng). Kết quả học tập, học phí, chứng chỉ vẫn gắn theo khóa nên được giữ nguyên khi chuyển lớp; phê duyệt kết quả (KQ-04) vẫn theo khóa",
     "actor": "Cán bộ quản lý đào tạo",
     "input": "Khóa, tên lớp, sĩ số tối đa lớp; học viên, lớp đích, ngày hiệu lực, lý do chuyển",
     "output": "Danh sách lớp của khóa, học viên theo lớp, lịch sử chuyển lớp",
-    "quy_tac_nghiep_vu": "Chỉ chuyển lớp trong cùng khóa (chuyển sang khóa khác theo HV-09); chuyển lớp không làm mất điểm, điểm danh, học phí đã có; tổng sĩ số tối đa các lớp không vượt sĩ số tối đa của khóa, không xếp vượt sĩ số lớp; chỉ xếp học viên Chính thức; không xếp/chuyển lớp sau khi kết quả khóa đã phê duyệt; khóa Phương thức 3 không chia lớp (không có giảng dạy); chuyên cần (KQ-02) tính theo các buổi của lớp mà học viên thuộc về tại ngày học",
+    "quy_tac_nghiep_vu": "Chỉ chuyển lớp trong cùng khóa (chuyển sang khóa khác theo HV-09); chuyển lớp không làm mất điểm, điểm danh, học phí đã có; tổng sĩ số tối đa các lớp không vượt sĩ số tối đa của khóa, không xếp vượt sĩ số lớp; chỉ xếp học viên Chính thức; không xếp/chuyển lớp sau khi kết quả khóa đã phê duyệt; khóa Phương thức 3 không chia lớp (không có giảng dạy); chia tự động: nhóm cùng đơn vị công tác không lớn hơn sĩ số bình quân 1 lớp luôn được giữ nguyên, chỉ nhóm lớn hơn mới tách; xếp nhiều học viên cùng lúc bị chặn cả lô nếu vượt sĩ số lớp đích; chuyên cần (KQ-02) tính theo các buổi của lớp mà học viên thuộc về tại ngày học",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 2"
   },

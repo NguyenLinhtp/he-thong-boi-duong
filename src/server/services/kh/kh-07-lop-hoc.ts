@@ -15,6 +15,7 @@ import {
   KhongTimThayDangKyLopError,
   HocVienChuaChinhThucError,
   DaOLopNayError,
+  LoiLopHoc,
 } from "@/server/services/kh/loi-khoa";
 
 /** Học viên đang "chiếm chỗ" trong lớp (thôi học trả lại chỗ). */
@@ -129,13 +130,80 @@ export async function danhSachLop(khoaId: string) {
   return dsLop.map((lop) => ({ ...lop, siSoHienTai: siSoTheoLop.get(lop.id) ?? 0 }));
 }
 
-/** Học viên chính thức của khóa kèm lớp hiện tại (null = chưa xếp). */
-export async function hocVienTheoLop(khoaId: string) {
-  return prisma.dangKyHoc.findMany({
+/** Bỏ dấu tiếng Việt + chữ thường + gộp khoảng trắng - so khớp tên/đơn vị không phụ thuộc cách gõ. */
+export function chuanHoaChuoi(chuoi: string | null | undefined): string {
+  return (chuoi ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export type BoLocHocVienLop = {
+  // tìm theo họ tên / mã học viên / CCCD, không phân biệt dấu và hoa thường
+  tuKhoa?: string | null;
+  donViCongTac?: string | null;
+  donViLienKetId?: string | null;
+  // id lớp, hoặc "chua-xep" = chưa có lớp
+  lopId?: string | null;
+};
+
+/**
+ * Học viên chính thức của khóa kèm lớp hiện tại (null = chưa xếp) và đơn vị
+ * liên kết (qua hợp đồng, Phương thức 4) - lọc để chia/chuyển lớp thủ công.
+ * Lọc trong bộ nhớ (1 khóa chỉ vài trăm học viên) để tìm được tên không dấu.
+ */
+export async function hocVienTheoLop(khoaId: string, boLoc: BoLocHocVienLop = {}) {
+  const ds = await prisma.dangKyHoc.findMany({
     where: { khoaId, trangThai: { in: [...TRANG_THAI_TRONG_LOP] } },
-    include: { hocVien: true, lop: true },
+    include: { hocVien: true, lop: true, hopDongLienKet: { include: { donViLienKet: true } } },
     orderBy: { hocVien: { hoTen: "asc" } },
   });
+
+  const tuKhoa = chuanHoaChuoi(boLoc.tuKhoa);
+  const donViCongTac = chuanHoaChuoi(boLoc.donViCongTac);
+  return ds.filter((dk) => {
+    const khopTuKhoa =
+      !tuKhoa ||
+      [dk.hocVien.hoTen, dk.hocVien.maHocVien, dk.hocVien.soCCCD].some((truong) =>
+        chuanHoaChuoi(truong).includes(tuKhoa),
+      );
+    const khopDonViCongTac = !donViCongTac || chuanHoaChuoi(dk.hocVien.donViCongTac) === donViCongTac;
+    const khopDonViLienKet =
+      !boLoc.donViLienKetId || dk.hopDongLienKet?.donViLienKetId === boLoc.donViLienKetId;
+    const khopLop =
+      !boLoc.lopId || (boLoc.lopId === "chua-xep" ? dk.lopId === null : dk.lopId === boLoc.lopId);
+    return khopTuKhoa && khopDonViCongTac && khopDonViLienKet && khopLop;
+  });
+}
+
+/** Giá trị cho các ô lọc: đơn vị công tác (gộp các cách viết khác dấu/hoa thường) và đơn vị liên kết trong khóa. */
+export async function tuyChonBoLocLop(khoaId: string) {
+  const ds = await hocVienTheoLop(khoaId);
+  const donViCongTac = new Map<string, { ten: string; soHocVien: number }>();
+  for (const dk of ds) {
+    const khoa = chuanHoaChuoi(dk.hocVien.donViCongTac);
+    if (!khoa) continue;
+    const daCo = donViCongTac.get(khoa);
+    donViCongTac.set(khoa, {
+      ten: daCo?.ten ?? dk.hocVien.donViCongTac!.trim(),
+      soHocVien: (daCo?.soHocVien ?? 0) + 1,
+    });
+  }
+  const donViLienKet = new Map(
+    ds.flatMap((dk) =>
+      dk.hopDongLienKet ? [[dk.hopDongLienKet.donViLienKetId, dk.hopDongLienKet.donViLienKet.ten] as const] : [],
+    ),
+  );
+  return {
+    donViCongTac: [...donViCongTac.values()].sort((a, b) => a.ten.localeCompare(b.ten, "vi")),
+    donViLienKet: [...donViLienKet.entries()]
+      .map(([id, ten]) => ({ id, ten }))
+      .sort((a, b) => a.ten.localeCompare(b.ten, "vi")),
+  };
 }
 
 export type XepLopInput = NguoiThucHien & {
@@ -211,10 +279,90 @@ export async function xepLop(dangKyId: string, input: XepLopInput) {
   return dangKySau;
 }
 
+type LopConCho = { id: string; maLop: string; siSoHienTai: number; siSoToiDa: number | null };
+type HocVienCanXep = { dangKyId: string; hoTen: string; donViCongTac: string | null };
+
 /**
- * KH-07: chia đều tự động - xếp lần lượt học viên chính thức CHƯA có lớp (theo
- * họ tên) vào lớp đang ít học viên nhất còn chỗ. Hết chỗ thì dừng, trả về số
- * học viên chưa xếp được để cán bộ tạo thêm lớp/tăng sĩ số.
+ * KH-07 chia tự động - ƯU TIÊN ĐƠN VỊ CÔNG TÁC TRƯỚC, cân bằng sĩ số sau:
+ *  1. Gom nhóm theo đơn vị công tác (so khớp không dấu/hoa thường), xét nhóm
+ *     đông trước - cách xếp "nhóm lớn trước vào lớp ít người nhất" tự cân bằng.
+ *  2. Nhóm KHÔNG lớn hơn sĩ số bình quân 1 lớp (làm tròn lên) luôn được giữ
+ *     nguyên: đặt cả nhóm vào lớp ít học viên nhất còn đủ chỗ theo sĩ số tối
+ *     đa thật (muốn khống chế chênh lệch sĩ số thì đặt sĩ số tối đa cho lớp).
+ *  3. Nhóm lớn hơn sĩ số bình quân (không thể nằm gọn trong 1 lớp cỡ trung
+ *     bình), hoặc không lớp nào còn đủ chỗ cho cả nhóm -> tách, phần lớn nhất
+ *     vào lớp còn nhiều chỗ nhất, không vượt sĩ số bình quân.
+ *  4. Học viên không khai báo đơn vị xếp sau cùng, từng người vào lớp ít nhất
+ *     - lấp chỗ trống để cân bằng lại sĩ số.
+ *  5. Còn người chưa xếp vì chạm sĩ số bình quân -> xếp tiếp theo sĩ số tối đa thật.
+ * Hàm thuần (không truy cập DB) để kiểm thử trực tiếp.
+ */
+export function phanBoUuTienDonViCongTac(dsHocVien: HocVienCanXep[], dsLop: LopConCho[]) {
+  const siSo = new Map(dsLop.map((l) => [l.id, l.siSoHienTai]));
+  const tongSauChia = dsLop.reduce((t, l) => t + l.siSoHienTai, 0) + dsHocVien.length;
+  const siSoBinhQuan = dsLop.length === 0 ? 0 : Math.ceil(tongSauChia / dsLop.length);
+  // số chỗ còn lại theo sĩ số tối đa thật, hoặc thêm giới hạn "không vượt sĩ số bình quân"
+  const conCho = (lop: LopConCho, gioiHanBinhQuan: boolean) =>
+    Math.min(lop.siSoToiDa ?? Infinity, gioiHanBinhQuan ? siSoBinhQuan : Infinity) - siSo.get(lop.id)!;
+  const itNguoiNhat = (a: LopConCho, b: LopConCho) =>
+    siSo.get(a.id)! - siSo.get(b.id)! || a.maLop.localeCompare(b.maLop);
+
+  const ketQua: { dangKyId: string; lopId: string }[] = [];
+  const xep = (hv: HocVienCanXep, lop: LopConCho) => {
+    ketQua.push({ dangKyId: hv.dangKyId, lopId: lop.id });
+    siSo.set(lop.id, siSo.get(lop.id)! + 1);
+  };
+
+  const theoTen = (a: HocVienCanXep, b: HocVienCanXep) => a.hoTen.localeCompare(b.hoTen, "vi");
+  const nhomTheoDonVi = new Map<string, HocVienCanXep[]>();
+  const khongDonVi: HocVienCanXep[] = [];
+  for (const hv of dsHocVien) {
+    const khoa = chuanHoaChuoi(hv.donViCongTac);
+    if (!khoa) khongDonVi.push(hv);
+    else nhomTheoDonVi.set(khoa, [...(nhomTheoDonVi.get(khoa) ?? []), hv]);
+  }
+  const dsNhom = [...nhomTheoDonVi.entries()]
+    .map(([khoa, thanhVien]) => ({ khoa, thanhVien: thanhVien.sort(theoTen) }))
+    .sort((a, b) => b.thanhVien.length - a.thanhVien.length || a.khoa.localeCompare(b.khoa));
+
+  const conLai: HocVienCanXep[] = [];
+  let soNhomBiTach = 0;
+  for (const { thanhVien } of dsNhom) {
+    const vuaNguyenNhom =
+      thanhVien.length <= siSoBinhQuan
+        ? dsLop.filter((l) => conCho(l, false) >= thanhVien.length).sort(itNguoiNhat)[0]
+        : undefined;
+    if (vuaNguyenNhom) {
+      thanhVien.forEach((hv) => xep(hv, vuaNguyenNhom));
+      continue;
+    }
+
+    soNhomBiTach++;
+    const chuaXep = [...thanhVien];
+    while (chuaXep.length > 0) {
+      const lop = dsLop
+        .filter((l) => conCho(l, true) > 0)
+        .sort((a, b) => conCho(b, true) - conCho(a, true) || itNguoiNhat(a, b))[0];
+      if (!lop) break;
+      chuaXep.splice(0, conCho(lop, true)).forEach((hv) => xep(hv, lop));
+    }
+    conLai.push(...chuaXep);
+  }
+
+  for (const hv of [...khongDonVi.sort(theoTen), ...conLai]) {
+    const lop =
+      dsLop.filter((l) => conCho(l, true) > 0).sort(itNguoiNhat)[0] ??
+      dsLop.filter((l) => conCho(l, false) > 0).sort(itNguoiNhat)[0];
+    if (lop) xep(hv, lop);
+  }
+
+  return { ketQua, soNhomDonVi: dsNhom.length, soNhomBiTach };
+}
+
+/**
+ * KH-07: chia tự động học viên chính thức CHƯA có lớp, ưu tiên giữ học viên
+ * cùng đơn vị công tác chung lớp (phanBoUuTienDonViCongTac). Hết chỗ thì trả
+ * về số học viên chưa xếp được để cán bộ tạo thêm lớp/tăng sĩ số.
  */
 export async function chiaLopTuDong(khoaId: string, nguoi: NguoiThucHien) {
   await layKhoaChoPhepChiaLop(khoaId);
@@ -222,22 +370,62 @@ export async function chiaLopTuDong(khoaId: string, nguoi: NguoiThucHien) {
   const dsChuaXep = await prisma.dangKyHoc.findMany({
     where: { khoaId, trangThai: "CHINH_THUC", lopId: null },
     include: { hocVien: true },
-    orderBy: { hocVien: { hoTen: "asc" } },
   });
 
-  const siSo = new Map(dsLop.map((l) => [l.id, l.siSoHienTai]));
-  let soDaXep = 0;
-  for (const dk of dsChuaXep) {
-    const lop = dsLop
-      .filter((l) => l.siSoToiDa === null || siSo.get(l.id)! < l.siSoToiDa)
-      .sort((a, b) => siSo.get(a.id)! - siSo.get(b.id)! || a.maLop.localeCompare(b.maLop))[0];
-    if (!lop) break;
-    await xepLop(dk.id, { ...nguoi, lopId: lop.id, lyDo: "Chia lớp tự động" });
-    siSo.set(lop.id, siSo.get(lop.id)! + 1);
-    soDaXep++;
+  const { ketQua, soNhomDonVi, soNhomBiTach } = phanBoUuTienDonViCongTac(
+    dsChuaXep.map((dk) => ({
+      dangKyId: dk.id,
+      hoTen: dk.hocVien.hoTen,
+      donViCongTac: dk.hocVien.donViCongTac,
+    })),
+    dsLop,
+  );
+  for (const { dangKyId, lopId } of ketQua) {
+    await xepLop(dangKyId, { ...nguoi, lopId, lyDo: "Chia lớp tự động (ưu tiên đơn vị công tác)" });
   }
 
-  return { soDaXep, soChuaXep: dsChuaXep.length - soDaXep };
+  return { soDaXep: ketQua.length, soChuaXep: dsChuaXep.length - ketQua.length, soNhomDonVi, soNhomBiTach };
+}
+
+export type KetQuaXepNhieu = { dangKyId: string; hoTen: string; loi: string | null };
+
+/**
+ * KH-07 chia thủ công: xếp/chuyển nhiều học viên (đã chọn sau khi lọc theo
+ * ĐVCT/ĐVLK/tên) vào cùng 1 lớp. Kiểm tra sĩ số cho cả lô TRƯỚC khi đổi gì;
+ * sau đó xếp từng người - lỗi riêng từng người (vd chưa chính thức) được trả
+ * về trong kết quả, không làm hỏng cả lô.
+ */
+export async function xepLopNhieu(khoaId: string, dangKyIds: string[], input: XepLopInput) {
+  const lopDich = await prisma.lopHoc.findUnique({ where: { id: input.lopId } });
+  if (!lopDich) throw new KhongTimThayLopError();
+  if (lopDich.khoaId !== khoaId) throw new LopKhongThuocKhoaError();
+  await layKhoaChoPhepChiaLop(khoaId);
+
+  // học viên đã ở sẵn lớp đích thì bỏ qua (SQL "<>" loại cả NULL nên ghi rõ nhánh chưa xếp)
+  const dsCanXep = await prisma.dangKyHoc.findMany({
+    where: {
+      id: { in: dangKyIds },
+      khoaId,
+      OR: [{ lopId: null }, { lopId: { not: lopDich.id } }],
+    },
+    include: { hocVien: true },
+    orderBy: { hocVien: { hoTen: "asc" } },
+  });
+  if (lopDich.siSoToiDa !== null && (await siSoLop(lopDich.id)) + dsCanXep.length > lopDich.siSoToiDa) {
+    throw new LopDaDuSiSoError();
+  }
+
+  const ketQua: KetQuaXepNhieu[] = [];
+  for (const dk of dsCanXep) {
+    try {
+      await xepLop(dk.id, input);
+      ketQua.push({ dangKyId: dk.id, hoTen: dk.hocVien.hoTen, loi: null });
+    } catch (error) {
+      if (!(error instanceof LoiLopHoc)) throw error;
+      ketQua.push({ dangKyId: dk.id, hoTen: dk.hocVien.hoTen, loi: error.message });
+    }
+  }
+  return ketQua;
 }
 
 export async function lichSuChuyenLopCuaKhoa(khoaId: string) {

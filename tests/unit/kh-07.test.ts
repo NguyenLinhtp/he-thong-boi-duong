@@ -9,6 +9,9 @@ import {
   chiaLopTuDong,
   danhSachLop,
   lopTaiNgay,
+  phanBoUuTienDonViCongTac,
+  hocVienTheoLop,
+  xepLopNhieu,
 } from "@/server/services/kh/kh-07-lop-hoc";
 import { phanCongGiangVien } from "@/server/services/kh/kh-02-phan-cong-giang-vien";
 import {
@@ -38,6 +41,7 @@ const chuongTrinhIds: string[] = [];
 const khoaIds: string[] = [];
 const hocVienIds: string[] = [];
 const giangVienIds: string[] = [];
+const donViLienKetIds: string[] = [];
 
 afterAll(async () => {
   await prisma.ketQuaKhoa.deleteMany({ where: { khoaId: { in: khoaIds } } });
@@ -47,6 +51,8 @@ afterAll(async () => {
   await prisma.dangKyHoc.deleteMany({ where: { khoaId: { in: khoaIds } } });
   await prisma.buoiHoc.deleteMany({ where: { khoaId: { in: khoaIds } } });
   await prisma.giangVienHocPhan.deleteMany({ where: { khoaId: { in: khoaIds } } });
+  await prisma.hopDongLienKet.deleteMany({ where: { khoaId: { in: khoaIds } } });
+  await prisma.donViLienKet.deleteMany({ where: { id: { in: donViLienKetIds } } });
   await prisma.khoa.deleteMany({ where: { id: { in: khoaIds } } });
   await prisma.hocVien.deleteMany({ where: { id: { in: hocVienIds } } });
   await prisma.giangVien.deleteMany({ where: { id: { in: giangVienIds } } });
@@ -212,14 +218,14 @@ describe("KH-07 xếp/chuyển lớp", () => {
     );
   });
 
-  it("chia lớp tự động chia đều, dừng khi hết chỗ", async () => {
+  it("chia lớp tự động (không khai đơn vị) chia đều, dừng khi hết chỗ", async () => {
     const { khoa } = await taoKhoa({ soHocVien: 5 });
     const lopA = await taoLop(khoa.id, { ten: "A", siSoToiDa: 2 });
     const lopB = await taoLop(khoa.id, { ten: "B", siSoToiDa: 2 });
 
     const kq = await chiaLopTuDong(khoa.id, NGUOI);
 
-    expect(kq).toEqual({ soDaXep: 4, soChuaXep: 1 });
+    expect(kq).toMatchObject({ soDaXep: 4, soChuaXep: 1 });
     const ds = await danhSachLop(khoa.id);
     expect(ds.find((l) => l.id === lopA.id)!.siSoHienTai).toBe(2);
     expect(ds.find((l) => l.id === lopB.id)!.siSoHienTai).toBe(2);
@@ -334,5 +340,154 @@ describe("KH-07 tích hợp KH-02/03, GD-01, KQ-01/02 theo lớp", () => {
     expect(Number(a.tyLeChuyenCan)).toBe(100);
     // B: buổi lớp B 05/10 (có mặt) + 20/10 (vắng)
     expect(Number(b.tyLeChuyenCan)).toBe(50);
+  });
+});
+
+describe("KH-07 chia tự động ưu tiên đơn vị công tác (hàm phân bổ)", () => {
+  const lop = (id: string, siSoToiDa: number | null = null, siSoHienTai = 0) => ({
+    id,
+    maLop: id,
+    siSoHienTai,
+    siSoToiDa,
+  });
+  const nhom = (donVi: string | null, soNguoi: number) =>
+    Array.from({ length: soNguoi }, (_, i) => ({
+      dangKyId: `${donVi ?? "khong"}-${i}`,
+      hoTen: `${donVi ?? "Không"} ${i}`,
+      donViCongTac: donVi,
+    }));
+  const lopCua = (ketQua: { dangKyId: string; lopId: string }[], tienTo: string) =>
+    new Set(ketQua.filter((kq) => kq.dangKyId.startsWith(tienTo)).map((kq) => kq.lopId));
+  const siSo = (ketQua: { lopId: string }[], lopId: string) => ketQua.filter((kq) => kq.lopId === lopId).length;
+
+  it("giữ nguyên mọi nhóm không lớn hơn sĩ số bình quân, kể cả khi sĩ số lệch nhẹ", () => {
+    const { ketQua, soNhomDonVi, soNhomBiTach } = phanBoUuTienDonViCongTac(
+      [...nhom("A", 3), ...nhom("B", 3), ...nhom("C", 2)],
+      [lop("L1"), lop("L2")],
+    );
+    expect(soNhomDonVi).toBe(3);
+    expect(soNhomBiTach).toBe(0);
+    for (const dv of ["A-", "B-", "C-"]) expect(lopCua(ketQua, dv).size).toBe(1);
+    expect(lopCua(ketQua, "A-")).not.toEqual(lopCua(ketQua, "B-"));
+  });
+
+  it("gộp cùng 1 đơn vị dù viết khác dấu/hoa thường/khoảng trắng", () => {
+    const { ketQua } = phanBoUuTienDonViCongTac(
+      [
+        { dangKyId: "x1", hoTen: "X1", donViCongTac: "Trường THPT Lê Lợi" },
+        { dangKyId: "x2", hoTen: "X2", donViCongTac: "truong thpt  le loi " },
+        { dangKyId: "x3", hoTen: "X3", donViCongTac: "TRƯỜNG THPT LÊ LỢI" },
+        ...nhom("Khác", 3),
+      ],
+      [lop("L1"), lop("L2")],
+    );
+    expect(lopCua(ketQua, "x").size).toBe(1);
+  });
+
+  it("nhóm lớn hơn sĩ số bình quân mới bị tách, sĩ số vẫn cân bằng", () => {
+    const { ketQua, soNhomBiTach } = phanBoUuTienDonViCongTac(
+      [...nhom("A", 6), ...nhom("B", 2)],
+      [lop("L1"), lop("L2")],
+    );
+    expect(soNhomBiTach).toBe(1);
+    expect(lopCua(ketQua, "B-").size).toBe(1);
+    expect([siSo(ketQua, "L1"), siSo(ketQua, "L2")]).toEqual([4, 4]);
+  });
+
+  it("tôn trọng sĩ số tối đa của lớp; người không khai đơn vị lấp chỗ để cân bằng", () => {
+    const daDu = phanBoUuTienDonViCongTac(
+      [...nhom("A", 3), ...nhom("B", 3), ...nhom("C", 1)],
+      [lop("L1", 3), lop("L2", 3)],
+    );
+    expect(daDu.ketQua).toHaveLength(6);
+    expect(lopCua(daDu.ketQua, "A-").size).toBe(1);
+    expect(lopCua(daDu.ketQua, "B-").size).toBe(1);
+
+    const canBang = phanBoUuTienDonViCongTac([...nhom("A", 3), ...nhom(null, 3)], [lop("L1"), lop("L2")]);
+    expect([siSo(canBang.ketQua, "L1"), siSo(canBang.ketQua, "L2")]).toEqual([3, 3]);
+  });
+});
+
+describe("KH-07 chia thủ công: bộ lọc + xếp nhiều học viên", () => {
+  async function khoaCoDonVi() {
+    const f = await taoKhoa({ soHocVien: 4 });
+    const [a, b, c, d] = f.dsDangKy;
+    await prisma.hocVien.update({ where: { id: a.hocVienId }, data: { hoTen: "Nguyễn Văn Ánh", donViCongTac: "THPT Lê Lợi" } });
+    await prisma.hocVien.update({ where: { id: b.hocVienId }, data: { hoTen: "Trần Thị Bình", donViCongTac: "thpt le loi" } });
+    await prisma.hocVien.update({ where: { id: c.hocVienId }, data: { hoTen: "Lê Văn Cường", donViCongTac: "THCS Kim Đồng" } });
+    const dvlk = await prisma.donViLienKet.create({ data: { ma: `DVLK_KH7_${uid()}`, ten: "Trung tâm liên kết X" } });
+    donViLienKetIds.push(dvlk.id);
+    const hopDong = await prisma.hopDongLienKet.create({
+      data: { maHopDong: `HD_KH7_${uid()}`, donViLienKetId: dvlk.id, khoaId: f.khoa.id },
+    });
+    await prisma.dangKyHoc.update({ where: { id: d.id }, data: { hopDongLienKetId: hopDong.id } });
+    return { ...f, a, b, c, d, dvlk };
+  }
+
+  it("lọc theo tên không dấu, đơn vị công tác (gộp cách viết), đơn vị liên kết, chưa xếp lớp", async () => {
+    const f = await khoaCoDonVi();
+    const ids = (ds: { id: string }[]) => ds.map((dk) => dk.id).sort();
+
+    expect(ids(await hocVienTheoLop(f.khoa.id, { tuKhoa: "nguyen van anh" }))).toEqual([f.a.id]);
+    expect(ids(await hocVienTheoLop(f.khoa.id, { donViCongTac: "THPT LÊ LỢI" }))).toEqual(ids([f.a, f.b]));
+    expect(ids(await hocVienTheoLop(f.khoa.id, { donViLienKetId: f.dvlk.id }))).toEqual([f.d.id]);
+
+    const lopA = await taoLop(f.khoa.id, { ten: "A" });
+    await xepLop(f.a.id, { ...NGUOI, lopId: lopA.id });
+    expect(ids(await hocVienTheoLop(f.khoa.id, { lopId: "chua-xep" }))).toEqual(ids([f.b, f.c, f.d]));
+    expect(ids(await hocVienTheoLop(f.khoa.id, { lopId: lopA.id }))).toEqual([f.a.id]);
+  });
+
+  it("xếp nhiều học viên đã lọc vào 1 lớp; học viên đã ở lớp đó được bỏ qua", async () => {
+    const f = await khoaCoDonVi();
+    const lopA = await taoLop(f.khoa.id, { ten: "A" });
+    const lopB = await taoLop(f.khoa.id, { ten: "B" });
+    await xepLop(f.a.id, { ...NGUOI, lopId: lopA.id });
+    await xepLop(f.b.id, { ...NGUOI, lopId: lopB.id });
+
+    const locLeLoi = await hocVienTheoLop(f.khoa.id, { donViCongTac: "thpt le loi" });
+    const ketQua = await xepLopNhieu(
+      f.khoa.id,
+      locLeLoi.map((dk) => dk.id),
+      { ...NGUOI, lopId: lopA.id, lyDo: "Gom cùng đơn vị" },
+    );
+
+    expect(ketQua.map((kq) => kq.dangKyId)).toEqual([f.b.id]);
+    expect((await hocVienTheoLop(f.khoa.id, { lopId: lopA.id })).map((dk) => dk.id).sort()).toEqual(
+      [f.a.id, f.b.id].sort(),
+    );
+  });
+
+  it("chặn cả lô khi vượt sĩ số lớp (không đổi ai); lỗi riêng từng người trả về trong kết quả", async () => {
+    const f = await khoaCoDonVi();
+    const lopNho = await taoLop(f.khoa.id, { ten: "Nhỏ", siSoToiDa: 2 });
+    const lopLon = await taoLop(f.khoa.id, { ten: "Lớn" });
+
+    await expect(
+      xepLopNhieu(f.khoa.id, [f.a.id, f.b.id, f.c.id], { ...NGUOI, lopId: lopNho.id }),
+    ).rejects.toThrow(LopDaDuSiSoError);
+    expect(await prisma.dangKyHoc.count({ where: { lopId: lopNho.id } })).toBe(0);
+
+    await prisma.dangKyHoc.update({ where: { id: f.c.id }, data: { trangThai: "HOAN_THANH" } });
+    const ketQua = await xepLopNhieu(f.khoa.id, [f.a.id, f.c.id], { ...NGUOI, lopId: lopLon.id });
+    expect(ketQua.find((kq) => kq.dangKyId === f.a.id)!.loi).toBeNull();
+    expect(ketQua.find((kq) => kq.dangKyId === f.c.id)!.loi).toContain("chính thức");
+  });
+
+  it("chia tự động qua DB giữ học viên cùng đơn vị công tác chung lớp", async () => {
+    const f = await khoaCoDonVi();
+    const lopA = await taoLop(f.khoa.id, { ten: "A" });
+    await taoLop(f.khoa.id, { ten: "B" });
+
+    const kq = await chiaLopTuDong(f.khoa.id, NGUOI);
+
+    expect(kq.soDaXep).toBe(4);
+    expect(kq.soNhomBiTach).toBe(0);
+    const [dkA, dkB] = await Promise.all([
+      prisma.dangKyHoc.findUniqueOrThrow({ where: { id: f.a.id } }),
+      prisma.dangKyHoc.findUniqueOrThrow({ where: { id: f.b.id } }),
+    ]);
+    expect(dkA.lopId).toBe(dkB.lopId);
+    expect(dkA.lopId).toBe(lopA.id);
   });
 });
