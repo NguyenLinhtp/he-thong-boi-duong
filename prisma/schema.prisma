@@ -784,7 +784,8 @@ model BanGiaoChungChi {
   hopDongLienKetId String
   hopDongLienKet   HopDongLienKet @relation(fields: [hopDongLienKetId], references: [id])
   ngayBanGiao      DateTime
-  nguoiDaiDienNhan String
+  // thông tin để quản lý, không bắt buộc (bổ sung 26/09/2026)
+  nguoiDaiDienNhan String?
   nguoiBanGiao     String
   ghiChu           String?
   createdAt        DateTime       @default(now())

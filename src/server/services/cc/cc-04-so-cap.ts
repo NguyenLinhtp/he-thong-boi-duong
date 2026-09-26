@@ -92,8 +92,9 @@ export async function traTrucTiep(chungChiId: string, input: TraTrucTiepInput) {
   return sau;
 }
 
+// thông tin bàn giao chỉ để quản lý, đều có thể để trống (ngày trống = hôm nay)
 export type BanGiaoLoInput = NguoiThucHien & {
-  nguoiDaiDienNhan: string;
+  nguoiDaiDienNhan?: string | null;
   ngayBanGiao?: Date | string | null;
   ghiChu?: string | null;
 };
@@ -111,7 +112,6 @@ export async function banGiaoTheoLo(hopDongLienKetId: string, input: BanGiaoLoIn
   });
   if (!hopDong) throw new KhongTimThayHopDongError();
   if (hopDong.trangThai !== "DA_THANH_LY") throw new HopDongChuaThanhLyError();
-  if (!input.nguoiDaiDienNhan?.trim()) throw new ThieuThongTinError("người đại diện đơn vị liên kết nhận");
 
   const dsHocVienHopDong = await prisma.dangKyHoc.findMany({
     where: { hopDongLienKetId, khoaId: hopDong.khoaId },
@@ -137,6 +137,8 @@ export async function banGiaoTheoLo(hopDongLienKetId: string, input: BanGiaoLoIn
   if (dsGiao.length === 0) throw new LoTrongError();
 
   const ngayBanGiao = input.ngayBanGiao ? new Date(input.ngayBanGiao) : new Date();
+  if (Number.isNaN(ngayBanGiao.getTime())) throw new ThieuThongTinError("ngày bàn giao hợp lệ");
+  const daiDien = input.nguoiDaiDienNhan?.trim() || null;
   // cùng 1 hợp đồng = cùng 1 khóa = cùng 1 chương trình -> cùng 1 loại văn bằng
   const lo = await vaoSoTrongTransaction(dsGiao[0].loaiVanBang, async (tx, soKeTiep) => {
     const soLoDaCo = await tx.banGiaoChungChi.count({ where: { hopDongLienKetId } });
@@ -145,9 +147,9 @@ export async function banGiaoTheoLo(hopDongLienKetId: string, input: BanGiaoLoIn
         maLo: `LO-${hopDong.maHopDong}-${String(soLoDaCo + 1).padStart(2, "0")}`,
         hopDongLienKetId,
         ngayBanGiao,
-        nguoiDaiDienNhan: input.nguoiDaiDienNhan.trim(),
+        nguoiDaiDienNhan: daiDien,
         nguoiBanGiao: input.nguoiThucHienTen,
-        ghiChu: input.ghiChu || null,
+        ghiChu: input.ghiChu?.trim() || null,
       },
     });
     for (const cc of dsGiao) {
@@ -157,7 +159,7 @@ export async function banGiaoTheoLo(hopDongLienKetId: string, input: BanGiaoLoIn
           trangThai: "DA_CAP",
           kenhNhan: "BAN_GIAO_DVLK",
           banGiaoId: banGiao.id,
-          nguoiNhan: `${input.nguoiDaiDienNhan.trim()} (${hopDong.donViLienKet.ten})`,
+          nguoiNhan: daiDien ? `${daiDien} (${hopDong.donViLienKet.ten})` : hopDong.donViLienKet.ten,
           ngayNhan: ngayBanGiao,
           soVaoSo: soKeTiep(),
         },

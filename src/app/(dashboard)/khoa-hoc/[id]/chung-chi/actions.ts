@@ -100,7 +100,7 @@ export async function banGiaoLoAction(_prev: KetQuaThaoTacCC, formData: FormData
   let biLoai: string[] = [];
   const ketQua = await thucHien(khoaId, async () => {
     const kq = await banGiaoTheoLo(String(formData.get("hopDongLienKetId")), {
-      nguoiDaiDienNhan: String(formData.get("nguoiDaiDienNhan") ?? ""),
+      nguoiDaiDienNhan: String(formData.get("nguoiDaiDienNhan") ?? "") || null,
       ngayBanGiao: String(formData.get("ngayBanGiao") ?? "") || null,
       ghiChu: String(formData.get("ghiChu") ?? "") || null,
       nguoiThucHienId: phien.userId,

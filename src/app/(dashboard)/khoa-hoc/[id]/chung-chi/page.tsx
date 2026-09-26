@@ -240,7 +240,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
                     {hd.banGiaos.length === 0
                       ? "—"
                       : hd.banGiaos
-                          .map((lo) => `${lo.maLo} (${lo.ngayBanGiao.toLocaleDateString("vi-VN")}, ${lo.nguoiDaiDienNhan})`)
+                          .map((lo) => `${lo.maLo} (${[lo.ngayBanGiao.toLocaleDateString("vi-VN"), lo.nguoiDaiDienNhan].filter(Boolean).join(", ")})`)
                           .join("; ")}
                   </TableCell>
                   <TableCell>

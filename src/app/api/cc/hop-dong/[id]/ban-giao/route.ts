@@ -13,7 +13,7 @@ export const POST = apiRoute(async (req: Request, { params }: Params) => {
   try {
     return NextResponse.json(
       await banGiaoTheoLo(id, {
-        nguoiDaiDienNhan: String(body.nguoiDaiDienNhan ?? ""),
+        nguoiDaiDienNhan: body.nguoiDaiDienNhan ? String(body.nguoiDaiDienNhan) : null,
         ngayBanGiao: body.ngayBanGiao ?? null,
         ghiChu: body.ghiChu ?? null,
         nguoiThucHienId: phien.userId,

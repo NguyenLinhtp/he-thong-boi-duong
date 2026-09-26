@@ -421,6 +421,24 @@ describe("CC-04 vào sổ cấp chứng chỉ, trao/bàn giao", () => {
     );
   });
 
+  it("thông tin bàn giao không bắt buộc: để trống vẫn vào sổ, người nhận ghi theo tên ĐVLK", async () => {
+    const f = await khoaDaKyDuyet({ hopDongThanhLy: true });
+
+    const { lo, soChungChi } = await banGiaoTheoLo(f.hopDong.id, { ...NGUOI, nguoiDaiDienNhan: "  ", ghiChu: "" });
+
+    expect(soChungChi).toBe(1);
+    expect([lo.nguoiDaiDienNhan, lo.ghiChu]).toEqual([null, null]);
+    expect(lo.ngayBanGiao.toDateString()).toBe(new Date().toDateString());
+    const ccD = await prisma.chungChi.findUniqueOrThrow({ where: { id: f.ccD.id } });
+    expect([ccD.trangThai, ccD.nguoiNhan]).toEqual(["DA_CAP", "ĐVLK CC"]);
+    expect(ccD.soVaoSo).not.toBeNull();
+  });
+
+  it("chặn ngày bàn giao không hợp lệ", async () => {
+    const f = await khoaDaKyDuyet({ hopDongThanhLy: true });
+    await expect(banGiaoTheoLo(f.hopDong.id, { ...NGUOI, ngayBanGiao: "abc" })).rejects.toThrow(ThieuThongTinError);
+  });
+
   it("số vào sổ tăng liên tiếp; sổ cấp tra cứu được theo tên/số hiệu", async () => {
     const f = await khoaDaKyDuyet({ hopDongThanhLy: true });
     const a = await traTrucTiep(f.ccA.id, { ...NGUOI, nguoiNhan: "A" });

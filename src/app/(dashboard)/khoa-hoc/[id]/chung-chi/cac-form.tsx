@@ -178,8 +178,10 @@ export function FormBanGiaoLo({
     <form action={formAction} className="flex flex-wrap items-end gap-1.5">
       <input type="hidden" name="khoaId" value={khoaId} />
       <input type="hidden" name="hopDongLienKetId" value={hopDongLienKetId} />
-      <Input name="nguoiDaiDienNhan" placeholder="Đại diện ĐVLK nhận" required className="w-44" />
+      {/* thông tin để quản lý, có thể để trống */}
+      <Input name="nguoiDaiDienNhan" placeholder="Đại diện ĐVLK nhận (không bắt buộc)" className="w-56" />
       <Input name="ngayBanGiao" type="date" defaultValue={homNay()} className="w-36" aria-label="Ngày bàn giao" />
+      <Input name="ghiChu" placeholder="Ghi chú (không bắt buộc)" className="w-48" />
       <Button type="submit" size="sm" disabled={dangXuLy}>
         {dangXuLy ? "..." : `Bàn giao lô ${soChoBanGiao} chứng chỉ`}
       </Button>
