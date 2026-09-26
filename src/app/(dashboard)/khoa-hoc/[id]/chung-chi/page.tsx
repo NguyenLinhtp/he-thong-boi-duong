@@ -3,10 +3,18 @@ import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { xetDeNghiCapChungChi, danhSachChungChiCuaKhoa } from "@/server/services/cc/cc-01-de-nghi";
+import { hopDongChoBanGiao } from "@/server/services/cc/cc-04-so-cap";
 import { ChuaPheDuyetKetQuaError } from "@/server/services/cc/loi-chung-chi";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { NutLapDeNghi, NutSinhSoHieu, NutHuyChungChi, FormKyDuyet } from "./cac-form";
-import { NHAN_TRANG_THAI_CHUNG_CHI } from "./nhan";
+import {
+  NutLapDeNghi,
+  NutSinhSoHieu,
+  NutHuyChungChi,
+  FormKyDuyet,
+  NutTraTrucTiep,
+  FormBanGiaoLo,
+} from "./cac-form";
+import { NHAN_TRANG_THAI_CHUNG_CHI, NHAN_KENH_NHAN } from "./nhan";
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -42,11 +50,15 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
     if (!(error instanceof ChuaPheDuyetKetQuaError)) throw error;
     xet = null;
   }
-  const [dsChungChi, choPhepCC02, choPhepCC03] = await Promise.all([
+  const [dsChungChi, dsHopDong, choPhepCC02, choPhepCC03, choPhepCC04] = await Promise.all([
     danhSachChungChiCuaKhoa(id),
+    hopDongChoBanGiao(id),
     coQuyen("CC-02"),
     coQuyen("CC-03"),
+    coQuyen("CC-04"),
   ]);
+  // học viên do ĐVLK tuyển sinh chỉ nhận qua lô bàn giao, không trao trực tiếp
+  const hocVienQuaDvlk = new Set(dsHopDong.flatMap((hd) => hd.hocVienIds));
   const soChoKy = dsChungChi.filter((cc) => cc.trangThai === "CHO_KY_DUYET").length;
   const soDeNghi = dsChungChi.filter((cc) => cc.trangThai === "DE_NGHI").length;
   const coChungChiDeIn = dsChungChi.some((cc) => cc.soHieu && cc.trangThai !== "DA_HUY");
@@ -142,8 +154,58 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
         </section>
       )}
 
+      {choPhepCC04 && dsHopDong.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold">CC-04 · Bàn giao theo lô về đơn vị liên kết</h2>
+          <p className="text-sm text-muted-foreground">
+            Chứng chỉ của học viên do đơn vị liên kết tuyển sinh chỉ được bàn giao theo lô, sau khi
+            hợp đồng liên kết đã thanh lý. Học viên tự đăng ký nhận trực tiếp ở bảng dưới.
+          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Hợp đồng</TableHead>
+                <TableHead>Đơn vị liên kết</TableHead>
+                <TableHead>Các lô đã giao</TableHead>
+                <TableHead>Bàn giao</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dsHopDong.map((hd) => (
+                <TableRow key={hd.id}>
+                  <TableCell className="font-mono">{hd.maHopDong}</TableCell>
+                  <TableCell>{hd.donViLienKet.ten}</TableCell>
+                  <TableCell className="text-xs">
+                    {hd.banGiaos.length === 0
+                      ? "—"
+                      : hd.banGiaos
+                          .map((lo) => `${lo.maLo} (${lo.ngayBanGiao.toLocaleDateString("vi-VN")}, ${lo.nguoiDaiDienNhan})`)
+                          .join("; ")}
+                  </TableCell>
+                  <TableCell>
+                    <FormBanGiaoLo
+                      khoaId={khoa.id}
+                      hopDongLienKetId={hd.id}
+                      soChoBanGiao={hd.soChoBanGiao}
+                      daThanhLy={hd.trangThai === "DA_THANH_LY"}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </section>
+      )}
+
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Chứng chỉ của khóa</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Chứng chỉ của khóa</h2>
+          {choPhepCC04 && (
+            <a href="/chung-chi/so-cap" className="text-sm underline">
+              Sổ cấp chứng chỉ (CC-04)
+            </a>
+          )}
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -165,6 +227,12 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
                       (QĐ {cc.soQuyetDinh}, {cc.nguoiKy})
                     </span>
                   )}
+                  {cc.trangThai === "DA_CAP" && (
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      - sổ {cc.soVaoSo}, {cc.kenhNhan ? NHAN_KENH_NHAN[cc.kenhNhan] : ""}
+                      {cc.banGiao ? ` lô ${cc.banGiao.maLo}` : ""}, {cc.ngayNhan?.toLocaleDateString("vi-VN")}
+                    </span>
+                  )}
                   {cc.trangThai === "DA_HUY" && (
                     <span className="ml-1 text-xs text-muted-foreground">({cc.lyDoHuy})</span>
                   )}
@@ -174,6 +242,9 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
                     <a href={`/khoa-hoc/${khoa.id}/chung-chi/in?ids=${cc.id}`} target="_blank" className="text-sm underline">
                       In
                     </a>
+                  )}
+                  {choPhepCC04 && cc.trangThai === "DA_KY_DUYET" && !hocVienQuaDvlk.has(cc.hocVienId) && (
+                    <NutTraTrucTiep khoaId={khoa.id} chungChiId={cc.id} hoTen={cc.hocVien.hoTen} />
                   )}
                   {choPhepCC02 && TRANG_THAI_HUY_DUOC.includes(cc.trangThai) && (
                     <NutHuyChungChi khoaId={khoa.id} chungChiId={cc.id} soHieu={cc.soHieu} />
