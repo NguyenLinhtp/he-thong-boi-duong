@@ -5,7 +5,8 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layHopDong } from "@/server/services/dvlk/dvlk-03-hop-dong";
 import { KhongTimThayHopDongDvlkError } from "@/server/services/dvlk/loi-dvlk";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { FormSuaHopDong } from "../cac-form";
+import { FormSuaHopDong, FormThanhLy } from "../cac-form";
+import { doiChieuThanhLy, NHAN_PHAN_LOAI } from "@/server/services/dvlk/dvlk-06-thanh-ly";
 import { NHAN_TRANG_THAI_HOP_DONG, NHAN_TRANG_THAI_HO_SO, dinhDangTien } from "../../nhan";
 import { FormXacNhanThuHoSo, ID_FORM_XAC_NHAN } from "../../form-xac-nhan-thu-ho-so";
 import { xacNhanThuHoSoTruongAction } from "../actions";
@@ -43,6 +44,8 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
   const daThanhLy = hd.trangThai === "DA_THANH_LY";
   const choPhepDVLK05 = !daThanhLy && (await coQuyen("DVLK-05"));
   const soChoThu = hd.dangKys.filter((dk) => dk.trangThai === "CHO_NOP_GIAY").length;
+  const choPhepDVLK06 = await coQuyen("DVLK-06");
+  const doiChieu = choPhepDVLK06 && !daThanhLy ? await doiChieuThanhLy(hd.id) : null;
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -79,6 +82,11 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
         </p>
         {daThanhLy ? (
           <p>
+            Biên bản <b>{hd.soBienBanThanhLy}</b> ·{" "}
+            <a href={`/don-vi-lien-ket/hop-dong/${hd.id}/bien-ban`} target="_blank" className="underline">
+              In biên bản thanh lý
+            </a>
+            {" · "}
             Đã thanh lý{hd.ngayQuyetToan ? ` ngày ${hd.ngayQuyetToan.toLocaleDateString("vi-VN")}` : ""} · số tiền
             quyết toán: <b>{dinhDangTien(hd.soTienQuyetToan)}</b>
           </p>
@@ -155,6 +163,64 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
           </TableBody>
         </Table>
       </section>
+      {doiChieu && (
+        <section className="flex flex-col gap-3 rounded-lg border p-4">
+          <h2 className="text-sm font-semibold">DVLK-06 · Thanh lý hợp đồng cuối khóa</h2>
+          <p className="text-sm font-medium">Bước 1 · Đối chiếu số học viên với hợp đồng</p>
+          {!doiChieu.ketQuaDaPheDuyet && (
+            <p className="text-sm text-destructive">
+              Kết quả khóa chưa được phê duyệt (KQ-04) - chưa thanh lý được.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded border px-2 py-0.5">Dự kiến: {doiChieu.tong.duKien ?? "—"}</span>
+            <span className="rounded border px-2 py-0.5 font-semibold">Hợp lệ (quyết toán): {doiChieu.tong.hopLe}</span>
+            <span className="rounded border px-2 py-0.5">Hoàn thành: {doiChieu.tong.hoanThanh}</span>
+            <span className="rounded border px-2 py-0.5">Không đạt: {doiChieu.tong.khongDat}</span>
+            <span className="rounded border px-2 py-0.5">Thôi học: {doiChieu.tong.thoiHoc}</span>
+            {doiChieu.tong.chuaCoKetQua > 0 && (
+              <span className="rounded border px-2 py-0.5">Chưa có kết quả: {doiChieu.tong.chuaCoKetQua}</span>
+            )}
+            {doiChieu.tong.chuaXuLy > 0 && (
+              <span className="rounded border border-destructive px-2 py-0.5 text-destructive">
+                Hồ sơ chưa xử lý: {doiChieu.tong.chuaXuLy} (sẽ không được xét tiếp sau thanh lý)
+              </span>
+            )}
+            <span className="rounded border px-2 py-0.5">Không tính: {doiChieu.tong.khongTinh}</span>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Mã học viên</TableHead>
+                <TableHead>Họ tên</TableHead>
+                <TableHead>Trạng thái hồ sơ</TableHead>
+                <TableHead>Điểm tổng kết</TableHead>
+                <TableHead>Đối chiếu</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {doiChieu.dong.map((d) => (
+                <TableRow key={d.dangKyId}>
+                  <TableCell>{d.maHocVien}</TableCell>
+                  <TableCell>{d.hoTen}</TableCell>
+                  <TableCell>{NHAN_TRANG_THAI_HO_SO[d.trangThaiDangKy] ?? d.trangThaiDangKy}</TableCell>
+                  <TableCell>{d.diemTongKet ?? "—"}</TableCell>
+                  <TableCell>{NHAN_PHAN_LOAI[d.phanLoai]}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <p className="text-sm font-medium">Bước 2 · Lập biên bản, ghi nhận số tiền quyết toán</p>
+          <p className="text-xs text-muted-foreground">
+            Gợi ý = đơn giá thỏa thuận × số học viên hợp lệ
+            {doiChieu.soTienGoiY != null ? ` = ${dinhDangTien(doiChieu.soTienGoiY)}` : " (hợp đồng chưa có đơn giá)"}. Sau khi
+            thanh lý, toàn bộ học viên hợp lệ được cập nhật tài chính &quot;Đã hoàn tất&quot;; học viên đạt được xét cấp văn
+            bằng và bàn giao theo lô về đơn vị liên kết.
+          </p>
+          <FormThanhLy id={hd.id} soTienGoiY={doiChieu.soTienGoiY} choPhep={doiChieu.ketQuaDaPheDuyet} />
+        </section>
+      )}
+
       {hd.loNopHoSos.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold">DVLK-05 · Các lô hồ sơ đã gửi về trường</h2>

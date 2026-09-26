@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { taoHopDong, capNhatHopDong, type HopDongInput } from "@/server/services/dvlk/dvlk-03-hop-dong";
 import { xacNhanThuHoSo } from "@/server/services/dvlk/dvlk-05-xac-nhan-thu-ho-so";
+import { thanhLyHopDong } from "@/server/services/dvlk/dvlk-06-thanh-ly";
 import { thucHienDvlk, type KetQuaThaoTacDvlk } from "../thuc-hien";
 
 const DUONG_DAN = "/don-vi-lien-ket/hop-dong";
@@ -69,5 +70,22 @@ export async function xacNhanThuHoSoTruongAction(_prev: KetQuaThaoTacDvlk, formD
       },
     );
     return `Đã xác nhận ${dsLo.reduce((t, lo) => t + lo.dangKys.length, 0)} hồ sơ, lô ${dsLo.map((lo) => lo.maLo).join(", ")}.`;
+  });
+}
+
+// DVLK-06 (Cán bộ tài chính): thanh lý hợp đồng - bước 2 sau khi xem đối chiếu
+export async function thanhLyHopDongAction(_prev: KetQuaThaoTacDvlk, formData: FormData): Promise<KetQuaThaoTacDvlk> {
+  const phien = await requirePermission("DVLK-06");
+  const id = String(formData.get("id"));
+  if (formData.get("daDoiChieu") !== "on") return { loi: "Hãy xác nhận đã đối chiếu số liệu trước khi thanh lý." };
+  return thucHienDvlk([DUONG_DAN, `${DUONG_DAN}/${id}`], async () => {
+    const { hopDong, soHocVienCapNhat } = await thanhLyHopDong(id, {
+      soTienQuyetToan: soHoacNull(formData.get("soTienQuyetToan")),
+      ngayThanhLy: String(formData.get("ngayThanhLy") ?? "") || null,
+      ghiChu: String(formData.get("ghiChu") ?? ""),
+      nguoiThucHienId: phien.userId,
+      nguoiThucHienTen: phien.hoTen,
+    });
+    return `Đã thanh lý, biên bản ${hopDong.soBienBanThanhLy}; cập nhật Đã hoàn tất cho ${soHocVienCapNhat} học viên.`;
   });
 }

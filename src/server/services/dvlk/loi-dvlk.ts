@@ -123,3 +123,16 @@ export class HoSoKhongChoThuError extends LoiDonViLienKet {
     super(`Hồ sơ không còn chờ đơn vị liên kết thu - không xác nhận lượt này: ${dsHoSo.join("; ")}`);
   }
 }
+
+// DVLK-06
+export class ChuaPheDuyetKetQuaDvlkError extends LoiDonViLienKet {
+  constructor() {
+    super("Kết quả khóa chưa được phê duyệt (KQ-04) - chưa đối chiếu được số học viên hoàn thành để thanh lý");
+  }
+}
+
+export class HopDongChuaThanhLyDvlkError extends LoiDonViLienKet {
+  constructor() {
+    super("Hợp đồng liên kết chưa thanh lý - chưa có biên bản thanh lý");
+  }
+}

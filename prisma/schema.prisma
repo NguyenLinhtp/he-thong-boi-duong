@@ -825,20 +825,26 @@ model DonViLienKet {
 }
 
 model HopDongLienKet {
-  id              String           @id @default(cuid())
-  maHopDong       String           @unique
-  donViLienKetId  String
-  donViLienKet    DonViLienKet     @relation(fields: [donViLienKetId], references: [id])
-  khoaId          String
-  khoa            Khoa             @relation(fields: [khoaId], references: [id])
-  soLuongDuKien   Int?
-  soLuongThucTe   Int?
-  donGiaThoaThuan Decimal?         @db.Decimal(12, 2)
-  trangThai       TrangThaiHopDong @default(DANG_TRIEN_KHAI)
-  ngayQuyetToan   DateTime?
-  soTienQuyetToan Decimal?         @db.Decimal(12, 2)
-  ghiChu          String?
-  createdAt       DateTime         @default(now())
+  id                 String           @id @default(cuid())
+  maHopDong          String           @unique
+  donViLienKetId     String
+  donViLienKet       DonViLienKet     @relation(fields: [donViLienKetId], references: [id])
+  khoaId             String
+  khoa               Khoa             @relation(fields: [khoaId], references: [id])
+  soLuongDuKien      Int?
+  soLuongThucTe      Int?
+  donGiaThoaThuan    Decimal?         @db.Decimal(12, 2)
+  trangThai          TrangThaiHopDong @default(DANG_TRIEN_KHAI)
+  ngayQuyetToan      DateTime?
+  soTienQuyetToan    Decimal?         @db.Decimal(12, 2)
+  // DVLK-06: biên bản thanh lý - số liệu đối chiếu chốt tại thời điểm thanh lý
+  soBienBanThanhLy   String?          @unique
+  nguoiThanhLy       String?
+  ghiChuThanhLy      String?
+  soHocVienHoanThanh Int?
+  soHocVienThoiHoc   Int?
+  ghiChu             String?
+  createdAt          DateTime         @default(now())
 
   dangKys    DangKyHoc[]
   banGiaos   BanGiaoChungChi[]

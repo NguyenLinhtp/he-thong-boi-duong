@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { taoHopDongAction, capNhatHopDongAction } from "./actions";
+import { taoHopDongAction, capNhatHopDongAction, thanhLyHopDongAction } from "./actions";
 import { ThongDiepDvlk } from "../cac-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ function CacTruongSoLieu({
         name="donGiaThoaThuan"
         type="number"
         min={0}
-        step={1000}
+        step={1}
         defaultValue={donGiaThoaThuan ?? ""}
         placeholder="Đơn giá thỏa thuận (đ/HV)"
         aria-label="Đơn giá thỏa thuận"
@@ -118,6 +118,55 @@ export function FormSuaHopDong({
         <CacTruongSoLieu soLuongDuKien={soLuongDuKien} donGiaThoaThuan={donGiaThoaThuan} ghiChu={ghiChu} />
         <Button type="submit" size="sm" disabled={dangXuLy}>
           {dangXuLy ? "Đang lưu..." : "Lưu"}
+        </Button>
+      </div>
+      <ThongDiepDvlk ketQua={ketQua} />
+    </form>
+  );
+}
+
+/** DVLK-06 bước 2: nhập số tiền quyết toán và thanh lý (sau khi xem bảng đối chiếu bước 1). */
+export function FormThanhLy({ id, soTienGoiY, choPhep }: { id: string; soTienGoiY: number | null; choPhep: boolean }) {
+  const [ketQua, formAction, dangXuLy] = useActionState(thanhLyHopDongAction, undefined);
+  return (
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        if (!confirm("Thanh lý hợp đồng? Sau khi thanh lý không sửa được hợp đồng và không nhận thêm hồ sơ.")) {
+          e.preventDefault();
+        }
+      }}
+      className="flex flex-col gap-2 rounded-lg border p-3"
+    >
+      <input type="hidden" name="id" value={id} />
+      <div className="flex flex-wrap items-end gap-2">
+        <Input
+          name="soTienQuyetToan"
+          type="number"
+          min={0}
+          step={1}
+          required
+          defaultValue={soTienGoiY ?? ""}
+          placeholder="Số tiền quyết toán (đ)"
+          aria-label="Số tiền quyết toán"
+          className="w-52"
+        />
+        <Input
+          name="ngayThanhLy"
+          type="date"
+          defaultValue={new Date().toISOString().slice(0, 10)}
+          aria-label="Ngày thanh lý"
+          className="w-40"
+        />
+        <Input name="ghiChu" placeholder="Ghi chú biên bản (không bắt buộc)" className="w-72" />
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="daDoiChieu" required />
+        Đã đối chiếu số học viên hoàn thành/thôi học với hợp đồng ở bảng trên
+      </label>
+      <div>
+        <Button type="submit" size="sm" disabled={dangXuLy || !choPhep}>
+          {dangXuLy ? "Đang thanh lý..." : "Lập biên bản & thanh lý hợp đồng"}
         </Button>
       </div>
       <ThongDiepDvlk ketQua={ketQua} />
