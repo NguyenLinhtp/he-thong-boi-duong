@@ -56,6 +56,7 @@ const THU_TU_BANG = [
   "banGiaoChungChi",
   "quyetDinhCapVanBang",
   "chungChi",
+  "mauBieuBaoCao",
 ] as const;
 
 type TenBang = (typeof THU_TU_BANG)[number];

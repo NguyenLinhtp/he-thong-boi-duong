@@ -6,3 +6,16 @@ export class KhoangNgayKhongHopLeError extends LoiBaoCao {
     super(`Kỳ báo cáo không hợp lệ: ${chiTiet}`);
   }
 }
+
+// BC-04
+export class MauBieuKhongHopLeError extends LoiBaoCao {
+  constructor(chiTiet: string) {
+    super(`Mẫu biểu không hợp lệ: ${chiTiet}`);
+  }
+}
+
+export class KhongTimThayMauBieuError extends LoiBaoCao {
+  constructor() {
+    super("Không tìm thấy mẫu biểu");
+  }
+}

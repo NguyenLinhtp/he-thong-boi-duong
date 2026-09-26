@@ -4,7 +4,8 @@ import { baoCaoDoanhThu, baoCaoCongNo } from "@/server/services/hp/hp-05-bao-cao
 import { khoangNgay, nhanKy, type KhoangNgay } from "@/server/services/bc/khoang-ngay";
 import { ExcelJS, themSheetBaoCao, sangBuffer, DINH_DANG_TIEN } from "@/server/services/bc/excel";
 
-export type LocBaoCaoTaiChinh = KhoangNgay & { dotTuyenSinhId?: string | null; khoaId?: string | null };
+// khoaIds: phạm vi khóa tùy ý (BC-04 dùng đúng các khóa thuộc kỳ của BC-02)
+export type LocBaoCaoTaiChinh = KhoangNgay & { dotTuyenSinhId?: string | null; khoaId?: string | null; khoaIds?: string[] };
 
 const CON_NO: TrangThaiHocPhi[] = ["CHUA_NOP", "CON_NO"];
 const QUA_DVLK: TrangThaiHocPhi[] = ["CHO_THANH_LY_HOP_DONG", "DA_HOAN_TAT"];
@@ -12,6 +13,7 @@ const QUA_DVLK: TrangThaiHocPhi[] = ["CHO_THANH_LY_HOP_DONG", "DA_HOAN_TAT"];
 /** Phạm vi khóa: 1 khóa, các khóa của 1 đợt, hoặc undefined = mọi khóa. */
 async function phamViKhoa(loc: LocBaoCaoTaiChinh): Promise<string[] | undefined> {
   if (loc.khoaId) return [loc.khoaId];
+  if (loc.khoaIds) return loc.khoaIds;
   if (loc.dotTuyenSinhId) {
     return (await prisma.khoa.findMany({ where: { dotTuyenSinhId: loc.dotTuyenSinhId }, select: { id: true } })).map(
       (k) => k.id,

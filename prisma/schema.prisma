@@ -953,3 +953,33 @@ model ThamSoHeThong {
 
   @@map("tham_so_he_thong")
 }
+
+// BC-04: cách nhóm dòng của biểu báo cáo gửi cấp trên
+enum NhomBaoCao {
+  TONG
+  LOAI_HINH
+  CHUONG_TRINH
+  KHOA
+}
+
+// BC-04: mẫu biểu báo cáo gửi cấp trên (Bộ/Sở GD&ĐT). "Cập nhật mẫu biểu khi
+// có thay đổi quy định": sửa = tạo phiên bản mới (ma, phienBan), phiên bản cũ
+// giữ lại (dangApDung = false) để xuất lại đúng mẫu của kỳ trước.
+// cot = [{ chiTieu, tieuDe }] theo thứ tự cột, chiTieu thuộc danh mục chỉ tiêu
+// trong services/bc/bc-04-mau-bieu.ts.
+model MauBieuBaoCao {
+  id           String     @id @default(cuid())
+  ma           String
+  phienBan     Int
+  ten          String
+  coQuanNhan   String?
+  canCu        String?
+  nhomTheo     NhomBaoCao
+  cot          Json
+  dangApDung   Boolean    @default(true)
+  nguoiCapNhat String
+  createdAt    DateTime   @default(now())
+
+  @@unique([ma, phienBan])
+  @@map("mau_bieu_bao_cao")
+}
