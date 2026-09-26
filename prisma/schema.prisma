@@ -736,6 +736,8 @@ model ChungChi {
   // CC-02: số hiệu theo sổ cấp, tăng dần, không trùng
   soHieu       String?              @unique
   ngayInSoHieu DateTime?
+  // CC-05: mã xác thực ngẫu nhiên (không đoán được) in trong mã QR trên văn bằng
+  maXacThuc    String?              @unique
   // CC-03: ký duyệt theo quyết định (nhập theo khóa hoặc theo lớp)
   quyetDinhId  String?
   quyetDinh    QuyetDinhCapVanBang? @relation(fields: [quyetDinhId], references: [id])

@@ -631,7 +631,7 @@
     "actor": "Học viên/Bên thứ ba (nhà tuyển dụng, đơn vị công tác)",
     "input": "Số hiệu chứng chỉ hoặc mã QR",
     "output": "Thông tin xác thực chứng chỉ (hợp lệ/không tìm thấy)",
-    "quy_tac_nghiep_vu": "Không hiển thị thông tin cá nhân nhạy cảm khi tra cứu công khai",
+    "quy_tac_nghiep_vu": "Không hiển thị thông tin cá nhân nhạy cảm khi tra cứu công khai; (bổ sung 27/09/2026) tra cứu theo số hiệu phải kèm họ tên người được cấp (số hiệu tăng dần nên chỉ số hiệu thì dò được danh sách người được cấp); mã QR chứa mã xác thực ngẫu nhiên; chỉ công bố văn bằng đã ký duyệt/đã cấp hoặc đã hủy",
     "do_uu_tien": "Thấp",
     "giai_doan": "Đợt 3"
   },

@@ -5,6 +5,7 @@ import { layThamSo } from "@/server/services/qt/qt-05-tham-so";
 import { tienToSoHieu, tieuDeVanBang } from "@/server/services/cc/van-bang";
 import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
 import { lyDoKhongDuDieuKien } from "@/server/services/cc/cc-01-de-nghi";
+import { sinhMaXacThuc, duongDanXacThuc } from "@/server/services/cc/cc-05-xac-thuc";
 import {
   KhongTimThayChungChiError,
   SaiTrangThaiChungChiError,
@@ -67,7 +68,8 @@ export async function sinhSoHieu(khoaId: string, nguoi: NguoiThucHien, chungChiI
       prisma.chungChi.update({
         // điều kiện trạng thái trong where: không gán số 2 lần nếu bấm trùng
         where: { id: cc.id, trangThai: "DE_NGHI" },
-        data: { soHieu: so, trangThai: "CHO_KY_DUYET", ngayInSoHieu: new Date() },
+        // CC-05: mã xác thực cho mã QR cấp cùng số hiệu
+        data: { soHieu: so, trangThai: "CHO_KY_DUYET", ngayInSoHieu: new Date(), maXacThuc: sinhMaXacThuc() },
       }),
     );
     daCapSo.push({ chungChiId: cc.id, hoTen: cc.hocVien.hoTen, soHieu });
@@ -130,10 +132,14 @@ export async function duLieuInChungChi(chungChiIds: string[]) {
     tieuDeVanBang("CHUNG_NHAN"),
   ]);
   return {
-    dsChungChi: dsChungChi.map((cc) => ({
-      ...cc,
-      tieuDe: cc.loaiVanBang === "CHUNG_NHAN" ? tieuDeChungNhan : tieuDeChungChi,
-    })),
+    dsChungChi: await Promise.all(
+      dsChungChi.map(async (cc) => ({
+        ...cc,
+        tieuDe: cc.loaiVanBang === "CHUNG_NHAN" ? tieuDeChungNhan : tieuDeChungChi,
+        // CC-05: link tra cứu công khai in thành mã QR
+        duongDanXacThuc: cc.maXacThuc ? await duongDanXacThuc(cc.maXacThuc) : null,
+      })),
+    ),
     tenCoQuan: tenCoQuan ?? "CƠ SỞ ĐÀO TẠO, BỒI DƯỠNG",
   };
 }

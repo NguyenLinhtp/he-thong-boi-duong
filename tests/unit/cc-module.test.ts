@@ -6,6 +6,7 @@ import { xuatExcelDanhSachHoanThanh } from "@/server/services/cc/xuat-danh-sach-
 import { sinhSoHieu, huyChungChi, duLieuInChungChi } from "@/server/services/cc/cc-02-so-hieu";
 import { kyDuyetChungChi, danhSachQuyetDinhCuaKhoa, soVanBangChoQuyetDinh } from "@/server/services/cc/cc-03-ky-duyet";
 import { traTrucTiep, banGiaoTheoLo, soCapChungChi } from "@/server/services/cc/cc-04-so-cap";
+import { xacThucTheoMa, traCuuTheoSoHieu } from "@/server/services/cc/cc-05-xac-thuc";
 import { thietLapLoaiVanBang, DoiLoaiVanBangKhiDaLapError } from "@/server/services/ct/ct-01-loai-van-bang";
 import {
   ChuaPheDuyetKetQuaError,
@@ -566,5 +567,59 @@ describe("CC-01 (bổ sung) danh sách hoàn thành theo khóa/lớp và xuất 
     expect(giaTri).toContain("2|B Không đạt");
     expect(toanBo).not.toContain("C Còn nợ");
     expect(toanBo).toContain("Tổng cộng: 2 học viên");
+  });
+});
+
+describe("CC-05 tra cứu, xác thực văn bằng công khai", () => {
+  const KY = { soQuyetDinh: "QĐ-CC-05", ngayKy: "2026-11-05", nguoiKy: "Hiệu trưởng", nguoiThucHienTen: "Cán bộ test CC" };
+
+  it("mã xác thực cấp cùng số hiệu; chưa ký duyệt thì chưa công bố; ký duyệt xong -> hợp lệ, không lộ thông tin nhạy cảm", async () => {
+    const f = await taoKhoaDuDieuKien(2);
+    await prisma.hocVien.update({ where: { id: f.datCaNhan.id }, data: { ngaySinh: new Date("1990-05-17"), soCCCD: Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("") } });
+    const { daCapSo } = await sinhSoHieu(f.khoa.id, NGUOI);
+    const dsCc = await prisma.chungChi.findMany({ where: { khoaId: f.khoa.id } });
+    expect(dsCc.every((cc) => /^[0-9a-f]{16}$/.test(cc.maXacThuc ?? ""))).toBe(true);
+    expect(new Set(dsCc.map((cc) => cc.maXacThuc)).size).toBe(2);
+    const cc = dsCc.find((c) => c.hocVienId === f.datCaNhan.id)!;
+
+    expect(await xacThucTheoMa(cc.maXacThuc!)).toEqual({ trangThai: "KHONG_TIM_THAY" });
+
+    await kyDuyetChungChi(f.khoa.id, KY);
+    const kq = await xacThucTheoMa(cc.maXacThuc!.toUpperCase());
+    expect(kq).toMatchObject({
+      trangThai: "HOP_LE",
+      soHieu: daCapSo.find((d) => d.chungChiId === cc.id)!.soHieu,
+      hoTen: "A Đạt cá nhân",
+      namSinh: 1990,
+      soQuyetDinh: "QĐ-CC-05",
+      loaiVanBang: "chứng chỉ",
+    });
+    expect(Object.keys(kq)).not.toEqual(expect.arrayContaining(["soCCCD"]));
+    expect(JSON.stringify(kq)).not.toMatch(/17\/5\/1990|1990-05-17|soCCCD|soDienThoai|email|donViCongTac|diem/);
+
+    const inAn = await duLieuInChungChi([cc.id]);
+    expect(inAn.dsChungChi[0].duongDanXacThuc).toMatch(new RegExp(`/xac-thuc-van-bang/${cc.maXacThuc}$`));
+  });
+
+  it("tra cứu theo số hiệu bắt buộc khớp họ tên (không phân biệt hoa thường, dấu); sai/thiếu họ tên như không tìm thấy", async () => {
+    const f = await taoKhoaDuDieuKien(1);
+    const { daCapSo } = await sinhSoHieu(f.khoa.id, NGUOI);
+    await kyDuyetChungChi(f.khoa.id, KY);
+    const soHieu = daCapSo[0].soHieu;
+
+    expect((await traCuuTheoSoHieu(soHieu.toLowerCase(), "  a  DAT ca nhân ")).trangThai).toBe("HOP_LE");
+    expect(await traCuuTheoSoHieu(soHieu, "Người khác")).toEqual({ trangThai: "KHONG_TIM_THAY" });
+    expect(await traCuuTheoSoHieu(soHieu, "")).toEqual({ trangThai: "KHONG_TIM_THAY" });
+    expect(await traCuuTheoSoHieu("CC1900-99999", "A Đạt cá nhân")).toEqual({ trangThai: "KHONG_TIM_THAY" });
+    expect(await xacThucTheoMa("khong-hop-le")).toEqual({ trangThai: "KHONG_TIM_THAY" });
+  });
+
+  it("văn bằng đã hủy báo 'đã hủy', không kèm số quyết định", async () => {
+    const f = await taoKhoaDuDieuKien(1);
+    const { daCapSo } = await sinhSoHieu(f.khoa.id, NGUOI);
+    const cc = await huyChungChi(daCapSo[0].chungChiId, "In sai", NGUOI);
+
+    const kq = await xacThucTheoMa(cc.maXacThuc!);
+    expect(kq).toMatchObject({ trangThai: "DA_HUY", soHieu: cc.soHieu, soQuyetDinh: null });
   });
 });

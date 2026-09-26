@@ -123,7 +123,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 8. Quản lý chứng chỉ/chứng nhận
 
-- [ ] **CC-05** — Tra cứu, xác thực chứng chỉ
+- [x] **CC-05** — Tra cứu, xác thực chứng chỉ
 
 ### 9. Báo cáo – Thống kê – Dashboard
 

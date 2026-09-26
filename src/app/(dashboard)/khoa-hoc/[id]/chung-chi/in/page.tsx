@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import QRCode from "qrcode";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachChungChiCuaKhoa } from "@/server/services/cc/cc-01-de-nghi";
@@ -32,13 +33,29 @@ export default async function InChungChiPage({
   const idsCuaKhoa = new Set((await danhSachChungChiCuaKhoa(id)).map((cc) => cc.id));
   const idsIn = ids ? ids.split(",").filter((x) => idsCuaKhoa.has(x)) : [...idsCuaKhoa];
   const { dsChungChi, tenCoQuan } = await duLieuInChungChi(idsIn);
+  // CC-05: mã QR trỏ về trang xác thực công khai (SVG sinh phía server từ link tin cậy)
+  const maQr = new Map(
+    await Promise.all(
+      dsChungChi
+        .filter((cc) => cc.duongDanXacThuc)
+        .map(
+          async (cc) =>
+            [
+              cc.id,
+              await QRCode.toString(cc.duongDanXacThuc!, { type: "svg", margin: 0 }),
+            ] as const,
+        ),
+    ),
+  );
 
   return (
     <main className="flex flex-col items-center gap-6 p-6 print:p-0">
       <div className="print:hidden">
         <NutIn />
       </div>
-      {dsChungChi.length === 0 && <p className="text-sm text-muted-foreground">Không có chứng chỉ nào đã có số hiệu để in.</p>}
+      {dsChungChi.length === 0 && (
+        <p className="text-sm text-muted-foreground">Không có chứng chỉ nào đã có số hiệu để in.</p>
+      )}
       {dsChungChi.map((cc) => (
         <article
           key={cc.id}
@@ -52,7 +69,10 @@ export default async function InChungChiPage({
             <p>
               Chứng nhận ông/bà: <b>{cc.hocVien.hoTen}</b>
             </p>
-            <p>Ngày sinh: {cc.hocVien.ngaySinh ? cc.hocVien.ngaySinh.toLocaleDateString("vi-VN") : "…………"}</p>
+            <p>
+              Ngày sinh:{" "}
+              {cc.hocVien.ngaySinh ? cc.hocVien.ngaySinh.toLocaleDateString("vi-VN") : "…………"}
+            </p>
             {cc.hocVien.donViCongTac && <p>Đơn vị công tác: {cc.hocVien.donViCongTac}</p>}
             <p>
               Đã hoàn thành chương trình bồi dưỡng: <b>{cc.khoa.chuongTrinh.ten}</b>
@@ -65,13 +85,24 @@ export default async function InChungChiPage({
             </p>
           </div>
           <div className="mt-6 flex justify-between text-sm">
-            <div className="text-left">
-              <p>Số hiệu: {cc.soHieu}</p>
-              <p>Số vào sổ cấp: {cc.soVaoSo ?? "…………"}</p>
-              {cc.soQuyetDinh && <p>Quyết định số: {cc.soQuyetDinh}</p>}
+            <div className="flex items-end gap-3 text-left">
+              {maQr.has(cc.id) && (
+                <div className="flex flex-col items-center gap-0.5">
+                  <div className="size-20" dangerouslySetInnerHTML={{ __html: maQr.get(cc.id)! }} />
+                  <span className="text-[10px]">Quét để xác thực</span>
+                </div>
+              )}
+              <div>
+                <p>Số hiệu: {cc.soHieu}</p>
+                <p>Số vào sổ cấp: {cc.soVaoSo ?? "…………"}</p>
+                {cc.soQuyetDinh && <p>Quyết định số: {cc.soQuyetDinh}</p>}
+              </div>
             </div>
             <div className="text-center">
-              <p>…………, ngày {cc.ngayCap ? cc.ngayCap.toLocaleDateString("vi-VN") : "…… tháng …… năm ……"}</p>
+              <p>
+                …………, ngày{" "}
+                {cc.ngayCap ? cc.ngayCap.toLocaleDateString("vi-VN") : "…… tháng …… năm ……"}
+              </p>
               <p className="font-semibold">NGƯỜI KÝ</p>
               <p className="mt-12">{cc.nguoiKy ?? ""}</p>
             </div>
