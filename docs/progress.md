@@ -127,7 +127,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 9. Báo cáo – Thống kê – Dashboard
 
-- [ ] **BC-01** — Dashboard tổng quan thời gian thực
+- [x] **BC-01** — Dashboard tổng quan thời gian thực
 - [x] **BC-04** — Xuất báo cáo theo mẫu gửi cấp trên
 - [x] **BC-05** — Tra cứu hồ sơ lưu trữ điện tử
 
