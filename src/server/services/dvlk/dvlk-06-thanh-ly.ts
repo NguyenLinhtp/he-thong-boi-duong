@@ -19,7 +19,7 @@ import {
  * thành) kể cả người thôi học giữa chừng - đơn vị liên kết quyết toán cho cả
  * họ. Hồ sơ bị hủy/không hợp lệ hoặc chưa xử lý xong không tính.
  */
-const TRANG_THAI_HOP_LE: TrangThaiDangKy[] = ["CHINH_THUC", "HOAN_THANH", "THOI_HOC"];
+export const TRANG_THAI_HOP_LE: TrangThaiDangKy[] = ["CHINH_THUC", "HOAN_THANH", "THOI_HOC"];
 const TRANG_THAI_KHONG_TINH: TrangThaiDangKy[] = ["HUY_QUA_HAN_NOP_GIAY", "KHONG_HOP_LE"];
 
 export type PhanLoaiThanhLy = "HOAN_THANH" | "KHONG_DAT" | "CHUA_CO_KET_QUA" | "THOI_HOC" | "CHUA_XU_LY" | "KHONG_TINH";

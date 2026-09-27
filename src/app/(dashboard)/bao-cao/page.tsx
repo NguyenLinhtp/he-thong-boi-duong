@@ -130,6 +130,9 @@ export default async function DashboardPage() {
         <Link href="/bao-cao/ho-so-luu-tru" className="underline">
           BC-05 Tra cứu hồ sơ lưu trữ
         </Link>
+        <Link href="/don-vi-lien-ket/bao-cao" className="underline">
+          DVLK-07 Công nợ, doanh thu theo đơn vị liên kết
+        </Link>
       </section>
     </main>
   );

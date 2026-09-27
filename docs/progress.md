@@ -133,7 +133,7 @@ Nguồn: `docs/functions.json`. Đánh dấu `[x]` khi đã code + test pass + r
 
 ### 11. Quản lý đơn vị liên kết
 
-- [ ] **DVLK-07** — Báo cáo công nợ và doanh thu theo đơn vị liên kết
+- [x] **DVLK-07** — Báo cáo công nợ và doanh thu theo đơn vị liên kết
 
 
 Tổng cộng: 70 chức năng (69 gốc + KH-07 mở rộng).
