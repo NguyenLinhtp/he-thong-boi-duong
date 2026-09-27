@@ -4,7 +4,7 @@ import {
   danhSachHocVienTheoKhoa,
   themHocVienVaoKhoa,
 } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
-import { KhongTimThayKhoaError, DaDangKyKhoaNayError } from "@/server/services/hv/loi-hoc-vien";
+import { KhongTimThayKhoaError, DaDangKyKhoaNayError, KhoaDichKhongNhanHocVienError } from "@/server/services/hv/loi-hoc-vien";
 
 type Params = { params: Promise<{ khoaId: string }> };
 
@@ -15,7 +15,7 @@ export const GET = apiRoute(async (_req: Request, { params }: Params) => {
 });
 
 export const POST = apiRoute(async (req: Request, { params }: Params) => {
-  await requirePermission("HV-09");
+  const phien = await requirePermission("HV-09");
   const { khoaId } = await params;
   const body = await req.json();
 
@@ -30,11 +30,11 @@ export const POST = apiRoute(async (req: Request, { params }: Params) => {
         email: body.email ?? null,
         donViCongTac: body.donViCongTac ?? null,
         lyDo: body.lyDo ?? null,
-      }),
+      }, { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen }),
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof DaDangKyKhoaNayError) {
+    if (error instanceof DaDangKyKhoaNayError || error instanceof KhoaDichKhongNhanHocVienError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
     if (error instanceof KhongTimThayKhoaError) {

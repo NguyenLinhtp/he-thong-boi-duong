@@ -262,7 +262,7 @@ export async function themHocVienVaoKhoaAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  await requirePermission("HV-09");
+  const phien = await requirePermission("HV-09");
   const khoaId = String(formData.get("khoaId"));
 
   try {
@@ -271,7 +271,7 @@ export async function themHocVienVaoKhoaAction(
       hoTen: String(formData.get("hoTen")),
       soCCCD: String(formData.get("soCCCD")),
       lyDo: String(formData.get("lyDo") || "") || null,
-    });
+    }, { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen });
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;
@@ -281,15 +281,22 @@ export async function themHocVienVaoKhoaAction(
   return undefined;
 }
 
-export async function xoaHocVienKhoiKhoaAction(khoaId: string, dangKyId: string): Promise<void> {
-  await requirePermission("HV-09");
-  await xoaHocVienKhoiKhoa(dangKyId);
+// HV-09: xóa có thể bị chặn (đã có điểm/chứng chỉ, đã nộp học phí, hồ sơ ĐVLK) -> trả thông điệp cho form
+export async function xoaHocVienKhoiKhoaAction(khoaId: string, dangKyId: string): Promise<string | undefined> {
+  const phien = await requirePermission("HV-09");
+  try {
+    await xoaHocVienKhoiKhoa(dangKyId, null, { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen });
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
   revalidatePath(`/khoa-hoc/${khoaId}`);
+  return undefined;
 }
 
 export async function ghiNhanThoiHocAction(khoaId: string, dangKyId: string): Promise<void> {
-  await requirePermission("HV-09");
-  await ghiNhanThoiHoc(dangKyId);
+  const phien = await requirePermission("HV-09");
+  await ghiNhanThoiHoc(dangKyId, null, { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen });
   revalidatePath(`/khoa-hoc/${khoaId}`);
 }
 
@@ -297,13 +304,13 @@ export async function chuyenHocVienSangKhoaAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  await requirePermission("HV-09");
+  const phien = await requirePermission("HV-09");
   const khoaId = String(formData.get("khoaId"));
   const dangKyId = String(formData.get("dangKyId"));
   const khoaMoiId = String(formData.get("khoaMoiId"));
 
   try {
-    await chuyenHocVienSangKhoa(dangKyId, khoaMoiId);
+    await chuyenHocVienSangKhoa(dangKyId, khoaMoiId, String(formData.get("lyDo") || "") || null, { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen });
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;

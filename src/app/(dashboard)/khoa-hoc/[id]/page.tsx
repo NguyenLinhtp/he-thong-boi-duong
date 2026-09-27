@@ -17,7 +17,11 @@ import {
   danhSachHopLeChoXetDuyet,
   danhSachChinhThuc,
 } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
-import { danhSachHocVienTheoKhoa } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
+import {
+  danhSachHocVienTheoKhoa,
+  lichSuThayDoiDanhSach,
+  NHAN_HANH_DONG_HV09,
+} from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
 import { buoiHocDaKetThuc } from "@/server/services/gd/gd-05-link-truc-tuyen";
 import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -32,11 +36,11 @@ import { FormThamDinh } from "./form-tham-dinh";
 import { FormXetDuyet } from "./form-xet-duyet";
 import { FormThemHocVien } from "./form-them-hoc-vien";
 import { FormChuyenKhoa } from "./form-chuyen-khoa";
+import { FormXoaHocVien } from "./form-xoa-hoc-vien";
 import { HangBuoiHoc } from "./hang-buoi-hoc";
 import {
   tuDongTaoLinkAction,
   xacNhanNopGiayAction,
-  xoaHocVienKhoiKhoaAction,
   ghiNhanThoiHocAction,
 } from "./actions";
 
@@ -119,6 +123,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     dsChinhThuc,
     dsHocVienTheoKhoa,
     dsKhoaKhac,
+    lichSuDanhSach,
   ] = await Promise.all([
     danhSachPhanCong(id),
     danhSachGiangVien(),
@@ -136,6 +141,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     danhSachChinhThuc(id),
     danhSachHocVienTheoKhoa(id),
     danhSachKhoa(),
+    lichSuThayDoiDanhSach(id),
   ]);
   const dsKhoaKhacRutGon = dsKhoaKhac
     .filter((k) => k.id !== khoa.id)
@@ -482,11 +488,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
                         </Button>
                       </form>
                     )}
-                    <form action={xoaHocVienKhoiKhoaAction.bind(null, khoa.id, dk.id)}>
-                      <Button type="submit" variant="ghost" className="h-7 px-2 text-xs text-destructive">
-                        Xóa
-                      </Button>
-                    </form>
+                    <FormXoaHocVien khoaId={khoa.id} dangKyId={dk.id} />
                   </div>
                 </TableCell>
               </TableRow>
@@ -500,6 +502,21 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
             )}
           </TableBody>
         </Table>
+
+        {lichSuDanhSach.length > 0 && (
+          <details className="text-sm">
+            <summary className="cursor-pointer font-medium">Lịch sử thay đổi danh sách ({lichSuDanhSach.length})</summary>
+            <ul className="mt-2 flex flex-col gap-1">
+              {lichSuDanhSach.map((ls) => (
+                <li key={ls.id}>
+                  <span className="text-muted-foreground">{ls.thoiGian.toLocaleString("vi-VN")}</span> ·{" "}
+                  {NHAN_HANH_DONG_HV09[ls.hanhDong] ?? ls.hanhDong}: {ls.chiTiet} ·{" "}
+                  <span className="text-muted-foreground">{ls.nguoiThucHienTen}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">

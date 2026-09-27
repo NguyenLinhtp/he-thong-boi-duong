@@ -35,6 +35,22 @@ export class SaiTrangThaiXacNhanNopGiayError extends Error {
 }
 
 // DVLK-05: hồ sơ gắn hợp đồng liên kết do đơn vị liên kết thu giấy, xác nhận theo lô ở DVLK-05
+// HV-09: tiền đã nộp gắn theo khóa (HocPhi/PhieuThu) - xóa/chuyển khóa sẽ bỏ
+// rơi khoản đã thu; hoàn/chuyển học phí là quyết định của tài chính
+export class DaNopHocPhiKhoaNayError extends Error {
+  constructor() {
+    super(
+      "Học viên đã nộp học phí cho khóa này - không xóa/chuyển khóa; ghi nhận thôi học hoặc để cán bộ tài chính xử lý hoàn/chuyển học phí trước",
+    );
+  }
+}
+
+export class KhoaDichKhongNhanHocVienError extends Error {
+  constructor(lyDo: string) {
+    super(`Khóa đích không nhận thêm học viên: ${lyDo}`);
+  }
+}
+
 export class HoSoQuaDonViLienKetError extends Error {
   constructor() {
     super("Hồ sơ đăng ký qua đơn vị liên kết - xác nhận thu hồ sơ giấy theo lô ở DVLK-05");
