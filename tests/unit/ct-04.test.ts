@@ -4,6 +4,7 @@ import {
   suaChuongTrinhDaBanHanh,
   lichSuPhienBan,
   SuaTruongAnhHuongKhoaDangChayError,
+  ThoiLuongLechTongTietError,
 } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
 import { SaiTrangThaiChuongTrinhError } from "@/server/services/ct/loi-chuong-trinh";
 
@@ -12,6 +13,7 @@ const loaiHinhTaoTrongTest: string[] = [];
 const khoaTaoTrongTest: string[] = [];
 
 afterAll(async () => {
+  await prisma.hocPhan.deleteMany({ where: { chuongTrinhId: { in: chuongTrinhTaoTrongTest } } });
   await prisma.khoa.deleteMany({ where: { id: { in: khoaTaoTrongTest } } });
   await prisma.chuongTrinhPhienBan.deleteMany({
     where: { chuongTrinhId: { in: chuongTrinhTaoTrongTest } },
@@ -73,6 +75,7 @@ describe("CT-04 cập nhật/chỉnh sửa chương trình đã ban hành", () =
 
   it("cho sửa tự do (kể cả đổi loại hình/tổng thời lượng) khi không có khóa hoạt động", async () => {
     const { ct } = await taoChuongTrinhDaBanHanh();
+    await prisma.hocPhan.create({ data: { chuongTrinhId: ct.id, ten: "HP", soTiet: 99, thuTu: 1 } });
     const lhKhac = await prisma.loaiHinhBoiDuong.create({
       data: { ma: `LH_CT04_KHAC_${crypto.randomUUID()}`, ten: "Loại hình khác" },
     });
@@ -114,5 +117,21 @@ describe("CT-04 cập nhật/chỉnh sửa chương trình đã ban hành", () =
     });
     expect(daSua.ten).toBe("Tên mới vẫn được đổi");
     expect(daSua.tongThoiLuong).toBe(10);
+  });
+
+  it("chặn đổi tổng thời lượng lệch tổng số tiết học phần (CT-02) - học phần đã khóa sau ban hành", async () => {
+    const { ct, lh } = await taoChuongTrinhDaBanHanh();
+    await prisma.hocPhan.create({ data: { chuongTrinhId: ct.id, ten: "HP 1", soTiet: 6, thuTu: 1 } });
+    await prisma.hocPhan.create({ data: { chuongTrinhId: ct.id, ten: "HP 2", soTiet: 4, thuTu: 2 } });
+
+    await expect(
+      suaChuongTrinhDaBanHanh(ct.id, { ten: "X", loaiHinhBoiDuongId: lh.id, tongThoiLuong: 12 }),
+    ).rejects.toThrow(ThoiLuongLechTongTietError);
+    const sau = await prisma.chuongTrinh.findUniqueOrThrow({ where: { id: ct.id } });
+    expect([sau.tongThoiLuong, sau.phienBanHienTai]).toEqual([10, ct.phienBanHienTai]);
+
+    // giữ nguyên thời lượng (khớp 10 tiết) vẫn sửa được các trường khác
+    const daSua = await suaChuongTrinhDaBanHanh(ct.id, { ten: "Tên mới", loaiHinhBoiDuongId: lh.id, tongThoiLuong: 10 });
+    expect(daSua.ten).toBe("Tên mới");
   });
 });

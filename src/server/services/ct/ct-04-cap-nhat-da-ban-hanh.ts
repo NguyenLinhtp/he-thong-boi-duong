@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { tongSoTietHocPhan } from "@/server/services/ct/ct-02-hoc-phan";
 import {
   SaiTrangThaiChuongTrinhError,
   KhongTimThayChuongTrinhError,
@@ -9,6 +10,14 @@ export class SuaTruongAnhHuongKhoaDangChayError extends Error {
     super(
       "Chương trình đang có khóa hoạt động, chỉ được sửa tên/mục tiêu/đối tượng áp dụng - không được đổi tổng thời lượng hoặc loại hình",
     );
+  }
+}
+
+// CT-02 "Tổng số tiết học phần phải khớp tổng thời lượng chương trình": học
+// phần đã khóa sau ban hành nên thời lượng mới phải bằng tổng tiết hiện có
+export class ThoiLuongLechTongTietError extends Error {
+  constructor(tongTiet: number) {
+    super(`Tổng thời lượng phải khớp tổng số tiết các học phần (${tongTiet} tiết)`);
   }
 }
 
@@ -57,6 +66,11 @@ export async function suaChuongTrinhDaBanHanh(
     const doiThoiLuong = input.tongThoiLuong !== chuongTrinh.tongThoiLuong;
     const doiLoaiHinh = input.loaiHinhBoiDuongId !== chuongTrinh.loaiHinhBoiDuongId;
     if (doiThoiLuong || doiLoaiHinh) throw new SuaTruongAnhHuongKhoaDangChayError();
+  }
+
+  if (input.tongThoiLuong !== undefined && input.tongThoiLuong !== chuongTrinh.tongThoiLuong) {
+    const tongTiet = await tongSoTietHocPhan(id);
+    if (input.tongThoiLuong !== tongTiet) throw new ThoiLuongLechTongTietError(tongTiet);
   }
 
   return prisma.$transaction(async (tx) => {
