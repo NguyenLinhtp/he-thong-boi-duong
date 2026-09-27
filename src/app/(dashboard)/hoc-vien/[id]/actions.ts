@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/guard";
-import { capNhatHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
+import { capNhatHoSoHocVien, phamViHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
 
 export async function capNhatHoSoAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  await requirePermission("HV-08");
+  const phien = await requirePermission("HV-08");
   const id = String(formData.get("id"));
   const ngaySinh = String(formData.get("ngaySinh") || "");
   const donViCongTac = String(formData.get("donViCongTac") || "");
@@ -26,7 +26,7 @@ export async function capNhatHoSoAction(
       soCCCD: soCCCD || null,
       soDienThoai: soDienThoai || null,
       email: email || null,
-    });
+    }, await phamViHoSoHocVien(phien.userId));
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;

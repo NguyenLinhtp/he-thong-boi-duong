@@ -125,6 +125,13 @@ export class KhongTimThayHocVienError extends Error {
   }
 }
 
+// HV-08: vai trò Học viên chỉ "tự cập nhật thông tin cá nhân" của chính mình
+export class NgoaiPhamViHoSoHocVienError extends Error {
+  constructor(lyDo = "Học viên chỉ được xem/cập nhật hồ sơ của chính mình") {
+    super(lyDo);
+  }
+}
+
 export class CccdTrungError extends Error {
   constructor() {
     super("Số CCCD đã được dùng cho 1 học viên khác trong hệ thống");

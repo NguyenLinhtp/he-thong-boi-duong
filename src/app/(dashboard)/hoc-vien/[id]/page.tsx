@@ -1,8 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
-import { layHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
-import { KhongTimThayHocVienError } from "@/server/services/hv/loi-hoc-vien";
+import { layHoSoHocVien, phamViHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
+import { KhongTimThayHocVienError, NgoaiPhamViHoSoHocVienError } from "@/server/services/hv/loi-hoc-vien";
 import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
 import { danhSachThongBaoCuaHocVien } from "@/server/services/hv/hv-10-thong-bao";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -42,8 +42,9 @@ const NHAN_TRANG_THAI_DANG_KY: Record<string, string> = {
 };
 
 export default async function ChiTietHocVienPage({ params }: { params: Promise<{ id: string }> }) {
+  let phien;
   try {
-    await requirePermission("HV-08");
+    phien = await requirePermission("HV-08");
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
@@ -53,11 +54,15 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
   }
 
   const { id } = await params;
+  const phamVi = await phamViHoSoHocVien(phien.userId);
   let hocVien;
   try {
-    hocVien = await layHoSoHocVien(id);
+    hocVien = await layHoSoHocVien(id, phamVi);
   } catch (error) {
     if (error instanceof KhongTimThayHocVienError) notFound();
+    if (error instanceof NgoaiPhamViHoSoHocVienError) {
+      return <p className="p-6 text-destructive">{error.message}</p>;
+    }
     throw error;
   }
 
@@ -71,6 +76,7 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
 
       <FormSuaHoSo
         hocVien={hocVien}
+        hocVienTuCapNhat={!phamVi.toanBo}
         dsChucDanhHocVi={dsChucDanhHocVi.map((cd) => ({ id: cd.id, ten: cd.ten }))}
       />
 

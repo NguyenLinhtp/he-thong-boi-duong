@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
-import { danhSachHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
+import { danhSachHocVien, phamViHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,9 @@ export default async function HocVienPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  let phien;
   try {
-    await requirePermission("HV-08");
+    phien = await requirePermission("HV-08");
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
@@ -23,7 +24,13 @@ export default async function HocVienPage({
   }
 
   const { q } = await searchParams;
-  const dsHocVien = await danhSachHocVien(q || undefined);
+  const phamVi = await phamViHoSoHocVien(phien.userId);
+  // học viên: chỉ có hồ sơ của chính mình -> vào thẳng
+  if (!phamVi.toanBo) {
+    if (phamVi.hocVienId) redirect(`/hoc-vien/${phamVi.hocVienId}`);
+    return <p className="p-6 text-muted-foreground">Tài khoản chưa được liên kết với hồ sơ học viên nào.</p>;
+  }
+  const dsHocVien = await danhSachHocVien(q || undefined, phamVi);
 
   return (
     <main className="flex flex-col gap-6 p-6">

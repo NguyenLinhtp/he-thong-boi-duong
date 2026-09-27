@@ -8,8 +8,11 @@ import { Label } from "@/components/ui/label";
 
 export function FormSuaHoSo({
   hocVien,
+  hocVienTuCapNhat = false,
   dsChucDanhHocVi,
 }: {
+  // HV-08: học viên tự cập nhật - họ tên/CCCD chỉ cán bộ sửa
+  hocVienTuCapNhat?: boolean;
   hocVien: {
     id: string;
     hoTen: string;
@@ -30,11 +33,11 @@ export function FormSuaHoSo({
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="hoTen">Họ tên</Label>
-          <Input id="hoTen" name="hoTen" defaultValue={hocVien.hoTen} required />
+          <Input id="hoTen" name="hoTen" defaultValue={hocVien.hoTen} required readOnly={hocVienTuCapNhat} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="soCCCD">Số CCCD</Label>
-          <Input id="soCCCD" name="soCCCD" defaultValue={hocVien.soCCCD ?? ""} />
+          <Input id="soCCCD" name="soCCCD" defaultValue={hocVien.soCCCD ?? ""} readOnly={hocVienTuCapNhat} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="ngaySinh">Ngày sinh</Label>
