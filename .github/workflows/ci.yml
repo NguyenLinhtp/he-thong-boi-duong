@@ -1,0 +1,74 @@
+# Giai đoạn 4 (kế hoạch): lint + typecheck + test + build mỗi lần đẩy code lên
+# nhánh chính / mở pull request. Test chạy trên Postgres trắng: migrate deploy
+# + seed (vai trò, 70 chức năng, ma trận phân quyền) giống môi trường mới.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kiem-tra:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: he_thong_boi_duong_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/he_thong_boi_duong_ci
+      # chỉ dùng trong CI - production đặt secret thật ở môi trường triển khai
+      AUTH_SECRET: ci-only-auth-secret-khong-dung-cho-production
+      HOC_LIEU_DIR: /tmp/hoc-lieu
+      BACKUP_DIR: /tmp/backups
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Cài gói
+        run: npm ci
+
+      - name: Sinh Prisma client
+        run: npx prisma generate
+
+      - name: Áp dụng migration + seed
+        run: |
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit + integration test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # sau build: next build sinh next-env.d.ts (gitignore) và .next/types;
+      # tsc kiểm tra thêm cả thư mục tests mà next build không kiểm tra
+      - name: Typecheck (gồm cả tests)
+        run: npx tsc --noEmit
