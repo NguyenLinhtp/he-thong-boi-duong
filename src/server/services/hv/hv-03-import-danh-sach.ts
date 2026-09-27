@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { dieuKienChiemCho } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { timHoacTaoHocVien } from "@/server/services/hv/dung-chung";
 import {
   KhongTimThayKhoaError,
@@ -134,9 +135,7 @@ export async function importDanhSachHocVien(khoaId: string, noiDungCsv: string) 
 
   if (loi.length > 0) throw new DuLieuImportLoiError(loi.sort((a, b) => a.dong - b.dong));
 
-  const siSoHienTai = await prisma.dangKyHoc.count({
-    where: { khoaId, trangThai: { notIn: ["KHONG_HOP_LE", "THOI_HOC"] } },
-  });
+  const siSoHienTai = await prisma.dangKyHoc.count({ where: dieuKienChiemCho(khoaId) });
   const soDongMoiThucSu = hopLe.filter((h) => !soDongDaDangKy.has(h.soDong)).length;
   const choConLai = khoa.siSoToiDa - siSoHienTai;
   if (soDongMoiThucSu > choConLai) {

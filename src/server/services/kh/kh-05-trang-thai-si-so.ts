@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import type { TrangThaiKhoa } from "@/generated/prisma/client";
+import type { Prisma, TrangThaiKhoa } from "@/generated/prisma/client";
 import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 import { xacNhanSanSangTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
@@ -54,13 +54,21 @@ export async function chuyenTrangThaiKhoa(khoaId: string, trangThaiMoi: TrangTha
 }
 
 /**
- * Sĩ số hiện tại: đếm đăng ký còn "chiếm chỗ" trong khóa - loại trừ đăng ký
- * không hợp lệ (bị từ chối) hoặc đã thôi học (trả lại chỗ).
+ * Đăng ký còn "chiếm chỗ" trong khóa - loại trừ đăng ký không hợp lệ (bị từ
+ * chối), đã thôi học, đã hủy do quá hạn nộp giấy (HV-02/DVLK-05) và đăng ký
+ * chờ nộp giấy đã quá hạn (sẽ bị hủy lười ở lần thao tác kế tiếp - không để
+ * nó giữ chỗ làm khóa báo đủ sĩ số sai, vô hiệu link KH-06 sớm).
  */
+export function dieuKienChiemCho(khoaId: string, bayGio = new Date()): Prisma.DangKyHocWhereInput {
+  return {
+    khoaId,
+    trangThai: { notIn: ["KHONG_HOP_LE", "THOI_HOC", "HUY_QUA_HAN_NOP_GIAY"] },
+    NOT: { trangThai: "CHO_NOP_GIAY", hanNopGiay: { lt: bayGio } },
+  };
+}
+
 export async function siSoHienTai(khoaId: string): Promise<number> {
-  return prisma.dangKyHoc.count({
-    where: { khoaId, trangThai: { notIn: ["KHONG_HOP_LE", "THOI_HOC"] } },
-  });
+  return prisma.dangKyHoc.count({ where: dieuKienChiemCho(khoaId) });
 }
 
 export type TinhTrangSiSo = {

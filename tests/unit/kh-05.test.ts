@@ -45,12 +45,16 @@ async function taoKhoa(siSoToiDa = 2) {
   return khoa;
 }
 
-async function taoHocVienVaDangKy(khoaId: string, trangThai: "CHO_DUYET" | "CHINH_THUC" | "KHONG_HOP_LE" | "THOI_HOC" = "CHINH_THUC") {
+async function taoHocVienVaDangKy(
+  khoaId: string,
+  trangThai: "CHO_DUYET" | "CHINH_THUC" | "KHONG_HOP_LE" | "THOI_HOC" | "HUY_QUA_HAN_NOP_GIAY" | "CHO_NOP_GIAY" = "CHINH_THUC",
+  hanNopGiay?: Date,
+) {
   const hv = await prisma.hocVien.create({
     data: { maHocVien: `HV_KH05_${crypto.randomUUID()}`, hoTen: "Học viên test" },
   });
   hocVienTaoTrongTest.push(hv.id);
-  return prisma.dangKyHoc.create({ data: { hocVienId: hv.id, khoaId, trangThai } });
+  return prisma.dangKyHoc.create({ data: { hocVienId: hv.id, khoaId, trangThai, hanNopGiay } });
 }
 
 describe("KH-05 quản lý trạng thái và sĩ số khóa", () => {
@@ -132,5 +136,19 @@ describe("KH-05 quản lý trạng thái và sĩ số khóa", () => {
     await taoHocVienVaDangKy(khoa.id, "CHINH_THUC");
 
     expect(await coTheNhanDangKy(khoa.id)).toBe(true);
+  });
+
+  it("hồ sơ hủy do quá hạn nộp giấy và hồ sơ chờ nộp giấy đã quá hạn không chiếm chỗ", async () => {
+    const khoa = await taoKhoa(2);
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
+    await taoHocVienVaDangKy(khoa.id, "HUY_QUA_HAN_NOP_GIAY");
+    await taoHocVienVaDangKy(khoa.id, "CHO_NOP_GIAY", new Date(Date.now() - 864e5)); // quá hạn
+    await taoHocVienVaDangKy(khoa.id, "CHO_NOP_GIAY", new Date(Date.now() + 864e5)); // còn hạn
+
+    expect(await siSoHienTai(khoa.id)).toBe(1);
+    expect(await coTheNhanDangKy(khoa.id)).toBe(true);
+
+    await taoHocVienVaDangKy(khoa.id, "CHINH_THUC");
+    expect(await coTheNhanDangKy(khoa.id)).toBe(false);
   });
 });
