@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { thietLapHocPhi, hocPhiCuaKhoa, taoHocPhiSauKhiChinhThuc } from "@/server/services/hp/hp-01-thiet-lap";
 import { xacNhanThanhToan, xacNhanMienGiam } from "@/server/services/hp/hp-02-thanh-toan";
@@ -205,6 +205,57 @@ describe("HP-02 ghi nhận và xác nhận thanh toán", () => {
     expect(dsPhieu[0].soPhieu).not.toBe(dsPhieu[1].soPhieu);
   });
 
+  it("nguyên tử: lập phiếu thu lỗi thì số đã nộp không đổi, không có phiếu thu/nhật ký nửa vời", async () => {
+    const { khoa } = await taoKhoaVoiHocVienChinhThuc();
+    await thietLapHocPhi(khoa.id, { mucHocPhi: 1_000_000 });
+    const [hocPhi] = await hocPhiCuaKhoa(khoa.id);
+
+    // chen loi vao buoc lap phieu thu ben trong transaction
+    const goc = prisma.$transaction.bind(prisma);
+    const spy = vi.spyOn(prisma, "$transaction").mockImplementation(((fn: (tx: unknown) => unknown) =>
+      goc(async (tx) => {
+        const txLoi = new Proxy(tx, {
+          get: (t, k) =>
+            k === "phieuThu"
+              ? { ...t.phieuThu, create: () => Promise.reject(new Error("lỗi giả lập khi lập phiếu thu")) }
+              : Reflect.get(t, k),
+        });
+        return fn(txLoi);
+      })) as never);
+    try {
+      await expect(
+        xacNhanThanhToan(hocPhi.id, { soTien: 400_000, hinhThucNop: "Tiền mặt", nguoiXacNhanTen: "Cán bộ test" }),
+      ).rejects.toThrow("lỗi giả lập khi lập phiếu thu");
+    } finally {
+      spy.mockRestore();
+    }
+
+    const sau = await prisma.hocPhi.findUniqueOrThrow({ where: { id: hocPhi.id } });
+    expect(Number(sau.soTienDaNop)).toBe(0);
+    expect(sau.trangThai).toBe(hocPhi.trangThai);
+    expect(await prisma.phieuThu.count({ where: { hocPhiId: hocPhi.id } })).toBe(0);
+    expect(await prisma.nhatKyThaoTac.count({ where: { doiTuongId: hocPhi.id, hanhDong: "XAC_NHAN_THANH_TOAN" } })).toBe(0);
+  });
+
+  it("xác nhận đồng thời không mất khoản nộp, số phiếu tăng dần không trùng", async () => {
+    const { khoa } = await taoKhoaVoiHocVienChinhThuc();
+    await thietLapHocPhi(khoa.id, { mucHocPhi: 1_000_000 });
+    const [hocPhi] = await hocPhiCuaKhoa(khoa.id);
+
+    const ketQua = await Promise.all(
+      [300_000, 300_000, 400_000].map((soTien) =>
+        xacNhanThanhToan(hocPhi.id, { soTien, hinhThucNop: "Chuyển khoản", nguoiXacNhanTen: "Cán bộ test" }),
+      ),
+    );
+    const sau = await prisma.hocPhi.findUniqueOrThrow({ where: { id: hocPhi.id } });
+    expect(Number(sau.soTienDaNop)).toBe(1_000_000);
+    expect(sau.trangThai).toBe("DA_NOP_DU");
+    const dsSo = ketQua.map((k) => k.phieuThu.soPhieu);
+    expect(new Set(dsSo).size).toBe(3);
+    const dsPhieu = await danhSachPhieuThu(khoa.id);
+    expect(dsPhieu.reduce((t, p) => t + Number(p.soTien), 0)).toBe(1_000_000);
+  });
+
   it("từ chối số tiền không hợp lệ", async () => {
     const { khoa } = await taoKhoaVoiHocVienChinhThuc();
     await thietLapHocPhi(khoa.id, { mucHocPhi: 1_000_000 });
@@ -212,6 +263,9 @@ describe("HP-02 ghi nhận và xác nhận thanh toán", () => {
 
     await expect(
       xacNhanThanhToan(hocPhi.id, { soTien: 0, hinhThucNop: "Tiền mặt", nguoiXacNhanTen: "x" }),
+    ).rejects.toThrow(SoTienKhongHopLeError);
+    await expect(
+      xacNhanThanhToan(hocPhi.id, { soTien: Number.NaN, hinhThucNop: "Tiền mặt", nguoiXacNhanTen: "x" }),
     ).rejects.toThrow(SoTienKhongHopLeError);
   });
 

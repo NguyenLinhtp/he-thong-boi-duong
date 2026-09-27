@@ -1,3 +1,4 @@
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
 /**
@@ -16,8 +17,9 @@ export async function ghiNhatKy(input: {
   doiTuong: string;
   doiTuongId: string;
   chiTiet?: string | null;
-}) {
-  return prisma.nhatKyThaoTac.create({
+}, db: Prisma.TransactionClient = prisma) {
+  // db: truyền tx để nhật ký nằm cùng transaction với thao tác được ghi
+  return db.nhatKyThaoTac.create({
     data: {
       nguoiThucHienId: input.nguoiThucHienId ?? null,
       nguoiThucHienTen: input.nguoiThucHienTen,
