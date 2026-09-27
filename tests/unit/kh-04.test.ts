@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { khoiTaoKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { thietLapBuoiHoc } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
+import { chuyenTrangThaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   thietLapHinhThucGiangDay,
   tuDongTaoLinkTrucTuyen,
@@ -131,5 +132,31 @@ describe("KH-04 thiết lập hình thức giảng dạy", () => {
   it("xác nhận sẵn sàng trực tuyến không chặn khóa trực tiếp", async () => {
     const khoa = await taoKhoa();
     await expect(xacNhanSanSangTrucTuyen(khoa.id)).resolves.toBeUndefined();
+  });
+
+  it("KH-05 chặn khai giảng (Đang diễn ra) khóa trực tuyến còn buổi thiếu link; buổi đã hủy không tính", async () => {
+    const khoa = await taoKhoa();
+    await thietLapHinhThucGiangDay(khoa.id, "TRUC_TUYEN");
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
+
+    // chưa có thời khóa biểu
+    await expect(chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA")).rejects.toThrow(ThieuLinkTrucTuyenError);
+
+    const coLink = await thietLapBuoiHoc({ khoaId: khoa.id, ngayHoc: "2026-11-02", linkTrucTuyen: "https://zoom.us/j/1" });
+    const thieuLink = await thietLapBuoiHoc({ khoaId: khoa.id, ngayHoc: "2026-11-03" });
+    await expect(chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA")).rejects.toThrow(ThieuLinkTrucTuyenError);
+    expect((await prisma.khoa.findUniqueOrThrow({ where: { id: khoa.id } })).trangThai).toBe("DANG_TUYEN_SINH");
+
+    await prisma.buoiHoc.update({ where: { id: thieuLink.id }, data: { daHuy: true } });
+    expect(await tinhTrangLinkTrucTuyen(khoa.id)).toMatchObject({ tongBuoi: 1, buoiThieuLink: 0, daDu: true });
+    expect(coLink.linkTrucTuyen).toBeTruthy();
+    const sau = await chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA");
+    expect(sau.trangThai).toBe("DANG_DIEN_RA");
+  });
+
+  it("KH-05 khóa trực tiếp khai giảng không cần link", async () => {
+    const khoa = await taoKhoa();
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
+    expect((await chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA")).trangThai).toBe("DANG_DIEN_RA");
   });
 });

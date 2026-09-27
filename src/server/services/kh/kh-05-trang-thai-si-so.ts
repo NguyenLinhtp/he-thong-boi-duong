@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import type { TrangThaiKhoa } from "@/generated/prisma/client";
 import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
+import { xacNhanSanSangTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
 
 /**
  * KH-05: vòng đời khóa theo đúng thứ tự mô tả trong CN - "chuẩn bị mở -> đang
@@ -25,6 +26,8 @@ export async function chuyenTrangThaiKhoa(khoaId: string, trangThaiMoi: TrangTha
 
   const chuyenDuoc = CHUYEN_TIEP_HOP_LE[khoa.trangThai].includes(trangThaiMoi);
   if (!chuyenDuoc) throw new ChuyenTrangThaiKhoaKhongHopLeError(khoa.trangThai, trangThaiMoi);
+  // KH-04: khóa trực tuyến chỉ khai giảng khi mọi buổi học đã có link
+  if (trangThaiMoi === "DANG_DIEN_RA") await xacNhanSanSangTrucTuyen(khoaId);
 
   const ketQua = await prisma.khoa.update({
     where: { id: khoaId },

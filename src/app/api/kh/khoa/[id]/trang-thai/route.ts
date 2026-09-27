@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePermission, apiRoute } from "@/lib/auth/guard";
 import { chuyenTrangThaiKhoa, tinhTrangSiSo } from "@/server/services/kh/kh-05-trang-thai-si-so";
-import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
+import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError, ThieuLinkTrucTuyenError } from "@/server/services/kh/loi-khoa";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -19,7 +19,7 @@ export const PATCH = apiRoute(async (req: Request, { params }: Params) => {
   try {
     return NextResponse.json(await chuyenTrangThaiKhoa(id, body.trangThai));
   } catch (error) {
-    if (error instanceof ChuyenTrangThaiKhoaKhongHopLeError) {
+    if (error instanceof ChuyenTrangThaiKhoaKhongHopLeError || error instanceof ThieuLinkTrucTuyenError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
     if (error instanceof KhongTimThayKhoaError) {

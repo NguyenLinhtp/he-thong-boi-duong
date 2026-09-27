@@ -37,7 +37,7 @@ export async function tuDongTaoLinkTrucTuyen(khoaId: string): Promise<number> {
   if (khoa.hinhThucGiangDay !== "TRUC_TUYEN") throw new KhoaKhongPhaiTrucTuyenError();
 
   const buoiChuaCoLink = await prisma.buoiHoc.findMany({
-    where: { khoaId, linkTrucTuyen: null },
+    where: { khoaId, linkTrucTuyen: null, daHuy: false },
   });
   if (buoiChuaCoLink.length === 0) return 0;
 
@@ -53,22 +53,26 @@ export type TinhTrangLinkTrucTuyen =
   | { apDung: false }
   | { apDung: true; tongBuoi: number; buoiThieuLink: number; daDu: boolean };
 
+// Buổi đã hủy (GD-03) không cần link; khóa chỉ dự thi (Phương thức 3) không
+// có giảng dạy nên không áp dụng.
 export async function tinhTrangLinkTrucTuyen(khoaId: string): Promise<TinhTrangLinkTrucTuyen> {
-  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId } });
+  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  if (khoa.hinhThucGiangDay !== "TRUC_TUYEN") return { apDung: false };
+  if (khoa.hinhThucGiangDay !== "TRUC_TUYEN" || khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI") {
+    return { apDung: false };
+  }
 
   const [tongBuoi, buoiThieuLink] = await Promise.all([
-    prisma.buoiHoc.count({ where: { khoaId } }),
-    prisma.buoiHoc.count({ where: { khoaId, linkTrucTuyen: null } }),
+    prisma.buoiHoc.count({ where: { khoaId, daHuy: false } }),
+    prisma.buoiHoc.count({ where: { khoaId, daHuy: false, linkTrucTuyen: null } }),
   ]);
   return { apDung: true, tongBuoi, buoiThieuLink, daDu: tongBuoi > 0 && buoiThieuLink === 0 };
 }
 
 /**
  * KH-04: "Khóa trực tuyến bắt buộc phải có link trước ngày khai giảng" -
- * cổng kiểm tra tường minh để gọi trước khi xác nhận khóa sẵn sàng khai
- * giảng (KH-05 sẽ dùng lại khi quản lý chuyển trạng thái khóa).
+ * KH-05 gọi khi chuyển khóa sang Đang diễn ra (khai giảng): khóa trực tuyến
+ * phải có thời khóa biểu và mọi buổi còn hiệu lực đều đã có link.
  */
 export async function xacNhanSanSangTrucTuyen(khoaId: string): Promise<void> {
   const tinhTrang = await tinhTrangLinkTrucTuyen(khoaId);
