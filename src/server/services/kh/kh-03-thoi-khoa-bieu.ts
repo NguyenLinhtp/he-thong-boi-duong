@@ -6,6 +6,7 @@ import {
   TrungLichGiangVienTheoBuoiError,
   TrungPhongHocError,
   LopKhongThuocKhoaError,
+  KhoaChiDuThiKhongGiangDayError,
 } from "@/server/services/kh/loi-khoa";
 
 export type ThietLapBuoiHocInput = {
@@ -135,8 +136,9 @@ async function kiemTraTrungPhongHoc(input: ThietLapBuoiHocInput, boQuaBuoiHocId?
 }
 
 export async function thietLapBuoiHoc(input: ThietLapBuoiHocInput) {
-  const khoa = await prisma.khoa.findUnique({ where: { id: input.khoaId } });
+  const khoa = await prisma.khoa.findUnique({ where: { id: input.khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
+  if (khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI") throw new KhoaChiDuThiKhongGiangDayError();
 
   await kiemTraLopThuocKhoa(input.khoaId, input.lopId);
   await kiemTraTrungLichGiangVien(input);

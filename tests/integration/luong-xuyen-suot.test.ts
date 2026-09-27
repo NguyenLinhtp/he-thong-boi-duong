@@ -34,6 +34,7 @@ import { taoHopDong } from "@/server/services/dvlk/dvlk-03-hop-dong";
 import { xacNhanThuHoSo } from "@/server/services/dvlk/dvlk-05-xac-nhan-thu-ho-so";
 import { thanhLyHopDong } from "@/server/services/dvlk/dvlk-06-thanh-ly";
 import { KhoaChiDuThiError } from "@/server/services/kq/loi-ket-qua";
+import { KhoaChiDuThiKhongGiangDayError } from "@/server/services/kh/loi-khoa";
 
 /**
  * Giai đoạn 3 (kế hoạch): integration test luồng xuyên suốt
@@ -222,8 +223,16 @@ describe("Luồng xuyên suốt: đăng ký → xét duyệt → học → đi�
     }
     await chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA");
 
-    // chặn: khóa chỉ dự thi không có giảng dạy/điểm học phần (HV-05)
-    await expect(hocVaNhapDiem(khoa.id, dsHocPhan, { [dkEm.hocVienId]: 8 })).rejects.toThrow(KhoaChiDuThiError);
+    // chặn: khóa chỉ dự thi không có giảng dạy (HV-05) - không phân công giảng viên (KH-02),
+    // không nhập điểm học phần (KQ-01)
+    await expect(hocVaNhapDiem(khoa.id, dsHocPhan, { [dkEm.hocVienId]: 8 })).rejects.toThrow(
+      KhoaChiDuThiKhongGiangDayError,
+    );
+    await expect(
+      nhapDiemHocPhan(ids.giangVien.at(-1)!, khoa.id, dsHocPhan[0].id, [
+        { hocVienId: dkEm.hocVienId, diemThanhPhan: 8, diemKetThuc: 8 },
+      ]),
+    ).rejects.toThrow(KhoaChiDuThiError);
 
     await nhapKetQuaThi(khoa.id, [
       { hocVienId: dkEm.hocVienId, diemThi: 8.5 },

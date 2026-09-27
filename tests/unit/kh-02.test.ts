@@ -8,6 +8,7 @@ import {
   KhongTimThayGiangVienError,
   HocPhanKhongThuocChuongTrinhError,
   TrungLichGiangVienError,
+  KhoaChiDuThiKhongGiangDayError,
 } from "@/server/services/kh/loi-khoa";
 
 const loaiHinhTaoTrongTest: string[] = [];
@@ -223,5 +224,16 @@ describe("KH-02 phân công giảng viên phụ trách học phần", () => {
       giangVienId: gv.id,
     });
     expect(phanCong2.giangVienId).toBe(gv.id);
+  });
+
+  it("chặn phân công giảng viên cho khóa Phương thức 3 (chỉ dự thi, không giảng dạy)", async () => {
+    const { chuongTrinh, hocPhans } = await taoChuongTrinhDaBanHanhVoiHocPhan();
+    await prisma.chuongTrinh.update({ where: { id: chuongTrinh.id }, data: { phuongThucDangKy: "CHI_DU_THI" } });
+    const khoa = await taoKhoa(chuongTrinh.id, "2026-12-01", "2026-12-10");
+    const gv = await taoGiangVien();
+    await expect(
+      phanCongGiangVien({ khoaId: khoa.id, hocPhanId: hocPhans[0].id, giangVienId: gv.id }),
+    ).rejects.toThrow(KhoaChiDuThiKhongGiangDayError);
+    expect(await prisma.giangVienHocPhan.count({ where: { khoaId: khoa.id } })).toBe(0);
   });
 });

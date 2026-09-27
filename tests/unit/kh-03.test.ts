@@ -12,6 +12,7 @@ import {
   KhongTimThayKhoaError,
   TrungLichGiangVienTheoBuoiError,
   TrungPhongHocError,
+  KhoaChiDuThiKhongGiangDayError,
 } from "@/server/services/kh/loi-khoa";
 
 const loaiHinhTaoTrongTest: string[] = [];
@@ -290,5 +291,15 @@ describe("KH-03 thiết lập thời khóa biểu", () => {
   it("lichDayGiangVien trả về mảng rỗng khi giảng viên chưa được phân công học phần nào", async () => {
     const gv = await taoGiangVien();
     expect(await lichDayGiangVien(gv.id)).toEqual([]);
+  });
+
+  it("chặn xếp thời khóa biểu cho khóa Phương thức 3 (chỉ dự thi, không giảng dạy/điểm danh)", async () => {
+    const { chuongTrinh } = await taoChuongTrinhDaBanHanhVoiHocPhan();
+    await prisma.chuongTrinh.update({ where: { id: chuongTrinh.id }, data: { phuongThucDangKy: "CHI_DU_THI" } });
+    const khoa = await taoKhoa(chuongTrinh.id);
+    await expect(thietLapBuoiHoc({ khoaId: khoa.id, ngayHoc: "2026-12-05" })).rejects.toThrow(
+      KhoaChiDuThiKhongGiangDayError,
+    );
+    expect(await prisma.buoiHoc.count({ where: { khoaId: khoa.id } })).toBe(0);
   });
 });

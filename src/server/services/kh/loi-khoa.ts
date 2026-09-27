@@ -82,6 +82,13 @@ export class LopKhongThuocKhoaError extends LoiLopHoc {
   }
 }
 
+// HV-05: "Khóa thuộc Phương thức 3 không áp dụng điểm danh/giảng dạy"
+export class KhoaChiDuThiKhongGiangDayError extends Error {
+  constructor() {
+    super("Khóa Phương thức 3 (chỉ dự thi) không có giảng dạy - không phân công giảng viên/xếp thời khóa biểu");
+  }
+}
+
 export class KhoaChiDuThiKhongChiaLopError extends LoiLopHoc {
   constructor() {
     super("Khóa Phương thức 3 (chỉ dự thi) không có giảng dạy nên không chia lớp");
