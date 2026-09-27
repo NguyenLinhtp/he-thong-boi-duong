@@ -11,9 +11,10 @@ import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
  *
  * Rẽ nhánh theo ĐĂNG KÝ trước (không theo dòng HocPhi) - "không áp cả hai
  * cùng lúc": đăng ký gắn hợp đồng liên kết -> chỉ xét hợp đồng đã thanh lý
- * (DVLK-06), kể cả khi chưa có dòng HocPhi; ngược lại xét học phí cá nhân,
- * chưa có dòng HocPhi (khóa miễn phí hoặc HP-01 chưa chạy) coi như không có
- * nghĩa vụ tài chính -> đạt. "Bỏ chặn thủ công" (boQuaKiemTra) áp dụng cho
+ * (DVLK-06), kể cả khi chưa có dòng HocPhi; ngược lại xét học phí cá nhân.
+ * Chưa có dòng HocPhi: chỉ đạt khi khóa miễn phí (không đặt mức học phí/mức
+ * 0); khóa có học phí mà thiếu dòng HocPhi (lỗi đồng bộ) -> chặn, không để
+ * lọt điều kiện cấp văn bằng. "Bỏ chặn thủ công" (boQuaKiemTra) áp dụng cho
  * cả 2 nhánh.
  */
 export async function daHoanTatNghiaVuTaiChinh(hocVienId: string, khoaId: string): Promise<boolean> {
@@ -30,7 +31,10 @@ export async function daHoanTatNghiaVuTaiChinh(hocVienId: string, khoaId: string
     return dangKy.hopDongLienKet?.trangThai === "DA_THANH_LY" || hocPhi?.trangThai === "DA_HOAN_TAT";
   }
 
-  if (!hocPhi) return true;
+  if (!hocPhi) {
+    const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, select: { mucHocPhi: true } });
+    return !khoa?.mucHocPhi || Number(khoa.mucHocPhi) === 0;
+  }
   return hocPhi.trangThai === "DA_NOP_DU" || hocPhi.trangThai === "MIEN_GIAM";
 }
 

@@ -311,6 +311,15 @@ describe("HP-06 điều kiện tài chính (dùng cho KQ-03/CC-01)", () => {
   it("chưa có dòng HocPhi (khóa miễn phí) luôn coi là đã hoàn tất", async () => {
     const { khoa, hocVien } = await taoKhoaVoiHocVienChinhThuc();
     expect(await daHoanTatNghiaVuTaiChinh(hocVien.id, khoa.id)).toBe(true);
+    await prisma.khoa.update({ where: { id: khoa.id }, data: { mucHocPhi: 0 } });
+    expect(await daHoanTatNghiaVuTaiChinh(hocVien.id, khoa.id)).toBe(true);
+  });
+
+  it("khóa có mức học phí mà học viên thiếu dòng HocPhi (lỗi đồng bộ) thì bị chặn, không lọt điều kiện", async () => {
+    const { khoa, hocVien } = await taoKhoaVoiHocVienChinhThuc();
+    await prisma.khoa.update({ where: { id: khoa.id }, data: { mucHocPhi: 1_000_000 } });
+    expect(await prisma.hocPhi.count({ where: { hocVienId: hocVien.id, khoaId: khoa.id } })).toBe(0);
+    expect(await daHoanTatNghiaVuTaiChinh(hocVien.id, khoa.id)).toBe(false);
   });
 
   it("còn nợ thì chưa hoàn tất; đã nộp đủ thì hoàn tất", async () => {
