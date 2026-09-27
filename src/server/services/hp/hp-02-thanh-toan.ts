@@ -22,13 +22,16 @@ export type XacNhanThanhToanInput = {
  * nhật ký" (QT-03) + tự động lập phiếu thu (HP-04) cho khoản vừa nộp.
  * Cập nhật học phí + phiếu thu + nhật ký trong 1 transaction (không bao giờ có
  * số đã nộp tăng mà thiếu phiếu thu - HP-05/BC-03 đối soát khớp); dòng học phí
- * bị khóa (FOR UPDATE) để 2 lần xác nhận đồng thời không ghi đè nhau.
+ * bị khóa (advisory lock theo khoản) để 2 lần xác nhận đồng thời không ghi
+ * đè nhau.
  */
 export async function xacNhanThanhToan(hocPhiId: string, input: XacNhanThanhToanInput) {
   if (!(input.soTien > 0) || !Number.isFinite(input.soTien)) throw new SoTienKhongHopLeError();
 
   return prisma.$transaction(async (tx) => {
-    await tx.$queryRawUnsafe(`SELECT id FROM "hoc_phi" WHERE id = $1 FOR UPDATE`, hocPhiId);
+    // khóa tư vấn theo khoản học phí (tự nhả khi transaction kết thúc) - không
+    // phụ thuộc tên bảng/schema như SELECT ... FOR UPDATE
+    await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, `HP02:${hocPhiId}`);
     const hocPhi = await tx.hocPhi.findUnique({ where: { id: hocPhiId } });
     if (!hocPhi) throw new KhongTimThayHocPhiError();
     if (TRANG_THAI_QUA_DVLK.includes(hocPhi.trangThai)) throw new HocPhiQuaDonViLienKetError();
