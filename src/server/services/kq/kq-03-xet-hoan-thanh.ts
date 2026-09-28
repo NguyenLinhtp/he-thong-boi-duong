@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { daHoanTatNghiaVuTaiChinh } from "@/server/services/hp/hp-06-dieu-kien";
 import {
   layKhoaKemChuongTrinh,
@@ -36,8 +37,8 @@ export async function danhGiaHoanThanh(ketQua: {
  * và điều kiện học phí, lập danh sách đủ/không đủ điều kiện hoàn thành. Áp
  * dụng chung cho khóa có giảng dạy và khóa Phương thức 3 (kết quả thi).
  */
-export async function xetDieuKienHoanThanh(khoaId: string) {
-  await layKhoaKemChuongTrinh(khoaId);
+export async function xetDieuKienHoanThanh(khoaId: string, nguoi: NguoiThucHien = HE_THONG) {
+  const khoa = await layKhoaKemChuongTrinh(khoaId);
   await chanNeuDaPheDuyet(khoaId);
 
   const [dsDangKy, dsKetQua] = await Promise.all([
@@ -49,9 +50,18 @@ export async function xetDieuKienHoanThanh(khoaId: string) {
     throw new ChuaTongHopKetQuaError();
   }
 
-  for (const kq of dsKetQua) {
-    await prisma.ketQuaKhoa.update({ where: { id: kq.id }, data: await danhGiaHoanThanh(kq) });
-  }
+  const danhGia = await Promise.all(dsKetQua.map(async (kq) => ({ id: kq.id, data: await danhGiaHoanThanh(kq) })));
+  const soHoanThanh = danhGia.filter((d) => d.data.hoanThanh).length;
+  await prisma.$transaction([
+    ...danhGia.map((d) => prisma.ketQuaKhoa.update({ where: { id: d.id }, data: d.data })),
+    ghiThaoTac(
+      nguoi,
+      "XET_DIEU_KIEN_HOAN_THANH",
+      "Khoa",
+      khoaId,
+      `${khoa.maKhoa}: ${soHoanThanh}/${danhGia.length} học viên đủ điều kiện hoàn thành`,
+    ),
+  ]);
 
   return danhSachXetHoanThanh(khoaId);
 }

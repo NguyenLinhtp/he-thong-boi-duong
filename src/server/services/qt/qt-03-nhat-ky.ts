@@ -10,7 +10,9 @@ import { prisma } from "@/lib/db/prisma";
  * insert bình thường trong cùng DB, không phụ thuộc dịch vụ ngoài (SMTP) nên
  * để lỗi throw ra bình thường như mọi thao tác DB khác.
  */
-export async function ghiNhatKy(input: {
+// Hàm thường (không async) trả thẳng PrismaPromise - dùng được cả trong
+// $transaction dạng mảng lẫn dạng callback.
+export function ghiNhatKy(input: {
   nguoiThucHienId?: string | null;
   nguoiThucHienTen: string;
   hanhDong: string;

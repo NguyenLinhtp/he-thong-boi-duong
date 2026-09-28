@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
 import { nhapDiemHocPhan } from "@/server/services/kq/kq-01-nhap-diem";
 import { LoiKetQua } from "@/server/services/kq/loi-ket-qua";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 function diemTuForm(giaTri: FormDataEntryValue | null): number | null {
   const chuoi = String(giaTri ?? "").trim();
@@ -25,7 +26,7 @@ export async function nhapDiemAction(_prevState: string | undefined, formData: F
       diemThanhPhan: diemTuForm(formData.get(`diemThanhPhan_${hocVienId}`)),
       diemKetThuc: diemTuForm(formData.get(`diemKetThuc_${hocVienId}`)),
     }));
-    await nhapDiemHocPhan(giangVien.id, khoaId, hocPhanId, danhSach);
+    await nhapDiemHocPhan(giangVien.id, khoaId, hocPhanId, danhSach, nguoiTuPhien(phien));
   } catch (error) {
     if (error instanceof LoiKetQua) return error.message;
     throw error;

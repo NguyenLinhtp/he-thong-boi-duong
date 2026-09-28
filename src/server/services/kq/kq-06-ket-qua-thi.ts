@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import {
   thamSoKetQua,
   kiemTraDiem,
@@ -21,22 +22,38 @@ export type DongKetQuaThiInput = { hocVienId: string; diemThi: number | null };
  * vì khóa không có điểm danh/giảng dạy" - tyLeChuyenCan luôn null, đạt chỉ
  * xét theo điểm thi.
  */
-export async function nhapKetQuaThi(khoaId: string, danhSach: DongKetQuaThiInput[]) {
+export async function nhapKetQuaThi(
+  khoaId: string,
+  danhSach: DongKetQuaThiInput[],
+  nguoi: NguoiThucHien = HE_THONG,
+) {
   const khoa = await layKhoaKemChuongTrinh(khoaId);
   if (!laKhoaChiDuThi(khoa)) throw new KhongPhaiKhoaChiDuThiError();
   await chanNeuDaPheDuyet(khoaId);
 
   for (const dong of danhSach) kiemTraDiem(dong.diemThi);
 
-  const thiSinhHopLe = new Set((await hocVienTinhKetQua(khoaId)).map((dk) => dk.hocVienId));
+  const dsThiSinh = await hocVienTinhKetQua(khoaId);
+  const thiSinhHopLe = new Set(dsThiSinh.map((dk) => dk.hocVienId));
   if (danhSach.some((dong) => !thiSinhHopLe.has(dong.hocVienId))) {
     throw new HocVienKhongThuocKhoaError();
   }
 
   const thamSo = await thamSoKetQua();
 
-  await prisma.$transaction(
-    danhSach.map((dong) => {
+  const maHocVien = new Map(dsThiSinh.map((dk) => [dk.hocVienId, dk.hocVien.maHocVien]));
+  const nhatKy = ghiThaoTac(
+    nguoi,
+    "NHAP_KET_QUA_THI",
+    "Khoa",
+    khoaId,
+    `${khoa.maKhoa}: ` +
+      danhSach.map((d) => `${maHocVien.get(d.hocVienId) ?? d.hocVienId} ${d.diemThi ?? "-"}`).join("; "),
+  );
+
+  await prisma.$transaction([
+    nhatKy,
+    ...danhSach.map((dong) => {
       const data = {
         diemTongKet: dong.diemThi,
         tyLeChuyenCan: null,
@@ -53,7 +70,7 @@ export async function nhapKetQuaThi(khoaId: string, danhSach: DongKetQuaThiInput
         create: { hocVienId: dong.hocVienId, khoaId, ...data },
       });
     }),
-  );
+  ]);
 
   return prisma.ketQuaKhoa.findMany({
     where: { khoaId },

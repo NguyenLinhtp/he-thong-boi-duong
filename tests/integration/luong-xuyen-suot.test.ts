@@ -175,6 +175,13 @@ describe("Luồng xuyên suốt: đăng ký → xét duyệt → học → đi�
     expect(sau.trangThai).toBe("DA_CAP");
     const xacThuc = await xacThucTheoMa(sau.maXacThuc!);
     expect(xacThuc).toMatchObject({ soHieu: sau.soHieu });
+
+    // QT-03: các bước quan trọng của luồng đều để lại nhật ký
+    const hanhDongKhoa = (await prisma.nhatKyThaoTac.findMany({ where: { doiTuongId: khoa.id } })).map((x) => x.hanhDong);
+    for (const hd of ["KHOI_TAO_KHOA", "THIET_LAP_HOC_PHI", "XET_DUYET_CHINH_THUC", "NHAP_DIEM_HOC_PHAN", "XET_DIEU_KIEN_HOAN_THANH"]) {
+      expect(hanhDongKhoa).toContain(hd);
+    }
+    expect(await prisma.nhatKyThaoTac.count({ where: { hanhDong: "THAM_DINH_HO_SO", doiTuongId: { in: [dkAn.id, dkBinh.id] } } })).toBe(2);
   }, 120_000);
 
   it("Phương thức 2: import danh sách + học viên tự xác nhận bằng CCCD; miễn giảm được coi như hoàn tất học phí", async () => {
@@ -238,6 +245,7 @@ describe("Luồng xuyên suốt: đăng ký → xét duyệt → học → đi�
       { hocVienId: dkEm.hocVienId, diemThi: 8.5 },
       { hocVienId: dkGiang.hocVienId, diemThi: 3 },
     ]);
+    expect(await prisma.nhatKyThaoTac.count({ where: { hanhDong: "NHAP_KET_QUA_THI", doiTuongId: khoa.id } })).toBe(1);
     await chuyenTrangThaiKhoa(khoa.id, "DA_KET_THUC");
     await xetDieuKienHoanThanh(khoa.id);
     await pheDuyetKetQua(khoa.id, { ...CB, soQuyetDinh: `QD-KQ-${uid()}` });

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { giangVienHieuLuc } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import {
   thamSoKetQua,
@@ -97,8 +98,9 @@ export async function nhapDiemHocPhan(
   khoaId: string,
   hocPhanId: string,
   danhSach: DongNhapDiemInput[],
+  nguoi: NguoiThucHien = HE_THONG,
 ) {
-  const { dsDangKy, dsPhuTrach } = await kiemTraPhuTrach(giangVienId, khoaId, hocPhanId);
+  const { khoa, dsDangKy, dsPhuTrach } = await kiemTraPhuTrach(giangVienId, khoaId, hocPhanId);
 
   for (const dong of danhSach) {
     kiemTraDiem(dong.diemThanhPhan);
@@ -128,7 +130,23 @@ export async function nhapDiemHocPhan(
     where: { khoaId, daPheDuyet: false, hocVienId: { in: danhSach.map((d) => d.hocVienId) } },
   });
 
+  // QT-03: ghi lại điểm đã nhập (mã học viên: thành phần/kết thúc)
+  const diem = (d: number | null) => (d === null ? "-" : String(d));
+  const maHocVien = new Map(dsDangKy.map((dk) => [dk.hocVienId, dk.hocVien.maHocVien]));
+  const hocPhan = khoa.chuongTrinh.hocPhans.find((hp) => hp.id === hocPhanId);
+  const nhatKy = ghiThaoTac(
+    nguoi,
+    "NHAP_DIEM_HOC_PHAN",
+    "Khoa",
+    khoaId,
+    `${khoa.maKhoa} - ${hocPhan?.ten ?? hocPhanId}: ` +
+      danhSach
+        .map((d) => `${maHocVien.get(d.hocVienId) ?? d.hocVienId} ${diem(d.diemThanhPhan)}/${diem(d.diemKetThuc)}`)
+        .join("; "),
+  );
+
   await prisma.$transaction([
+    nhatKy,
     xoaKetQuaKhoaCu,
     ...danhSach.map((dong) => {
       const diemHocPhan = tinhDiemHocPhan(dong.diemThanhPhan, dong.diemKetThuc, tyLeThanhPhan);

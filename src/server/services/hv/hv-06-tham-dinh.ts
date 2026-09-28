@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import type { TrangThaiDangKy } from "@/generated/prisma/client";
 import { KhongTimThayDangKyError, SaiTrangThaiThamDinhError } from "@/server/services/hv/loi-hoc-vien";
 
@@ -27,6 +28,7 @@ export async function thamDinhHoSo(
   dangKyId: string,
   ketQua: KetQuaThamDinh,
   ghiChu?: string | null,
+  nguoi: NguoiThucHien = HE_THONG,
 ) {
   const dangKy = await prisma.dangKyHoc.findUnique({ where: { id: dangKyId } });
   if (!dangKy) throw new KhongTimThayDangKyError();
@@ -34,10 +36,21 @@ export async function thamDinhHoSo(
     throw new SaiTrangThaiThamDinhError();
   }
 
-  return prisma.dangKyHoc.update({
-    where: { id: dangKyId },
-    data: { trangThai: ketQua, ghiChuThamDinh: ghiChu ?? null },
-    include: INCLUDE_DANG_KY,
+  return prisma.$transaction(async (tx) => {
+    const sau = await tx.dangKyHoc.update({
+      where: { id: dangKyId },
+      data: { trangThai: ketQua, ghiChuThamDinh: ghiChu ?? null },
+      include: INCLUDE_DANG_KY,
+    });
+    await ghiThaoTac(
+      nguoi,
+      "THAM_DINH_HO_SO",
+      "DangKyHoc",
+      dangKyId,
+      `${sau.hocVien.hoTen} (${sau.hocVien.maHocVien}) - khóa ${sau.khoa.maKhoa}: ${dangKy.trangThai} -> ${ketQua}${ghiChu ? ` - ${ghiChu}` : ""}`,
+      tx,
+    );
+    return sau;
   });
 }
 

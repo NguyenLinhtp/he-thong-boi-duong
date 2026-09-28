@@ -244,12 +244,12 @@ export async function xetDuyetDanhSachChinhThucAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  await requirePermission("HV-07");
+  const phien = await requirePermission("HV-07");
   const khoaId = String(formData.get("khoaId"));
   const dsDangKyId = formData.getAll("dangKyId") as string[];
 
   try {
-    await xetDuyetDanhSachChinhThuc(khoaId, dsDangKyId);
+    await xetDuyetDanhSachChinhThuc(khoaId, dsDangKyId, nguoiTuPhien(phien));
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;
@@ -325,14 +325,14 @@ export async function thamDinhHoSoAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  await requirePermission("HV-06");
+  const phien = await requirePermission("HV-06");
   const khoaId = String(formData.get("khoaId"));
   const dangKyId = String(formData.get("dangKyId"));
   const ketQua = formData.get("ketQua") as KetQuaThamDinh;
   const ghiChu = String(formData.get("ghiChu") || "");
 
   try {
-    await thamDinhHoSo(dangKyId, ketQua, ghiChu || null);
+    await thamDinhHoSo(dangKyId, ketQua, ghiChu || null, nguoiTuPhien(phien));
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;

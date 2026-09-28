@@ -129,4 +129,16 @@ describe("HV-07 xét duyệt danh sách chính thức", () => {
       KhongTimThayKhoaError,
     );
   });
+
+  it("2 lô duyệt đồng thời không cùng lọt qua kiểm tra sĩ số (còn 2 chỗ, mỗi lô 2 người)", async () => {
+    const { khoa, dsHopLe } = await taoKhoaVoiHoSoHopLe(4, 2);
+    const ketQua = await Promise.allSettled([
+      xetDuyetDanhSachChinhThuc(khoa.id, [dsHopLe[0].id, dsHopLe[1].id]),
+      xetDuyetDanhSachChinhThuc(khoa.id, [dsHopLe[2].id, dsHopLe[3].id]),
+    ]);
+    expect(ketQua.filter((k) => k.status === "fulfilled")).toHaveLength(1);
+    const biChan = ketQua.find((k) => k.status === "rejected") as PromiseRejectedResult;
+    expect(biChan.reason).toBeInstanceOf(VuotSiSoKhiXetDuyetError);
+    expect(await prisma.dangKyHoc.count({ where: { khoaId: khoa.id, trangThai: "CHINH_THUC" } })).toBe(2);
+  });
 });

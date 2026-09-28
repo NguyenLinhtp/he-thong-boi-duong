@@ -4,6 +4,7 @@ import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
 import { KhongPhaiTaiKhoanGiangVienError } from "@/server/services/gd/loi-giang-day";
 import { bangDiemHocPhan, nhapDiemHocPhan } from "@/server/services/kq/kq-01-nhap-diem";
 import { phanHoiLoiKetQua } from "@/app/api/kq/_phan-hoi-loi";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 type Params = { params: Promise<{ khoaId: string; hocPhanId: string }> };
 
@@ -30,7 +31,7 @@ export const POST = apiRoute(async (req: Request, { params }: Params) => {
   const body = await req.json();
   try {
     const giangVien = await giangVienDangNhap(phien.userId);
-    return NextResponse.json(await nhapDiemHocPhan(giangVien.id, khoaId, hocPhanId, body.danhSach));
+    return NextResponse.json(await nhapDiemHocPhan(giangVien.id, khoaId, hocPhanId, body.danhSach, nguoiTuPhien(phien)));
   } catch (error) {
     return phanHoiLoiKetQua(error);
   }

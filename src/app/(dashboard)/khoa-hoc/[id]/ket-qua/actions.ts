@@ -11,6 +11,7 @@ import {
 } from "@/server/services/kq/kq-04-phe-duyet";
 import { nhapKetQuaThi } from "@/server/services/kq/kq-06-ket-qua-thi";
 import { LoiKetQua } from "@/server/services/kq/loi-ket-qua";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 function duongDan(khoaId: string) {
   return `/khoa-hoc/${khoaId}/ket-qua`;
@@ -40,9 +41,9 @@ export async function tongHopAction(_prevState: string | undefined, formData: Fo
 }
 
 export async function xetHoanThanhAction(_prevState: string | undefined, formData: FormData) {
-  await requirePermission("KQ-03");
+  const phien = await requirePermission("KQ-03");
   const khoaId = String(formData.get("khoaId"));
-  return thucHien(khoaId, () => xetDieuKienHoanThanh(khoaId));
+  return thucHien(khoaId, () => xetDieuKienHoanThanh(khoaId, nguoiTuPhien(phien)));
 }
 
 export async function pheDuyetAction(_prevState: string | undefined, formData: FormData) {
@@ -58,13 +59,13 @@ export async function pheDuyetAction(_prevState: string | undefined, formData: F
 }
 
 export async function nhapKetQuaThiAction(_prevState: string | undefined, formData: FormData) {
-  await requirePermission("KQ-06");
+  const phien = await requirePermission("KQ-06");
   const khoaId = String(formData.get("khoaId"));
   const danhSach = (formData.getAll("hocVienId") as string[]).map((hocVienId) => ({
     hocVienId,
     diemThi: diemTuForm(formData.get(`diemThi_${hocVienId}`)),
   }));
-  return thucHien(khoaId, () => nhapKetQuaThi(khoaId, danhSach));
+  return thucHien(khoaId, () => nhapKetQuaThi(khoaId, danhSach, nguoiTuPhien(phien)));
 }
 
 export async function phucKhaoHocPhanAction(_prevState: string | undefined, formData: FormData) {
