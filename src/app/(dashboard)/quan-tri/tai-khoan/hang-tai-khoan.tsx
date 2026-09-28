@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import type { VaiTro } from "@/generated/prisma/client";
 
 const DANH_SACH_VAI_TRO: { ma: VaiTro; ten: string }[] = [
@@ -44,9 +45,13 @@ export function HangTaiKhoan({ taiKhoan }: { taiKhoan: TaiKhoanDong }) {
         <TableCell>{taiKhoan.tenDangNhap}</TableCell>
         <TableCell>{taiKhoan.hoTen}</TableCell>
         <TableCell>
-          {taiKhoan.trangThai === "HOAT_DONG" ? "Hoạt động" : "Tạm khóa"}
+          <NhanTrangThai ma={taiKhoan.trangThai}>
+            {taiKhoan.trangThai === "HOAT_DONG" ? "Hoạt động" : "Tạm khóa"}
+          </NhanTrangThai>
         </TableCell>
-        <TableCell>{taiKhoan.vaiTros.join(", ")}</TableCell>
+        <TableCell className="whitespace-normal">
+          {taiKhoan.vaiTros.map((v) => DANH_SACH_VAI_TRO.find((vt) => vt.ma === v)?.ten ?? v).join(", ")}
+        </TableCell>
         <TableCell className="flex flex-wrap gap-1.5">
           {taiKhoan.trangThai === "HOAT_DONG" ? (
             <Button

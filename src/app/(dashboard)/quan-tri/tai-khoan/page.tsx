@@ -4,6 +4,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachTaiKhoan } from "@/server/services/qt/qt-01-quan-ly-tai-khoan";
 import { Table, TableHeader, TableBody, TableHead, TableRow } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { DauTrangThemMoi } from "@/components/chung/dau-trang-them-moi";
 import { FormTaoTaiKhoan } from "./form-tao-tai-khoan";
 import { HangTaiKhoan } from "./hang-tai-khoan";
 
@@ -22,8 +23,12 @@ export default async function TaiKhoanPage() {
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
-      <h1 className="text-xl font-bold text-ued-blue-dam">QT-01 · Quản lý tài khoản người dùng</h1>
-      <FormTaoTaiKhoan />
+      <DauTrangThemMoi
+        tieuDe={<h1 className="text-xl font-bold text-ued-blue-dam">QT-01 · Quản lý tài khoản người dùng</h1>}
+        nhanNut="Thêm tài khoản"
+      >
+        <FormTaoTaiKhoan />
+      </DauTrangThemMoi>
       <Table>
         <TableHeader>
           <TableRow>

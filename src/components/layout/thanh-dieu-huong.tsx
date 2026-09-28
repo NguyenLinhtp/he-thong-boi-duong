@@ -16,7 +16,13 @@ type Props = {
 };
 
 // avatar viết tắt theo tên (chữ cuối của họ tên tiếng Việt)
-const chuCaiDau = (hoTen: string) => (hoTen.trim().split(/\s+/).at(-1)?.[0] ?? "?").toUpperCase();
+const chuCaiDau = (hoTen: string) =>
+  (
+    hoTen
+      .split(/\s+/)
+      .filter((tu) => /^\p{L}/u.test(tu))
+      .at(-1)?.[0] ?? "?"
+  ).toUpperCase();
 
 /**
  * Top bar ngang (logo + module lớn + tài khoản) và dải tab con màu xanh đậm
