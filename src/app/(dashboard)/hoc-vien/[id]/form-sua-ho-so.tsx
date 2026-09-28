@@ -27,8 +27,9 @@ export function FormSuaHoSo({
 }) {
   const [loi, formAction, dangXuLy] = useActionState(capNhatHoSoAction, undefined);
 
+  // key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
+    <form key={JSON.stringify(hocVien)} action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="id" value={hocVien.id} />
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1.5">

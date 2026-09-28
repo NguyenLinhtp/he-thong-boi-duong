@@ -28,7 +28,8 @@ export function KhoiPhuongThucDangKy({
         đơn vị liên kết): việc bắt buộc có hợp đồng liên kết còn hiệu lực được kiểm tra ở bước học
         viên đăng ký qua đơn vị liên kết sau này.
       </p>
-      <form action={action} className="flex flex-wrap items-end gap-3">
+      {/* key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount */}
+      <form key={phuongThucHienTai ?? ""} action={action} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="id" value={chuongTrinhId} />
         <select
           name="phuongThucDangKy"

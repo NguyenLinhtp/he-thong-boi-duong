@@ -144,7 +144,8 @@ export function HangBuoiHoc({
       {moDoiLich && (
         <TableRow>
           <TableCell colSpan={5}>
-            <form action={doiLichAction} className="flex flex-wrap items-end gap-2 py-2">
+            {/* key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount */}
+            <form key={JSON.stringify(buoiHoc)} action={doiLichAction} className="flex flex-wrap items-end gap-2 py-2">
               <input type="hidden" name="khoaId" value={khoaId} />
               <input type="hidden" name="buoiHocId" value={buoiHoc.id} />
               <div className="flex flex-col gap-1">

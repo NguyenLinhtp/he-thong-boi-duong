@@ -24,8 +24,9 @@ export function FormSuaChuongTrinh({
 }) {
   const [loi, formAction, dangXuLy] = useActionState(suaChuongTrinhAction, undefined);
 
+  // key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
+    <form key={JSON.stringify(chuongTrinh)} action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="id" value={chuongTrinh.id} />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="ten">Tên chương trình</Label>

@@ -79,6 +79,16 @@ test.describe("Nghiệp vụ qua giao diện", () => {
     const the = page.getByRole("listitem").filter({ hasText: ten });
     await expect(the).toBeVisible();
     await expect(the).toContainText(/Dự thảo/i);
+
+    // CT-07: sau khi lưu, ô chọn giữ phương thức vừa lưu (không bị form reset về "Chưa thiết lập")
+    await the.getByRole("link").click();
+    const phuongThuc = page.locator('select[name="phuongThucDangKy"]');
+    await phuongThuc.selectOption("CHI_DU_THI");
+    await page.getByRole("button", { name: "Lưu phương thức" }).click();
+    await expect(page.getByRole("button", { name: "Lưu phương thức" })).toBeEnabled();
+    await expect(phuongThuc).toHaveValue("CHI_DU_THI");
+    await page.reload();
+    await expect(phuongThuc).toHaveValue("CHI_DU_THI");
   });
 });
 

@@ -47,8 +47,9 @@ export function FormMauBieu({
       </Button>
     );
   }
+  // key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount
   return (
-    <form action={formAction} className="flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-sm">
+    <form key={JSON.stringify(mau ?? null)} action={formAction} className="flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-sm">
       {mau && <input type="hidden" name="maCu" value={mau.ma} />}
       <div className="flex flex-wrap items-end gap-2">
         <Input name="ma" defaultValue={mau?.ma ?? ""} disabled={Boolean(mau)} required={!mau} placeholder="Số hiệu biểu (VD: BIEU-01)" className="w-44" />

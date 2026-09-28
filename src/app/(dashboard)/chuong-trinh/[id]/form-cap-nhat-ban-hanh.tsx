@@ -39,7 +39,8 @@ export function FormCapNhatBanHanh({
           đổi được loại hình/tổng thời lượng.
         </p>
       )}
-      <form action={formAction} className="flex flex-wrap items-end gap-3">
+      {/* key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount */}
+      <form key={JSON.stringify(chuongTrinh)} action={formAction} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="id" value={chuongTrinh.id} />
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="ten">Tên chương trình</Label>

@@ -27,8 +27,9 @@ export function FormDiemDanh({
 }) {
   const [loi, formAction, dangXuLy] = useActionState(diemDanhAction, undefined);
 
+  // key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form key={JSON.stringify(dsHocVien)} action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="buoiHocId" value={buoiHocId} />
       <Table>
         <TableHeader>

@@ -15,7 +15,8 @@ export function KhoiLoaiVanBang({ chuongTrinhId, loaiHienTai }: { chuongTrinhId:
         sổ cấp riêng cho từng loại. Không đổi được nữa khi đã có văn bằng được lập cho khóa của
         chương trình.
       </p>
-      <form action={action} className="flex flex-wrap items-end gap-3">
+      {/* key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount */}
+      <form key={loaiHienTai} action={action} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="id" value={chuongTrinhId} />
         <select name="loaiVanBang" defaultValue={loaiHienTai} className="h-9 rounded-md border bg-background px-3 text-sm">
           <option value="CHUNG_CHI">Chứng chỉ</option>
