@@ -7,6 +7,7 @@ import {
   BanSaoLuuChuaSanSangError,
   TepSaoLuuKhongHopLeError,
 } from "./loi-sao-luu";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 
 // QT-04: "Sao lưu tối thiểu hằng ngày, lưu tối thiểu 30 bản gần nhất" - sau
 // mỗi lần sao lưu thành công, dọn các bản cũ hơn 30 bản gần nhất.
@@ -60,11 +61,16 @@ const THU_TU_BANG = [
 ] as const;
 
 type TenBang = (typeof THU_TU_BANG)[number];
+
+// QT-03 "Không cho phép sửa/xóa nhật ký đã ghi": phục hồi KHÔNG xóa nhật ký
+// hiện có (kể cả nhật ký phát sinh sau thời điểm sao lưu) - chỉ bổ sung các
+// dòng nhật ký có trong bản sao lưu mà hiện đã mất.
+const BANG_CHI_BO_SUNG: ReadonlySet<TenBang> = new Set<TenBang>(["nhatKyThaoTac"]);
 type DongDuLieu = Record<string, unknown>;
 
 type DelegateBangDuLieu = {
   findMany: (args?: unknown) => Promise<DongDuLieu[]>;
-  createMany: (args: { data: DongDuLieu[] }) => Promise<unknown>;
+  createMany: (args: { data: DongDuLieu[]; skipDuplicates?: boolean }) => Promise<unknown>;
   deleteMany: (args?: unknown) => Promise<unknown>;
   update: (args: { where: { id: string }; data: DongDuLieu }) => Promise<unknown>;
 };
@@ -153,7 +159,7 @@ export async function danhSachSaoLuu() {
   return prisma.saoLuu.findMany({ orderBy: { thoiGianBatDau: "desc" } });
 }
 
-export async function phucHoiTuBanSaoLuu(saoLuuId: string) {
+export async function phucHoiTuBanSaoLuu(saoLuuId: string, nguoi: NguoiThucHien = HE_THONG) {
   const ban = await prisma.saoLuu.findUnique({ where: { id: saoLuuId } });
   if (!ban) throw new KhongTimThayBanSaoLuuError();
   if (ban.trangThai !== "THANH_CONG" || !ban.duongDanFile) {
@@ -176,7 +182,7 @@ export async function phucHoiTuBanSaoLuu(saoLuuId: string) {
   await prisma.$transaction(
     async (tx) => {
       for (const ten of [...THU_TU_BANG].reverse()) {
-        await layDelegate(tx, ten).deleteMany();
+        if (!BANG_CHI_BO_SUNG.has(ten)) await layDelegate(tx, ten).deleteMany();
       }
 
       for (const ten of THU_TU_BANG) {
@@ -201,8 +207,17 @@ export async function phucHoiTuBanSaoLuu(saoLuuId: string) {
           continue;
         }
 
-        await layDelegate(tx, ten).createMany({ data: cacDong });
+        await layDelegate(tx, ten).createMany({ data: cacDong, skipDuplicates: BANG_CHI_BO_SUNG.has(ten) });
       }
+
+      await ghiThaoTac(
+        nguoi,
+        "PHUC_HOI_DU_LIEU",
+        "SaoLuu",
+        saoLuuId,
+        `Phục hồi toàn bộ dữ liệu về bản sao lưu lúc ${ban.thoiGianBatDau.toISOString()}`,
+        tx,
+      );
     },
     { timeout: 120_000, maxWait: 15_000 },
   );

@@ -144,13 +144,23 @@ describe("QT-04 sao lưu và phục hồi dữ liệu", () => {
         saoLuuTaoTrongTest.push(banCoDuLieu.id);
         if (banCoDuLieu.duongDanFile) duongDanFileTaoTrongTest.push(banCoDuLieu.duongDanFile);
 
+        // nhật ký phát sinh SAU thời điểm sao lưu - phục hồi không được xóa (QT-03)
+        const nhatKySau = await prisma.nhatKyThaoTac.create({
+          data: { nguoiThucHienTen: "QT-04 test", hanhDong: "SAU_SAO_LUU", doiTuong: "Test", doiTuongId: crypto.randomUUID() },
+        });
+
         // Giả lập "sự cố mất dữ liệu": xóa thẳng khóa (kéo theo đăng ký) vừa tạo.
         await prisma.dangKyHoc.deleteMany({ where: { khoaId: khoa.id } });
         await prisma.khoa.delete({ where: { id: khoa.id } });
         expect(await prisma.khoa.findUnique({ where: { id: khoa.id } })).toBeNull();
 
-        const ketQuaPhucHoi = await phucHoiTuBanSaoLuu(banCoDuLieu.id);
+        const ketQuaPhucHoi = await phucHoiTuBanSaoLuu(banCoDuLieu.id, { nguoiThucHienTen: "Admin QT-04" });
         expect(ketQuaPhucHoi.tongSoDong).toBeGreaterThan(0);
+        expect(await prisma.nhatKyThaoTac.findUnique({ where: { id: nhatKySau.id } })).not.toBeNull();
+        const nkPhucHoi = await prisma.nhatKyThaoTac.findFirst({
+          where: { hanhDong: "PHUC_HOI_DU_LIEU", doiTuongId: banCoDuLieu.id },
+        });
+        expect(nkPhucHoi?.nguoiThucHienTen).toBe("Admin QT-04");
 
         const khoaSauPhucHoi = await prisma.khoa.findUnique({ where: { id: khoa.id } });
         expect(khoaSauPhucHoi).not.toBeNull();

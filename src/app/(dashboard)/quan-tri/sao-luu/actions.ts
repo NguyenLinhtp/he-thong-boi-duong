@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/guard";
 import { chayBackupNgay, phucHoiTuBanSaoLuu } from "@/server/services/qt/qt-04-sao-luu";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 import {
   KhongTimThayBanSaoLuuError,
   BanSaoLuuChuaSanSangError,
@@ -18,11 +19,11 @@ export async function chayBackupNgayAction() {
 }
 
 export async function phucHoiAction(_prevState: string | undefined, formData: FormData) {
-  await requirePermission("QT-04");
+  const phienPhucHoi = await requirePermission("QT-04");
   const saoLuuId = String(formData.get("saoLuuId"));
 
   try {
-    await phucHoiTuBanSaoLuu(saoLuuId);
+    await phucHoiTuBanSaoLuu(saoLuuId, nguoiTuPhien(phienPhucHoi));
   } catch (error) {
     if (
       error instanceof KhongTimThayBanSaoLuuError ||

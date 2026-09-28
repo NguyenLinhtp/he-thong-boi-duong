@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePermission, apiRoute } from "@/lib/auth/guard";
 import { phucHoiTuBanSaoLuu } from "@/server/services/qt/qt-04-sao-luu";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 import {
   KhongTimThayBanSaoLuuError,
   BanSaoLuuChuaSanSangError,
@@ -10,11 +11,11 @@ import {
 type Params = { params: Promise<{ id: string }> };
 
 export const POST = apiRoute(async (_req: Request, { params }: Params) => {
-  await requirePermission("QT-04");
+  const phien = await requirePermission("QT-04");
   const { id } = await params;
 
   try {
-    const ketQua = await phucHoiTuBanSaoLuu(id);
+    const ketQua = await phucHoiTuBanSaoLuu(id, nguoiTuPhien(phien));
     return NextResponse.json(ketQua);
   } catch (error) {
     if (
