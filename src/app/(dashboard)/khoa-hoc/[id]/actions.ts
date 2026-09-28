@@ -28,6 +28,7 @@ import {
 } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
 import { DuLieuImportLoiError } from "@/server/services/hv/loi-hoc-vien";
 import type { HinhThucGiangDay, TrangThaiKhoa } from "@/generated/prisma/client";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 export async function phanCongGiangVienAction(
   _prevState: string | undefined,
@@ -173,11 +174,11 @@ export async function chuyenTrangThaiAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  await requirePermission("KH-05");
+  const phien = await requirePermission("KH-05");
   const khoaId = String(formData.get("khoaId"));
 
   try {
-    await chuyenTrangThaiKhoa(khoaId, formData.get("trangThai") as TrangThaiKhoa);
+    await chuyenTrangThaiKhoa(khoaId, formData.get("trangThai") as TrangThaiKhoa, nguoiTuPhien(phien));
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;

@@ -5,6 +5,7 @@ import {
   SaiTrangThaiChuongTrinhError,
   KhongTimThayChuongTrinhError,
 } from "@/server/services/ct/loi-chuong-trinh";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 export const GET = apiRoute(async () => {
   await requirePermission("KH-01");
@@ -12,11 +13,11 @@ export const GET = apiRoute(async () => {
 });
 
 export const POST = apiRoute(async (req: Request) => {
-  await requirePermission("KH-01");
+  const phien = await requirePermission("KH-01");
   const body = await req.json();
 
   try {
-    return NextResponse.json(await khoiTaoKhoa(body), { status: 201 });
+    return NextResponse.json(await khoiTaoKhoa(body, nguoiTuPhien(phien)), { status: 201 });
   } catch (error) {
     if (error instanceof SaiTrangThaiChuongTrinhError) {
       return NextResponse.json({ message: error.message }, { status: 400 });

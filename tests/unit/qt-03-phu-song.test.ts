@@ -16,6 +16,10 @@ import { trinhThamDinh, pheDuyet, traVeDuThao } from "@/server/services/ct/ct-03
 import { suaChuongTrinhDaBanHanh } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
 import { ngungHieuLucChuongTrinh } from "@/server/services/ct/ct-06-luu-tru";
 import { thietLapPhuongThucDangKy } from "@/server/services/ct/ct-07-phuong-thuc-dang-ky";
+import { khoiTaoKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
+import { chuyenTrangThaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { thietLapHocPhi } from "@/server/services/hp/hp-01-thiet-lap";
+import { ThieuLyDoDieuChinhHocPhiError } from "@/server/services/hp/loi-hoc-phi";
 
 /**
  * QT-03 "Ghi lại toàn bộ thao tác quan trọng": các thao tác quản trị/nghiệp vụ
@@ -30,9 +34,15 @@ const ids = {
   chucNang: [] as string[],
   loaiHinh: [] as string[],
   chuongTrinh: [] as string[],
+  khoa: [] as string[],
+  hocVien: [] as string[],
 };
 
 afterAll(async () => {
+  await prisma.hocPhi.deleteMany({ where: { khoaId: { in: ids.khoa } } });
+  await prisma.dangKyHoc.deleteMany({ where: { khoaId: { in: ids.khoa } } });
+  await prisma.hocVien.deleteMany({ where: { id: { in: ids.hocVien } } });
+  await prisma.khoa.deleteMany({ where: { id: { in: ids.khoa } } });
   await prisma.chuongTrinhPhienBan.deleteMany({ where: { chuongTrinhId: { in: ids.chuongTrinh } } });
   await prisma.hocPhan.deleteMany({ where: { chuongTrinhId: { in: ids.chuongTrinh } } });
   await prisma.chuongTrinh.deleteMany({ where: { id: { in: ids.chuongTrinh } } });
@@ -137,5 +147,38 @@ describe("QT-03 phủ sóng nhật ký: vòng đời chương trình (CT-01/03/0
     expect(ds.every((x) => x.nguoiThucHienTen === "Quản trị QT-03")).toBe(true);
     expect(ds[4].chiTiet).toContain("QD-QT03");
     expect(ds[2].chiTiet).toContain("Bổ sung mục tiêu");
+  });
+});
+
+describe("QT-03 phủ sóng nhật ký: khóa (KH-01/05) và học phí (HP-01)", () => {
+  it("khởi tạo khóa, đổi trạng thái, thiết lập/điều chỉnh học phí ghi nhật ký; điều chỉnh thiếu lý do bị chặn không ghi", async () => {
+    const lh = await prisma.loaiHinhBoiDuong.create({ data: { ma: `LH_QT03K_${uid()}`, ten: "LH QT-03 khóa" } });
+    ids.loaiHinh.push(lh.id);
+    const ct = await prisma.chuongTrinh.create({
+      data: { maCT: `CT_QT03K_${uid()}`, ten: "CT QT-03 khóa", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH" },
+    });
+    ids.chuongTrinh.push(ct.id);
+    const khoa = await khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 5 }, NGUOI);
+    ids.khoa.push(khoa.id);
+
+    await thietLapHocPhi(khoa.id, { mucHocPhi: 1_000_000 }, NGUOI);
+    const hv = await prisma.hocVien.create({ data: { maHocVien: `HV_QT03_${uid()}`, hoTen: "HV QT-03" } });
+    ids.hocVien.push(hv.id);
+    await prisma.dangKyHoc.create({ data: { hocVienId: hv.id, khoaId: khoa.id, trangThai: "CHINH_THUC" } });
+    await expect(thietLapHocPhi(khoa.id, { mucHocPhi: 1_200_000 }, NGUOI)).rejects.toThrow(ThieuLyDoDieuChinhHocPhiError);
+    await thietLapHocPhi(khoa.id, { mucHocPhi: 1_200_000, lyDoDieuChinh: "Quyết định điều chỉnh số 5" }, NGUOI);
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH", NGUOI);
+
+    const ds = await nhatKy(khoa.id);
+    expect(ds.map((x) => x.hanhDong)).toEqual([
+      "KHOI_TAO_KHOA",
+      "THIET_LAP_HOC_PHI",
+      "DIEU_CHINH_HOC_PHI",
+      "CHUYEN_TRANG_THAI_KHOA",
+    ]);
+    expect(ds[2].chiTiet).toMatch(/1\.000\.000 -> 1\.200\.000 đ - lý do: Quyết định điều chỉnh số 5/);
+    expect(ds[3].chiTiet).toContain("CHUAN_BI -> DANG_TUYEN_SINH");
+    // đồng bộ học phí cùng transaction với mức mới
+    expect(Number((await prisma.hocPhi.findFirstOrThrow({ where: { khoaId: khoa.id } })).soTienPhaiNop)).toBe(1_200_000);
   });
 });

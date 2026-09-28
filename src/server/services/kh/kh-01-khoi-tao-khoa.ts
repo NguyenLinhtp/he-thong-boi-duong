@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { taoKhoaVoiMaTuSinh } from "@/server/services/kh/dung-chung";
 import {
   SaiTrangThaiChuongTrinhError,
@@ -21,7 +22,7 @@ export type KhoiTaoKhoaInput = {
  * (CT-07) khi cần, không sao chép lại thành trường riêng trên Khoa - tránh
  * 2 nơi lưu cùng 1 giá trị có thể lệch nhau.
  */
-export async function khoiTaoKhoa(input: KhoiTaoKhoaInput) {
+export async function khoiTaoKhoa(input: KhoiTaoKhoaInput, nguoi: NguoiThucHien = HE_THONG) {
   const chuongTrinh = await prisma.chuongTrinh.findUnique({
     where: { id: input.chuongTrinhId },
   });
@@ -32,7 +33,7 @@ export async function khoiTaoKhoa(input: KhoiTaoKhoaInput) {
     );
   }
 
-  return taoKhoaVoiMaTuSinh((maKhoa) =>
+  const khoa = await taoKhoaVoiMaTuSinh((maKhoa) =>
     prisma.khoa.create({
       data: {
         maKhoa,
@@ -46,6 +47,15 @@ export async function khoiTaoKhoa(input: KhoiTaoKhoaInput) {
       include: { chuongTrinh: true },
     }),
   );
+  // QT-03 (mã khóa tự sinh có thử lại khi trùng -> ghi sau khi tạo xong)
+  await ghiThaoTac(
+    nguoi,
+    "KHOI_TAO_KHOA",
+    "Khoa",
+    khoa.id,
+    `${khoa.maKhoa} từ chương trình ${chuongTrinh.maCT} - sĩ số ${khoa.siSoToiDa}`,
+  );
+  return khoa;
 }
 
 export async function danhSachKhoa() {

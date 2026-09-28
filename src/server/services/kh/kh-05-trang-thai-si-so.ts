@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import type { Prisma, TrangThaiKhoa } from "@/generated/prisma/client";
 import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
@@ -18,7 +19,11 @@ const CHUYEN_TIEP_HOP_LE: Record<TrangThaiKhoa, TrangThaiKhoa[]> = {
   HUY: [],
 };
 
-export async function chuyenTrangThaiKhoa(khoaId: string, trangThaiMoi: TrangThaiKhoa) {
+export async function chuyenTrangThaiKhoa(
+  khoaId: string,
+  trangThaiMoi: TrangThaiKhoa,
+  nguoi: NguoiThucHien = HE_THONG,
+) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId } });
   if (!khoa) throw new KhongTimThayKhoaError();
 
@@ -29,9 +34,10 @@ export async function chuyenTrangThaiKhoa(khoaId: string, trangThaiMoi: TrangTha
   // KH-04: khóa trực tuyến chỉ khai giảng khi mọi buổi học đã có link
   if (trangThaiMoi === "DANG_DIEN_RA") await xacNhanSanSangTrucTuyen(khoaId);
 
-  const ketQua = await prisma.khoa.update({
-    where: { id: khoaId },
-    data: { trangThai: trangThaiMoi },
+  const ketQua = await prisma.$transaction(async (tx) => {
+    const sau = await tx.khoa.update({ where: { id: khoaId }, data: { trangThai: trangThaiMoi } });
+    await ghiThaoTac(nguoi, "CHUYEN_TRANG_THAI_KHOA", "Khoa", khoaId, `${khoa.maKhoa}: ${khoa.trangThai} -> ${trangThaiMoi}`, tx);
+    return sau;
   });
 
   // HV-10: "lịch học/lịch thi" - báo khai giảng cho học viên chính thức khi

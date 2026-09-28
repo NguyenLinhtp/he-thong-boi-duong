@@ -14,13 +14,14 @@ import {
   HocPhiQuaDonViLienKetError,
   ThieuLyDoBoQuaError,
 } from "@/server/services/hp/loi-hoc-phi";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 function duongDan(khoaId: string) {
   return `/khoa-hoc/${khoaId}/hoc-phi`;
 }
 
 export async function thietLapHocPhiAction(_prevState: string | undefined, formData: FormData) {
-  await requirePermission("HP-01");
+  const phien = await requirePermission("HP-01");
   const khoaId = String(formData.get("khoaId"));
 
   try {
@@ -28,7 +29,7 @@ export async function thietLapHocPhiAction(_prevState: string | undefined, formD
       mucHocPhi: Number(formData.get("mucHocPhi")),
       chinhSachMienGiam: String(formData.get("chinhSachMienGiam") ?? "") || null,
       lyDoDieuChinh: String(formData.get("lyDoDieuChinh") ?? "") || null,
-    });
+    }, nguoiTuPhien(phien));
   } catch (error) {
     if (error instanceof KhongTimThayKhoaError || error instanceof ThieuLyDoDieuChinhHocPhiError) {
       return error.message;

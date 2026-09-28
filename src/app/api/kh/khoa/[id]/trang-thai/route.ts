@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePermission, apiRoute } from "@/lib/auth/guard";
 import { chuyenTrangThaiKhoa, tinhTrangSiSo } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError, ThieuLinkTrucTuyenError } from "@/server/services/kh/loi-khoa";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -12,12 +13,12 @@ export const GET = apiRoute(async (_req: Request, { params }: Params) => {
 });
 
 export const PATCH = apiRoute(async (req: Request, { params }: Params) => {
-  await requirePermission("KH-05");
+  const phien = await requirePermission("KH-05");
   const { id } = await params;
   const body = await req.json();
 
   try {
-    return NextResponse.json(await chuyenTrangThaiKhoa(id, body.trangThai));
+    return NextResponse.json(await chuyenTrangThaiKhoa(id, body.trangThai, nguoiTuPhien(phien)));
   } catch (error) {
     if (error instanceof ChuyenTrangThaiKhoaKhongHopLeError || error instanceof ThieuLinkTrucTuyenError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
