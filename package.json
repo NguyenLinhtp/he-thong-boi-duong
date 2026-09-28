@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "seed:demo": "tsx prisma/seed-demo.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
