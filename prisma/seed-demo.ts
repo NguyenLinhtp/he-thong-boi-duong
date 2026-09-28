@@ -124,9 +124,30 @@ async function taoTaiKhoan(tenDangNhap: string, hoTen: string, vaiTro: VaiTro) {
   });
 }
 
+/**
+ * Tài khoản trình diễn giữ nhiều vai trò cán bộ (QT-02 cho phép) để xem đủ các
+ * module quản lý trong 1 lần đăng nhập. Cổng giảng viên/học viên/đơn vị liên
+ * kết gắn với hồ sơ cá nhân nên vẫn xem bằng tài khoản riêng của vai trò đó.
+ */
+async function taoTaiKhoanTongHop() {
+  if (await prisma.nguoiDung.findUnique({ where: { tenDangNhap: "demo_tonghop" } })) return;
+  const dsVaiTro = await prisma.vaiTroModel.findMany({
+    where: { ma: { in: ["ADMIN", "CAN_BO_QUAN_LY_DAO_TAO", "CAN_BO_TAI_CHINH"] } },
+  });
+  await prisma.nguoiDung.create({
+    data: {
+      tenDangNhap: "demo_tonghop",
+      hoTen: "Tài khoản trình diễn",
+      matKhauHash: await bcrypt.hash(MAT_KHAU_DEMO, 10),
+      vaiTros: { create: dsVaiTro.map((vt) => ({ vaiTroId: vt.id })) },
+    },
+  });
+}
+
 async function taoDuLieu() {
+  await taoTaiKhoanTongHop();
   if (await prisma.loaiHinhBoiDuong.findUnique({ where: { ma: "DEMO_CDNN" } })) {
-    console.log("Đã có dữ liệu mẫu - chạy với --xoa trước nếu muốn tạo lại.");
+    console.log("Đã có dữ liệu mẫu (đã bổ sung tài khoản còn thiếu) - chạy với --xoa trước nếu muốn tạo lại.");
     return;
   }
 
@@ -299,7 +320,7 @@ async function taoDuLieu() {
   });
   await themHocPhan(p5.id, { ten: "Học liệu số trong giáo dục mầm non", soTiet: 30 });
 
-  console.log(`Đã tạo dữ liệu mẫu. Tài khoản demo_daotao / demo_taichinh / demo_giangvien / demo_hocvien / demo_dvlk / demo_admin, mật khẩu: ${MAT_KHAU_DEMO}`);
+  console.log(`Đã tạo dữ liệu mẫu. Tài khoản demo_tonghop / demo_daotao / demo_taichinh / demo_giangvien / demo_hocvien / demo_dvlk / demo_admin, mật khẩu: ${MAT_KHAU_DEMO}`);
 }
 
 async function xoaDuLieu() {
