@@ -6,6 +6,7 @@ import {
   type TimKiemChuongTrinhFilter,
 } from "@/server/services/ct/ct-05-tra-cuu";
 import type { TrangThaiChuongTrinh } from "@/generated/prisma/client";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 export const GET = apiRoute(async (req: Request) => {
   await requirePermission("CT-05");
@@ -20,7 +21,7 @@ export const GET = apiRoute(async (req: Request) => {
 });
 
 export const POST = apiRoute(async (req: Request) => {
-  await requirePermission("CT-01");
+  const phien = await requirePermission("CT-01");
   const body = await req.json();
-  return NextResponse.json(await taoChuongTrinh(body), { status: 201 });
+  return NextResponse.json(await taoChuongTrinh(body, nguoiTuPhien(phien)), { status: 201 });
 });

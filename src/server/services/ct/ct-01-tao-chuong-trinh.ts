@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import type { LoaiVanBang } from "@/generated/prisma/client";
 import { taoChuongTrinhVoiMaTuSinh } from "@/server/services/ct/dung-chung";
 import {
@@ -16,13 +17,15 @@ export type TaoChuongTrinhInput = {
   loaiVanBang?: LoaiVanBang;
 };
 
-export async function taoChuongTrinh(input: TaoChuongTrinhInput) {
-  return taoChuongTrinhVoiMaTuSinh((maCT) =>
+export async function taoChuongTrinh(input: TaoChuongTrinhInput, nguoi: NguoiThucHien = HE_THONG) {
+  const chuongTrinh = await taoChuongTrinhVoiMaTuSinh((maCT) =>
     prisma.chuongTrinh.create({
       data: { ...input, maCT },
       include: { loaiHinhBoiDuong: true },
     }),
   );
+  await ghiThaoTac(nguoi, "TAO_CHUONG_TRINH", "ChuongTrinh", chuongTrinh.id, `${chuongTrinh.maCT} - ${chuongTrinh.ten}`);
+  return chuongTrinh;
 }
 
 export async function layChuongTrinh(id: string) {

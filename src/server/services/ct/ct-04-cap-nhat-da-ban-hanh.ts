@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { tongSoTietHocPhan } from "@/server/services/ct/ct-02-hoc-phan";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import {
   SaiTrangThaiChuongTrinhError,
   KhongTimThayChuongTrinhError,
@@ -53,6 +54,7 @@ export type SuaChuongTrinhDaBanHanhInput = {
 export async function suaChuongTrinhDaBanHanh(
   id: string,
   input: SuaChuongTrinhDaBanHanhInput,
+  nguoi: NguoiThucHien = HE_THONG,
 ) {
   const chuongTrinh = await prisma.chuongTrinh.findUnique({ where: { id } });
   if (!chuongTrinh) throw new KhongTimThayChuongTrinhError();
@@ -87,7 +89,7 @@ export async function suaChuongTrinhDaBanHanh(
       },
     });
 
-    return tx.chuongTrinh.update({
+    const sau = await tx.chuongTrinh.update({
       where: { id },
       data: {
         ten: input.ten,
@@ -98,6 +100,15 @@ export async function suaChuongTrinhDaBanHanh(
         phienBanHienTai: chuongTrinh.phienBanHienTai + 1,
       },
     });
+    await ghiThaoTac(
+      nguoi,
+      "SUA_CHUONG_TRINH_DA_BAN_HANH",
+      "ChuongTrinh",
+      id,
+      `${sau.maCT}: phiên bản ${chuongTrinh.phienBanHienTai} -> ${sau.phienBanHienTai}${input.lyDoSua ? ` - lý do: ${input.lyDoSua}` : ""}`,
+      tx,
+    );
+    return sau;
   });
 }
 

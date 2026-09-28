@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { coKhoaDangHoatDong } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
 import {
   SaiTrangThaiChuongTrinhError,
@@ -23,7 +24,7 @@ export class ConKhoaChuaKetThucError extends Error {
  * DA_BAN_HANH sẵn có). Quy tắc: chương trình đang có khóa chưa kết thúc
  * (CHUAN_BI/DANG_TUYEN_SINH/DANG_DIEN_RA) thì chưa được lưu trữ.
  */
-export async function ngungHieuLucChuongTrinh(chuongTrinhId: string, lyDo: string) {
+export async function ngungHieuLucChuongTrinh(chuongTrinhId: string, lyDo: string, nguoi: NguoiThucHien = HE_THONG) {
   if (!lyDo?.trim()) throw new ThieuLyDoNgungHieuLucError();
 
   const chuongTrinh = await prisma.chuongTrinh.findUnique({ where: { id: chuongTrinhId } });
@@ -37,12 +38,16 @@ export async function ngungHieuLucChuongTrinh(chuongTrinhId: string, lyDo: strin
     throw new ConKhoaChuaKetThucError();
   }
 
-  return prisma.chuongTrinh.update({
-    where: { id: chuongTrinhId },
-    data: {
-      trangThai: "NGUNG_HIEU_LUC",
-      lyDoNgungHieuLuc: lyDo,
-      ngayNgungHieuLuc: new Date(),
-    },
+  return prisma.$transaction(async (tx) => {
+    const sau = await tx.chuongTrinh.update({
+      where: { id: chuongTrinhId },
+      data: {
+        trangThai: "NGUNG_HIEU_LUC",
+        lyDoNgungHieuLuc: lyDo,
+        ngayNgungHieuLuc: new Date(),
+      },
+    });
+    await ghiThaoTac(nguoi, "NGUNG_HIEU_LUC_CHUONG_TRINH", "ChuongTrinh", chuongTrinhId, `${sau.maCT} - lý do: ${lyDo}`, tx);
+    return sau;
   });
 }

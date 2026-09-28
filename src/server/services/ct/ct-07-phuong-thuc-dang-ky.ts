@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { coKhoaDangHoatDong } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
 import {
   SaiTrangThaiChuongTrinhError,
@@ -24,6 +25,7 @@ export class DoiPhuongThucKhiCoKhoaDangHoatDongError extends Error {
 export async function thietLapPhuongThucDangKy(
   chuongTrinhId: string,
   phuongThucDangKy: PhuongThucDangKy,
+  nguoi: NguoiThucHien = HE_THONG,
 ) {
   const chuongTrinh = await prisma.chuongTrinh.findUnique({ where: { id: chuongTrinhId } });
   if (!chuongTrinh) throw new KhongTimThayChuongTrinhError();
@@ -40,8 +42,20 @@ export async function thietLapPhuongThucDangKy(
     throw new DoiPhuongThucKhiCoKhoaDangHoatDongError();
   }
 
-  return prisma.chuongTrinh.update({
-    where: { id: chuongTrinhId },
-    data: { phuongThucDangKy },
+  if (chuongTrinh.phuongThucDangKy === phuongThucDangKy) return chuongTrinh;
+  return prisma.$transaction(async (tx) => {
+    const sau = await tx.chuongTrinh.update({
+      where: { id: chuongTrinhId },
+      data: { phuongThucDangKy },
+    });
+    await ghiThaoTac(
+      nguoi,
+      "THIET_LAP_PHUONG_THUC_DANG_KY",
+      "ChuongTrinh",
+      chuongTrinhId,
+      `${sau.maCT}: ${chuongTrinh.phuongThucDangKy ?? "chưa có"} -> ${phuongThucDangKy}`,
+      tx,
+    );
+    return sau;
   });
 }

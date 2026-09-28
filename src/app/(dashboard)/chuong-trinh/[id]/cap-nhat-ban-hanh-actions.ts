@@ -6,12 +6,13 @@ import {
   suaChuongTrinhDaBanHanh,
   SuaTruongAnhHuongKhoaDangChayError,
 } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 export async function suaChuongTrinhDaBanHanhAction(
   _prevState: string | undefined,
   formData: FormData,
 ) {
-  await requirePermission("CT-04");
+  const phien = await requirePermission("CT-04");
   const id = String(formData.get("id"));
   const tongThoiLuongRaw = formData.get("tongThoiLuong") as string;
 
@@ -23,7 +24,7 @@ export async function suaChuongTrinhDaBanHanhAction(
       tongThoiLuong: tongThoiLuongRaw ? Number(tongThoiLuongRaw) : null,
       loaiHinhBoiDuongId: String(formData.get("loaiHinhBoiDuongId")),
       lyDoSua: (formData.get("lyDoSua") as string) || null,
-    });
+    }, nguoiTuPhien(phien));
   } catch (error) {
     if (error instanceof SuaTruongAnhHuongKhoaDangChayError) return error.message;
     if (error instanceof Error) return error.message;

@@ -8,16 +8,17 @@ import {
   SaiTrangThaiChuongTrinhError,
   KhongTimThayChuongTrinhError,
 } from "@/server/services/ct/loi-chuong-trinh";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 type Params = { params: Promise<{ id: string }> };
 
 export const PATCH = apiRoute(async (req: Request, { params }: Params) => {
-  await requirePermission("CT-07");
+  const phien = await requirePermission("CT-07");
   const { id } = await params;
   const body = await req.json();
 
   try {
-    return NextResponse.json(await thietLapPhuongThucDangKy(id, body.phuongThucDangKy));
+    return NextResponse.json(await thietLapPhuongThucDangKy(id, body.phuongThucDangKy, nguoiTuPhien(phien)));
   } catch (error) {
     if (
       error instanceof SaiTrangThaiChuongTrinhError ||
