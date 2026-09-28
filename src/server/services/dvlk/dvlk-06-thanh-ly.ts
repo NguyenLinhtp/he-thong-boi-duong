@@ -153,6 +153,32 @@ export async function thanhLyHopDong(hopDongLienKetId: string, input: ThanhLyInp
         create: { hocVienId: d.hocVienId, khoaId: hopDong.khoaId, soTienPhaiNop: 0, trangThai: "DA_HOAN_TAT" },
       });
     }
+
+    // KQ-03/KQ-04: điều kiện tài chính của học viên hợp đồng nay đã đủ - làm
+    // mới cờ hoàn thành (điểm/kết quả học tập đã phê duyệt giữ nguyên) để
+    // BC-02 và hồ sơ học viên phản ánh đúng; học viên đạt chuyển Hoàn thành.
+    const dsKetQua = await tx.ketQuaKhoa.findMany({
+      where: { khoaId: hopDong.khoaId, hocVienId: { in: dsHopLe.map((d) => d.hocVienId) } },
+    });
+    for (const kq of dsKetQua) {
+      const ghiChu =
+        (kq.ghiChu ?? "")
+          .split("; ")
+          .filter((y) => y && !y.startsWith("Chưa hoàn tất nghĩa vụ tài chính"))
+          .join("; ") || null;
+      await tx.ketQuaKhoa.update({
+        where: { id: kq.id },
+        data: { duDieuKienHocPhi: true, hoanThanh: kq.hoanThanh === null ? null : kq.datHocTap === true, ghiChu },
+      });
+    }
+    await tx.dangKyHoc.updateMany({
+      where: {
+        hopDongLienKetId: hopDong.id,
+        trangThai: "CHINH_THUC",
+        hocVienId: { in: dsHopLe.filter((d) => d.phanLoai === "HOAN_THANH").map((d) => d.hocVienId) },
+      },
+      data: { trangThai: "HOAN_THANH" },
+    });
     return tx.hopDongLienKet.findUniqueOrThrow({ where: { id: hopDong.id } });
   });
 

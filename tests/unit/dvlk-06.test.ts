@@ -212,4 +212,23 @@ describe("DVLK-06 thanh lý hợp đồng liên kết tuyển sinh cuối khóa"
     );
     expect(Number((await prisma.hopDongLienKet.findUniqueOrThrow({ where: { id: f.hdA.id } })).soTienQuyetToan)).toBe(0);
   });
+
+  it("sau thanh lý: làm mới cờ hoàn thành của kết quả khóa (KQ-03) và chuyển học viên đạt sang Hoàn thành", async () => {
+    const f = await taoKhoa();
+    // như sau KQ-03 chạy trước khi thanh lý: đạt điểm nhưng chưa đủ điều kiện tài chính
+    await prisma.ketQuaKhoa.updateMany({
+      where: { khoaId: f.khoa.id, hocVienId: { in: [f.an.hv.id, f.binh.hv.id] } },
+      data: { duDieuKienHocPhi: false, hoanThanh: false, ghiChu: "Chưa hoàn tất nghĩa vụ tài chính (HP-06)" },
+    });
+
+    await thanhLyHopDong(f.hdA.id, { ...NGUOI, soTienQuyetToan: 3000000 });
+
+    const kqAn = await prisma.ketQuaKhoa.findFirstOrThrow({ where: { khoaId: f.khoa.id, hocVienId: f.an.hv.id } });
+    expect(kqAn).toMatchObject({ duDieuKienHocPhi: true, hoanThanh: true, ghiChu: null, diemTongKet: expect.anything() });
+    const kqBinh = await prisma.ketQuaKhoa.findFirstOrThrow({ where: { khoaId: f.khoa.id, hocVienId: f.binh.hv.id } });
+    expect(kqBinh).toMatchObject({ duDieuKienHocPhi: true, hoanThanh: false });
+    expect((await prisma.dangKyHoc.findUniqueOrThrow({ where: { id: f.an.dk.id } })).trangThai).toBe("HOAN_THANH");
+    // hợp đồng B chưa thanh lý: không bị đụng
+    expect((await prisma.dangKyHoc.findUniqueOrThrow({ where: { id: f.giang.dk.id } })).trangThai).toBe("CHINH_THUC");
+  });
 });
