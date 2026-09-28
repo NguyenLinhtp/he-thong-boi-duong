@@ -111,8 +111,10 @@ async function kiemTraTrungLichGiangVien(
   const ngay = ngayThanhChuoi(input.ngayHoc);
   const buoiHocKhac = await buoiCuaGiangVien(giangVienId, boQuaBuoiHocId);
 
+  // buổi đã hủy (GD-03) không còn chiếm lịch giảng viên
   const trung = buoiHocKhac.some(
     (bh) =>
+      !bh.daHuy &&
       bh.gioBatDau !== null &&
       bh.gioKetThuc !== null &&
       ngayThanhChuoi(bh.ngayHoc) === ngay &&

@@ -54,6 +54,8 @@ export async function trungLichPhongHoc(input: {
     where: {
       phongHocId: input.phongHocId,
       ngayHoc: input.ngayHoc,
+      // buổi đã hủy (GD-03) trả lại phòng - xếp học bù vào khung giờ đó được
+      daHuy: false,
       id: input.boQuaBuoiHocId ? { not: input.boQuaBuoiHocId } : undefined,
     },
   });

@@ -302,4 +302,31 @@ describe("KH-03 thiết lập thời khóa biểu", () => {
     );
     expect(await prisma.buoiHoc.count({ where: { khoaId: khoa.id } })).toBe(0);
   });
+
+  it("buổi đã hủy (GD-03) không còn chiếm phòng và lịch giảng viên - xếp học bù vào đúng khung giờ đó được", async () => {
+    const { chuongTrinh: ct1, hocPhans: hp1 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
+    const { chuongTrinh: ct2, hocPhans: hp2 } = await taoChuongTrinhDaBanHanhVoiHocPhan(1);
+    const khoa1 = await taoKhoa(ct1.id);
+    const khoa2 = await taoKhoa(ct2.id);
+    const gv = await taoGiangVien();
+    const phong = await taoPhongHoc();
+    await phanCongGiangVien({ khoaId: khoa1.id, hocPhanId: hp1[0].id, giangVienId: gv.id });
+    await phanCongGiangVien({ khoaId: khoa2.id, hocPhanId: hp2[0].id, giangVienId: gv.id });
+
+    const buoiHuy = await thietLapBuoiHoc({
+      khoaId: khoa1.id,
+      hocPhanId: hp1[0].id,
+      ngayHoc: "2026-10-20",
+      gioBatDau: "08:00",
+      gioKetThuc: "10:00",
+      phongHocId: phong.id,
+    });
+    const khungGio = { ngayHoc: "2026-10-20", gioBatDau: "08:00", gioKetThuc: "10:00", phongHocId: phong.id };
+    // còn hiệu lực -> chặn cả trùng phòng lẫn trùng giảng viên
+    await expect(thietLapBuoiHoc({ khoaId: khoa2.id, hocPhanId: hp2[0].id, ...khungGio })).rejects.toThrow();
+
+    await prisma.buoiHoc.update({ where: { id: buoiHuy.id }, data: { daHuy: true } });
+    const hocBu = await thietLapBuoiHoc({ khoaId: khoa2.id, hocPhanId: hp2[0].id, ...khungGio });
+    expect(hocBu.phongHocId).toBe(phong.id);
+  });
 });
