@@ -3,10 +3,12 @@ import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { khoiTaoKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { themHocVienVaoKhoa } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
+import { Prisma } from "@/generated/prisma/client";
 import {
   chayBackupNgay,
   danhSachSaoLuu,
   phucHoiTuBanSaoLuu,
+  THU_TU_BANG,
 } from "@/server/services/qt/qt-04-sao-luu";
 import {
   KhongTimThayBanSaoLuuError,
@@ -34,6 +36,13 @@ afterAll(async () => {
 });
 
 describe("QT-04 sao lưu và phục hồi dữ liệu", () => {
+  it("sao lưu đủ mọi bảng dữ liệu (trừ bảng nhật ký sao lưu của chính nó) - thêm model mới phải thêm vào đây", () => {
+    const moiBang = Object.values(Prisma.ModelName)
+      .filter((ten) => ten !== "SaoLuu")
+      .map((ten) => ten[0].toLowerCase() + ten.slice(1));
+    expect([...THU_TU_BANG].sort()).toEqual(moiBang.sort());
+  });
+
   it("chạy backup thủ công tạo bản ghi Thành công kèm file trên đĩa", async () => {
     const ketQua = await chayBackupNgay("Admin test", "THU_CONG");
     saoLuuTaoTrongTest.push(ketQua.id);

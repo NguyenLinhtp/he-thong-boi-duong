@@ -352,10 +352,14 @@ model HocPhan {
   soTiet        Int
   thuTu         Int
 
-  giangViens GiangVienHocPhan[]
-  buoiHocs   BuoiHoc[]
-  ketQuas    KetQuaHocTap[]
-  taiLieus   TaiLieuHocTap[]
+  giangViens     GiangVienHocPhan[]
+  buoiHocs       BuoiHoc[]
+  ketQuas        KetQuaHocTap[]
+  taiLieus       TaiLieuHocTap[]
+  // CT-02 bổ sung 28/09/2026: học liệu khung + yêu cầu đánh giá của chuyên đề
+  hocLieus       HocLieuHocPhan[]
+  baiTracNghiems BaiTracNghiem[]
+  yeuCauSanPhams YeuCauSanPham[]
 
   @@map("hoc_phan")
 }
@@ -393,6 +397,8 @@ model Khoa {
   lopHocs              LopHoc[]
   quyetDinhCapVanBangs QuyetDinhCapVanBang[]
   taiLieus             TaiLieuHocTap[]
+  lanLamTracNghiems    LanLamTracNghiem[]
+  baiNopSanPhams       BaiNopSanPham[]
 
   @@map("khoa")
 }
@@ -457,13 +463,15 @@ model HocVien {
   soDienThoai     String?
   email           String?
 
-  dangKys     DangKyHoc[]
-  diemDanhs   DiemDanh[]
-  ketQuas     KetQuaHocTap[]
-  ketQuaKhoas KetQuaKhoa[]
-  hocPhis     HocPhi[]
-  chungChis   ChungChi[]
-  thongBaos   ThongBao[]
+  dangKys           DangKyHoc[]
+  diemDanhs         DiemDanh[]
+  ketQuas           KetQuaHocTap[]
+  ketQuaKhoas       KetQuaKhoa[]
+  hocPhis           HocPhi[]
+  chungChis         ChungChi[]
+  thongBaos         ThongBao[]
+  lanLamTracNghiems LanLamTracNghiem[]
+  baiNopSanPhams    BaiNopSanPham[]
 
   @@map("hoc_vien")
 }
@@ -982,4 +990,131 @@ model MauBieuBaoCao {
 
   @@unique([ma, phienBan])
   @@map("mau_bieu_bao_cao")
+}
+
+// ---- CT-02 / GD-04 / KQ-01 bổ sung 28/09/2026: học liệu khung theo chương trình ----
+
+enum LoaiHocLieu {
+  TAI_LIEU
+  SLIDE
+  THONG_TIN
+  VIDEO
+}
+
+/// Học liệu khung của 1 học phần/chuyên đề - mọi khóa mở từ chương trình dùng chung.
+/// Mỗi mục là 1 tệp, 1 đường link hoặc (với THONG_TIN) nội dung văn bản.
+model HocLieuHocPhan {
+  id         String      @id @default(cuid())
+  hocPhanId  String
+  hocPhan    HocPhan     @relation(fields: [hocPhanId], references: [id], onDelete: Cascade)
+  loai       LoaiHocLieu
+  tieuDe     String
+  moTa       String?
+  noiDung    String?
+  tenFile    String?
+  loaiFile   String?
+  kichThuoc  Int?
+  khoaLuuTru String?     @unique
+  duongLink  String?
+  thuTu      Int         @default(0)
+  nguoiDang  String
+  createdAt  DateTime    @default(now())
+
+  @@index([hocPhanId])
+  @@map("hoc_lieu_hoc_phan")
+}
+
+/// Bài trắc nghiệm của chuyên đề: chỉ để tự kiểm tra (tinhDiem = false) hoặc
+/// tính vào điểm đánh giá trực tuyến của học phần theo hệ số.
+model BaiTracNghiem {
+  id           String             @id @default(cuid())
+  hocPhanId    String
+  hocPhan      HocPhan            @relation(fields: [hocPhanId], references: [id], onDelete: Cascade)
+  tieuDe       String
+  moTa         String?
+  thoiGianPhut Int?
+  soLanToiDa   Int?
+  tinhDiem     Boolean            @default(false)
+  heSo         Decimal            @default(1) @db.Decimal(4, 2)
+  thuTu        Int                @default(0)
+  createdAt    DateTime           @default(now())
+  cauHois      CauHoiTracNghiem[]
+  lanLams      LanLamTracNghiem[]
+
+  @@index([hocPhanId])
+  @@map("bai_trac_nghiem")
+}
+
+model CauHoiTracNghiem {
+  id        String        @id @default(cuid())
+  baiId     String
+  bai       BaiTracNghiem @relation(fields: [baiId], references: [id], onDelete: Cascade)
+  noiDung   String
+  phuongAn  String[]
+  // chỉ số (0-based) các phương án đúng; nhiều phần tử = câu nhiều đáp án
+  dapAnDung Int[]
+  thuTu     Int           @default(0)
+
+  @@index([baiId])
+  @@map("cau_hoi_trac_nghiem")
+}
+
+/// 1 lần học viên làm bài (theo khóa). Bắt đầu tạo bản ghi, nộp mới có điểm.
+model LanLamTracNghiem {
+  id        String        @id @default(cuid())
+  baiId     String
+  bai       BaiTracNghiem @relation(fields: [baiId], references: [id], onDelete: Restrict)
+  khoaId    String
+  khoa      Khoa          @relation(fields: [khoaId], references: [id])
+  hocVienId String
+  hocVien   HocVien       @relation(fields: [hocVienId], references: [id])
+  batDauLuc DateTime      @default(now())
+  nopLuc    DateTime?
+  traLoi    Json?
+  soCauDung Int?
+  tongSoCau Int?
+  diem      Decimal?      @db.Decimal(4, 2)
+
+  @@index([baiId, khoaId, hocVienId])
+  @@map("lan_lam_trac_nghiem")
+}
+
+/// Yêu cầu sản phẩm cuối khóa của chuyên đề (học viên nộp tệp, giảng viên chấm).
+model YeuCauSanPham {
+  id        String          @id @default(cuid())
+  hocPhanId String
+  hocPhan   HocPhan         @relation(fields: [hocPhanId], references: [id], onDelete: Cascade)
+  tieuDe    String
+  moTa      String?
+  tinhDiem  Boolean         @default(false)
+  heSo      Decimal         @default(1) @db.Decimal(4, 2)
+  thuTu     Int             @default(0)
+  createdAt DateTime        @default(now())
+  baiNops   BaiNopSanPham[]
+
+  @@index([hocPhanId])
+  @@map("yeu_cau_san_pham")
+}
+
+model BaiNopSanPham {
+  id         String        @id @default(cuid())
+  yeuCauId   String
+  yeuCau     YeuCauSanPham @relation(fields: [yeuCauId], references: [id], onDelete: Restrict)
+  khoaId     String
+  khoa       Khoa          @relation(fields: [khoaId], references: [id])
+  hocVienId  String
+  hocVien    HocVien       @relation(fields: [hocVienId], references: [id])
+  tenFile    String
+  loaiFile   String
+  kichThuoc  Int
+  khoaLuuTru String        @unique
+  ghiChu     String?
+  nopLuc     DateTime      @default(now())
+  diem       Decimal?      @db.Decimal(4, 2)
+  nhanXet    String?
+  nguoiCham  String?
+  chamLuc    DateTime?
+
+  @@unique([yeuCauId, khoaId, hocVienId])
+  @@map("bai_nop_san_pham")
 }

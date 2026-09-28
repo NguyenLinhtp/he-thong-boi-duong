@@ -19,7 +19,7 @@ const THU_MUC_SAO_LUU = process.env.BACKUP_DIR ?? path.join(process.cwd(), "back
 // (và đảo ngược để xóa sạch trước khi chèn lại). Bảng SaoLuu (chính nó, lưu
 // nhật ký sao lưu) cố tình không nằm trong danh sách - không tự sao lưu/xóa
 // nhật ký của chính nó.
-const THU_TU_BANG = [
+export const THU_TU_BANG = [
   "nguoiDung",
   "vaiTroModel",
   "chucNangHeThong",
@@ -45,11 +45,17 @@ const THU_TU_BANG = [
   "giangVienHocPhan",
   "buoiHoc",
   "taiLieuHocTap",
+  "hocLieuHocPhan",
+  "baiTracNghiem",
+  "cauHoiTracNghiem",
+  "yeuCauSanPham",
   "hopDongLienKet",
   "loNopHoSo",
   "dangKyHoc",
   "lichSuChuyenLop",
   "diemDanh",
+  "lanLamTracNghiem",
+  "baiNopSanPham",
   "ketQuaHocTap",
   "ketQuaKhoa",
   "hocPhi",
