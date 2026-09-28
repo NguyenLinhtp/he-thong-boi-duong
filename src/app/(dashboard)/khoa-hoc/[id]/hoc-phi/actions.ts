@@ -102,7 +102,8 @@ export async function guiNhacNoAction(hocPhiId: string, khoaId: string) {
 // HP-06 actor là "Hệ thống (tự động kiểm tra)" - không map sang vai trò người
 // dùng cụ thể nào; gán quyền bấm nút "bỏ qua điều kiện" theo HP-01 (Cán bộ
 // quản lý đào tạo/Cán bộ tài chính, đã gộp cả vai trò lãnh đạo phê duyệt
-// trường hợp đặc biệt theo quyết định RBAC 6 vai trò).
+// trường hợp đặc biệt theo quyết định RBAC 6 vai trò). Đã chốt 28/09/2026 (bổ
+// sung quy tắc HP-06 trong functions.json): cả 2 vai trò đều được bỏ chặn.
 export async function boQuaDieuKienAction(_prevState: string | undefined, formData: FormData) {
   const phien = await requirePermission("HP-01");
   const hocPhiId = String(formData.get("hocPhiId"));

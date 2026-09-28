@@ -571,7 +571,7 @@
     "actor": "Hệ thống (tự động kiểm tra)",
     "input": "Trạng thái thanh toán học viên hoặc trạng thái thanh lý hợp đồng liên kết",
     "output": "Cảnh báo/chặn thao tác công nhận kết quả, cấp chứng chỉ",
-    "quy_tac_nghiep_vu": "Có thể bỏ chặn thủ công nếu lãnh đạo phê duyệt trường hợp đặc biệt",
+    "quy_tac_nghiep_vu": "Có thể bỏ chặn thủ công nếu lãnh đạo phê duyệt trường hợp đặc biệt; (bổ sung 28/09/2026) Cán bộ tài chính và Cán bộ quản lý đào tạo đều được xác nhận bỏ chặn (ghi nhận đã thu/đã hoàn tất nghĩa vụ học phí theo phê duyệt), bắt buộc ghi lý do và được ghi nhật ký",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 2"
   },

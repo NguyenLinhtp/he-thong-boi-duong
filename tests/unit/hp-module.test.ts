@@ -363,6 +363,14 @@ describe("HP-06 điều kiện tài chính (dùng cho KQ-03/CC-01)", () => {
     await boQuaDieuKienHocPhi(hocPhi.id, { lyDo: "Trường hợp đặc biệt", nguoiPheDuyetTen: "Lãnh đạo" });
     expect(await daHoanTatNghiaVuTaiChinh(hocVien.id, khoa.id)).toBe(true);
   });
+
+  it("quyền bỏ chặn (theo HP-01): Cán bộ tài chính và Cán bộ quản lý đào tạo đều có; học viên/giảng viên/ĐVLK thì không", async () => {
+    const quyen = await prisma.vaiTroChucNang.findMany({
+      where: { chucNangHeThong: { maCN: "HP-01" } },
+      include: { vaiTro: true },
+    });
+    expect(quyen.map((q) => q.vaiTro.ma).sort()).toEqual(["CAN_BO_QUAN_LY_DAO_TAO", "CAN_BO_TAI_CHINH"]);
+  });
 });
 
 describe("HP-05 báo cáo doanh thu và công nợ", () => {
