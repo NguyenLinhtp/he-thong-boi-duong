@@ -37,13 +37,15 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/he_thong_boi_duong_ci
       # chỉ dùng trong CI - production đặt secret thật ở môi trường triển khai
       AUTH_SECRET: ci-only-auth-secret-khong-dung-cho-production
+      CONFIG_ENCRYPT_KEY: ci-only-config-encrypt-key-khong-dung-cho-production
+      BACKUP_CRON_SECRET: ci-only-cron-secret
       HOC_LIEU_DIR: /tmp/hoc-lieu
       BACKUP_DIR: /tmp/backups
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
