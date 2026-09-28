@@ -31,6 +31,39 @@ export async function ghiNhatKy(input: {
   });
 }
 
+/** Người thực hiện thao tác - lấy từ phiên đăng nhập ở trang/API. */
+export type NguoiThucHien = { nguoiThucHienId?: string | null; nguoiThucHienTen: string };
+
+/** Mặc định cho lời gọi nội bộ/tác vụ tự động không gắn với 1 tài khoản. */
+export const HE_THONG: NguoiThucHien = { nguoiThucHienTen: "Hệ thống" };
+
+export const nguoiTuPhien = (phien: { userId: string; hoTen: string }): NguoiThucHien => ({
+  nguoiThucHienId: phien.userId,
+  nguoiThucHienTen: phien.hoTen,
+});
+
+/** Rút gọn ghiNhatKy cho các service nhận tham số NguoiThucHien. */
+export function ghiThaoTac(
+  nguoi: NguoiThucHien,
+  hanhDong: string,
+  doiTuong: string,
+  doiTuongId: string,
+  chiTiet?: string | null,
+  db: Prisma.TransactionClient = prisma,
+) {
+  return ghiNhatKy(
+    {
+      nguoiThucHienId: nguoi.nguoiThucHienId,
+      nguoiThucHienTen: nguoi.nguoiThucHienTen,
+      hanhDong,
+      doiTuong,
+      doiTuongId,
+      chiTiet,
+    },
+    db,
+  );
+}
+
 export type LocNhatKy = {
   doiTuong?: string;
   doiTuongId?: string;

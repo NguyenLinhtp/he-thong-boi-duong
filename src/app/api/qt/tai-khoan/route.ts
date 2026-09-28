@@ -6,6 +6,7 @@ import {
   MatKhauYeuError,
   TenDangNhapTrungError,
 } from "@/server/services/qt/qt-01-quan-ly-tai-khoan";
+import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 export const GET = apiRoute(async () => {
   await requirePermission("QT-01");
@@ -14,11 +15,11 @@ export const GET = apiRoute(async () => {
 });
 
 export const POST = apiRoute(async (req: Request) => {
-  await requirePermission("QT-01");
+  const phien = await requirePermission("QT-01");
   const body = await req.json();
 
   try {
-    const taiKhoan = await taoTaiKhoan(body);
+    const taiKhoan = await taoTaiKhoan(body, nguoiTuPhien(phien));
     return NextResponse.json(taiKhoan, { status: 201 });
   } catch (error) {
     if (error instanceof TenDangNhapTrungError || error instanceof MatKhauYeuError) {
