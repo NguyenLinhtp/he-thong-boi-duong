@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/guard";
 import { trinhThamDinh, pheDuyet, traVeDuThao } from "@/server/services/ct/ct-03-phe-duyet";
 import { SaiTrangThaiChuongTrinhError } from "@/server/services/ct/loi-chuong-trinh";
-import { ChuaSanSangTrinhDuyetError } from "@/server/services/ct/ct-03-phe-duyet";
+import { ChuaSanSangTrinhDuyetError, ChuaChonPhuongThucDangKyError } from "@/server/services/ct/ct-03-phe-duyet";
 import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 function duongDan(id: string) {
@@ -18,7 +18,11 @@ export async function trinhThamDinhAction(_prevState: string | undefined, formDa
   try {
     await trinhThamDinh(id, (formData.get("yKienThamDinh") as string) || null, nguoiTuPhien(phien));
   } catch (error) {
-    if (error instanceof SaiTrangThaiChuongTrinhError || error instanceof ChuaSanSangTrinhDuyetError) {
+    if (
+      error instanceof SaiTrangThaiChuongTrinhError ||
+      error instanceof ChuaSanSangTrinhDuyetError ||
+      error instanceof ChuaChonPhuongThucDangKyError
+    ) {
       return error.message;
     }
     throw error;

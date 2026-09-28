@@ -19,6 +19,12 @@ export class ChuaSanSangTrinhDuyetError extends Error {
   }
 }
 
+export class ChuaChonPhuongThucDangKyError extends Error {
+  constructor() {
+    super("Chương trình chưa chọn phương thức đăng ký (CT-07), chưa thể trình duyệt");
+  }
+}
+
 /**
  * CT-03 bước 1: Dự thảo -> Chờ thẩm định. Cổng chặn: tổng số tiết học phần
  * phải khớp tổng thời lượng chương trình (quy tắc nghiệp vụ CT-02/CT-03) -
@@ -39,6 +45,9 @@ export async function trinhThamDinh(
   if (!(await tongTietDaKhopThoiLuong(chuongTrinhId))) {
     throw new ChuaSanSangTrinhDuyetError();
   }
+  // CT-07/KH-01: mọi khóa kế thừa phương thức của chương trình - chương trình
+  // ban hành mà chưa có phương thức thì khóa mở ra không đăng ký được
+  if (!chuongTrinh.phuongThucDangKy) throw new ChuaChonPhuongThucDangKyError();
 
   return prisma.$transaction(async (tx) => {
     const sau = await tx.chuongTrinh.update({

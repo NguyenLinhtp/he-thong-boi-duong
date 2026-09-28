@@ -6,6 +6,7 @@ import {
   pheDuyet,
   traVeDuThao,
   ChuaSanSangTrinhDuyetError,
+  ChuaChonPhuongThucDangKyError,
 } from "@/server/services/ct/ct-03-phe-duyet";
 import { SaiTrangThaiChuongTrinhError } from "@/server/services/ct/loi-chuong-trinh";
 
@@ -30,6 +31,7 @@ async function taoChuongTrinhTest(tongThoiLuong: number | null = 10) {
       ten: "Chương trình test CT-03",
       loaiHinhBoiDuongId: lh.id,
       tongThoiLuong,
+      phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY",
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);
@@ -42,6 +44,15 @@ describe("CT-03 trình duyệt và phê duyệt chương trình", () => {
     await themHocPhan(ct.id, { ten: "A", soTiet: 5 });
 
     await expect(trinhThamDinh(ct.id)).rejects.toThrow(ChuaSanSangTrinhDuyetError);
+  });
+
+  it("chặn trình thẩm định khi chưa chọn phương thức đăng ký (CT-07) - khóa mở ra sẽ không đăng ký được", async () => {
+    const ct = await taoChuongTrinhTest(10);
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKy: null } });
+    await themHocPhan(ct.id, { ten: "A", soTiet: 10 });
+
+    await expect(trinhThamDinh(ct.id)).rejects.toThrow(ChuaChonPhuongThucDangKyError);
+    expect((await prisma.chuongTrinh.findUniqueOrThrow({ where: { id: ct.id } })).trangThai).toBe("DU_THAO");
   });
 
   it("luồng đầy đủ: Dự thảo -> Chờ thẩm định -> Đã ban hành kèm số quyết định", async () => {

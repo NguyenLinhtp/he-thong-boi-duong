@@ -91,7 +91,7 @@
     "actor": "Cán bộ quản lý đào tạo → Hội đồng khoa học → Ban giám hiệu",
     "input": "Chương trình \"Dự thảo\", ý kiến thẩm định",
     "output": "Chương trình \"Đã ban hành\" kèm số quyết định",
-    "quy_tac_nghiep_vu": "Chỉ chương trình \"Đã ban hành\" mới được dùng để mở khóa",
+    "quy_tac_nghiep_vu": "Chỉ chương trình \"Đã ban hành\" mới được dùng để mở khóa; (bổ sung 28/09/2026) chương trình phải đã chọn phương thức đăng ký (CT-07) mới được trình thẩm định - mọi khóa kế thừa phương thức của chương trình",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 1"
   },

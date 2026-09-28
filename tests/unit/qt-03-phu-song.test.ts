@@ -122,13 +122,13 @@ describe("QT-03 phủ sóng nhật ký: vòng đời chương trình (CT-01/03/0
     const ct = await taoChuongTrinh({ ten: "CT QT-03", tongThoiLuong: 10, loaiHinhBoiDuongId: lh.id }, NGUOI);
     ids.chuongTrinh.push(ct.id);
     await themHocPhan(ct.id, { ten: "HP", soTiet: 10 });
+    await thietLapPhuongThucDangKy(ct.id, "TRUC_TUYEN_NOP_GIAY", NGUOI);
 
     await trinhThamDinh(ct.id, null, NGUOI);
     await traVeDuThao(ct.id, "Bổ sung mục tiêu", NGUOI);
     await trinhThamDinh(ct.id, null, NGUOI);
     await expect(pheDuyet(ct.id, { soQuyetDinh: "  " }, NGUOI)).rejects.toThrow();
     await pheDuyet(ct.id, { soQuyetDinh: "QD-QT03" }, NGUOI);
-    await thietLapPhuongThucDangKy(ct.id, "TRUC_TUYEN_NOP_GIAY", NGUOI);
     await thietLapPhuongThucDangKy(ct.id, "TRUC_TUYEN_NOP_GIAY", NGUOI); // không đổi -> không ghi
     await suaChuongTrinhDaBanHanh(ct.id, { ten: "CT QT-03 v2", loaiHinhBoiDuongId: lh.id, tongThoiLuong: 10, lyDoSua: "Đổi tên" }, NGUOI);
     await ngungHieuLucChuongTrinh(ct.id, "Hết nhu cầu", NGUOI);
@@ -136,17 +136,17 @@ describe("QT-03 phủ sóng nhật ký: vòng đời chương trình (CT-01/03/0
     const ds = await nhatKy(ct.id);
     expect(ds.map((x) => x.hanhDong)).toEqual([
       "TAO_CHUONG_TRINH",
+      "THIET_LAP_PHUONG_THUC_DANG_KY",
       "TRINH_THAM_DINH_CHUONG_TRINH",
       "TRA_VE_DU_THAO_CHUONG_TRINH",
       "TRINH_THAM_DINH_CHUONG_TRINH",
       "PHE_DUYET_CHUONG_TRINH",
-      "THIET_LAP_PHUONG_THUC_DANG_KY",
       "SUA_CHUONG_TRINH_DA_BAN_HANH",
       "NGUNG_HIEU_LUC_CHUONG_TRINH",
     ]);
     expect(ds.every((x) => x.nguoiThucHienTen === "Quản trị QT-03")).toBe(true);
-    expect(ds[4].chiTiet).toContain("QD-QT03");
-    expect(ds[2].chiTiet).toContain("Bổ sung mục tiêu");
+    expect(ds[5].chiTiet).toContain("QD-QT03");
+    expect(ds[3].chiTiet).toContain("Bổ sung mục tiêu");
   });
 });
 
