@@ -5,10 +5,13 @@ import {
   DaXacNhanThamGiaError,
   KhoaChuaMoXacNhanThamGiaError,
 } from "@/server/services/hv/loi-hoc-vien";
+import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
 
 export type XacNhanThamGiaInput = {
   khoaId: string;
-  soCCCD: string;
+  // CCCD/mã số (cột "CCCD/mã số" của file import HV-03); bỏ trống khi xác
+  // nhận bằng tài khoản đang đăng nhập
+  soCCCD?: string | null;
   soDienThoai?: string | null;
   email?: string | null;
   ngaySinh?: string | null;
@@ -17,17 +20,24 @@ export type XacNhanThamGiaInput = {
 const INCLUDE_DANG_KY = { hocVien: true, khoa: { include: { chuongTrinh: true } } } as const;
 
 /**
- * HV-04 (Phương thức 2): học viên tự xác nhận bằng CCCD/mã số cho khóa đã
- * được import sẵn (HV-03) - "chỉ xác nhận được khi CCCD/mã số khớp với dữ
- * liệu đã import". Cửa sổ xác nhận mở khi khóa Đang tuyển sinh, không kiểm
- * tra lại sĩ số vì chỗ đã được giữ từ lúc import, không phải đăng ký mới.
+ * HV-04 (Phương thức 2): học viên tự xác nhận bằng CCCD/mã số hoặc tài khoản
+ * cho khóa đã được import sẵn (HV-03) - "chỉ xác nhận được khi CCCD/mã số
+ * khớp với dữ liệu đã import". Cửa sổ xác nhận mở khi khóa Đang tuyển sinh,
+ * không kiểm tra lại sĩ số vì chỗ đã được giữ từ lúc import.
+ * nguoiDungTaiKhoanId: CHỈ lấy từ phiên đăng nhập phía server (không bao giờ
+ * từ dữ liệu client gửi lên) - học viên liên kết với tài khoản như KQ-05.
  */
-export async function xacNhanThamGia(input: XacNhanThamGiaInput) {
+export async function xacNhanThamGia(input: XacNhanThamGiaInput, nguoiDungTaiKhoanId?: string | null) {
   const khoa = await prisma.khoa.findUnique({ where: { id: input.khoaId } });
   if (!khoa) throw new KhongTimThayKhoaError();
   if (khoa.trangThai !== "DANG_TUYEN_SINH") throw new KhoaChuaMoXacNhanThamGiaError();
 
-  const hocVien = await prisma.hocVien.findUnique({ where: { soCCCD: input.soCCCD } });
+  const soCCCD = input.soCCCD?.trim();
+  const hocVien = nguoiDungTaiKhoanId
+    ? await hocVienCuaTaiKhoan(nguoiDungTaiKhoanId)
+    : soCCCD
+      ? await prisma.hocVien.findUnique({ where: { soCCCD } })
+      : null;
   if (!hocVien) throw new KhongKhopDuLieuImportError();
 
   const dangKy = await prisma.dangKyHoc.findUnique({

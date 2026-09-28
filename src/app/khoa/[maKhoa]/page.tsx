@@ -4,8 +4,19 @@ import { coTheNhanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { dsDonViLienKetChoKhoa } from "@/server/services/hv/hv-12-dang-ky-qua-dvlk";
 import { FormDangKy } from "./form-dang-ky";
 import { FormXacNhanThamGia } from "./form-xac-nhan-tham-gia";
+import { auth } from "@/lib/auth";
+import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
 import { FormDangKyDuThi } from "./form-dang-ky-du-thi";
 import { FormDangKyQuaDVLK } from "./form-dang-ky-qua-dvlk";
+
+// HV-04: học viên đã đăng nhập (tài khoản liên kết hồ sơ học viên) xác nhận
+// tham gia bằng tài khoản, không cần gõ CCCD/mã số
+async function hocVienDangNhap() {
+  const userId = (await auth())?.phienDangNhap?.userId;
+  if (!userId) return null;
+  const hocVien = await hocVienCuaTaiKhoan(userId);
+  return hocVien ? { hoTen: hocVien.hoTen, maHocVien: hocVien.maHocVien } : null;
+}
 
 export default async function TrangDangKyCongKhaiKhoa({
   params,
@@ -55,7 +66,7 @@ export default async function TrangDangKyCongKhaiKhoa({
 
       {khoa.chuongTrinh.phuongThucDangKy === "IMPORT_TU_XAC_NHAN" &&
         (conMoXacNhanThamGia ? (
-          <FormXacNhanThamGia khoaId={khoa.id} />
+          <FormXacNhanThamGia khoaId={khoa.id} hocVienDangNhap={await hocVienDangNhap()} />
         ) : (
           <p className="rounded-lg border p-4 text-sm text-muted-foreground">
             Khóa hiện chưa/không còn mở xác nhận tham gia.

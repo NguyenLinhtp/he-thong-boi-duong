@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function FormXacNhanThamGia({ khoaId }: { khoaId: string }) {
+// hocVienDangNhap: học viên liên kết với tài khoản đang đăng nhập (nếu có) -
+// cho xác nhận bằng tài khoản thay vì nhập CCCD/mã số
+export function FormXacNhanThamGia({
+  khoaId,
+  hocVienDangNhap,
+}: {
+  khoaId: string;
+  hocVienDangNhap?: { hoTen: string; maHocVien: string } | null;
+}) {
   const [ketQua, formAction, dangXuLy] = useActionState(xacNhanThamGiaAction, undefined);
 
   if (ketQua === "THANH_CONG") {
@@ -21,14 +29,21 @@ export function FormXacNhanThamGia({ khoaId }: { khoaId: string }) {
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded-lg border p-4">
       <input type="hidden" name="khoaId" value={khoaId} />
+      {hocVienDangNhap && <input type="hidden" name="cachXacNhan" value="TAI_KHOAN" />}
       <p className="text-sm text-muted-foreground">
-        Nếu đơn vị bạn đã cử bạn tham gia khóa này (danh sách đã được import sẵn), hãy nhập CCCD/mã
-        số để xác nhận tham gia.
+        Nếu đơn vị bạn đã cử bạn tham gia khóa này (danh sách đã được import sẵn), hãy{" "}
+        {hocVienDangNhap ? "xác nhận bằng tài khoản đang đăng nhập" : "nhập CCCD/mã số"} để xác nhận tham gia.
       </p>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="soCCCD">Số CCCD/mã số</Label>
-        <Input id="soCCCD" name="soCCCD" required />
-      </div>
+      {hocVienDangNhap ? (
+        <p className="text-sm">
+          Tài khoản: <b>{hocVienDangNhap.hoTen}</b> ({hocVienDangNhap.maHocVien})
+        </p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="soCCCD">Số CCCD/mã số</Label>
+          <Input id="soCCCD" name="soCCCD" required />
+        </div>
+      )}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="soDienThoai">Số điện thoại (nếu chưa có)</Label>
         <Input id="soDienThoai" name="soDienThoai" />

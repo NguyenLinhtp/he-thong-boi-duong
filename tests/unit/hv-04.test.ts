@@ -15,8 +15,11 @@ const loaiHinhTaoTrongTest: string[] = [];
 const chuongTrinhTaoTrongTest: string[] = [];
 const khoaTaoTrongTest: string[] = [];
 const hocVienTaoTrongTest: string[] = [];
+const nguoiDungTaoTrongTest: string[] = [];
 
 afterAll(async () => {
+  await prisma.hocVien.updateMany({ where: { id: { in: hocVienTaoTrongTest } }, data: { nguoiDungId: null } });
+  await prisma.nguoiDung.deleteMany({ where: { id: { in: nguoiDungTaoTrongTest } } });
   await prisma.dangKyHoc.deleteMany({ where: { khoaId: { in: khoaTaoTrongTest } } });
   await prisma.hocVien.deleteMany({ where: { id: { in: hocVienTaoTrongTest } } });
   await prisma.khoa.deleteMany({ where: { id: { in: khoaTaoTrongTest } } });
@@ -161,5 +164,40 @@ describe("HV-04 học viên tự xác nhận tham gia (Phương thức 2)", () =
     await expect(
       xacNhanThamGia({ khoaId: "khong-ton-tai", soCCCD: "x" }),
     ).rejects.toThrow(KhongTimThayKhoaError);
+  });
+
+  async function taoTaiKhoan(hocVienId?: string) {
+    const nd = await prisma.nguoiDung.create({
+      data: { tenDangNhap: `hv04_${crypto.randomUUID()}`, matKhauHash: "x", hoTen: "Tài khoản HV-04" },
+    });
+    nguoiDungTaoTrongTest.push(nd.id);
+    if (hocVienId) await prisma.hocVien.update({ where: { id: hocVienId }, data: { nguoiDungId: nd.id } });
+    return nd;
+  }
+
+  it("xác nhận bằng tài khoản đang đăng nhập (liên kết hồ sơ học viên), không cần CCCD", async () => {
+    const { khoa, cccds } = await taoKhoaDaImport(1);
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
+    const hv = await prisma.hocVien.findUniqueOrThrow({ where: { soCCCD: cccds[0] } });
+    const nd = await taoTaiKhoan(hv.id);
+
+    const ketQua = await xacNhanThamGia({ khoaId: khoa.id }, nd.id);
+    expect(ketQua.hocVienId).toBe(hv.id);
+    expect(ketQua.trangThai).toBe("DA_XAC_NHAN_THAM_GIA");
+  });
+
+  it("chặn: tài khoản không liên kết học viên nào / học viên của tài khoản không có trong danh sách import / thiếu cả CCCD lẫn tài khoản", async () => {
+    const { khoa } = await taoKhoaDaImport(1);
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
+
+    const chuaLienKet = await taoTaiKhoan();
+    await expect(xacNhanThamGia({ khoaId: khoa.id }, chuaLienKet.id)).rejects.toThrow(KhongKhopDuLieuImportError);
+
+    const hvKhac = await prisma.hocVien.create({ data: { maHocVien: `HV_HV04_${crypto.randomUUID()}`, hoTen: "Không được import" } });
+    hocVienTaoTrongTest.push(hvKhac.id);
+    const ndKhac = await taoTaiKhoan(hvKhac.id);
+    await expect(xacNhanThamGia({ khoaId: khoa.id }, ndKhac.id)).rejects.toThrow(KhongKhopDuLieuImportError);
+
+    await expect(xacNhanThamGia({ khoaId: khoa.id, soCCCD: "   " })).rejects.toThrow(KhongKhopDuLieuImportError);
   });
 });
