@@ -6,6 +6,7 @@ import { hocPhiCuaKhoa } from "@/server/services/hp/hp-01-thiet-lap";
 import { danhSachPhieuThu } from "@/server/services/hp/hp-04-phieu-thu";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { FormThietLap } from "./form-thiet-lap";
 import { HangHocPhi } from "./hang-hoc-phi";
 
@@ -46,7 +47,7 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
-      <h1 className="text-xl font-bold text-ued-blue-dam">HP · Học phí khóa {khoa.maKhoa}</h1>
+      <DauTrangKhoa khoa={khoa} dangChon="hoc-phi" />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold text-ued-blue-dam">HP-01 · Thiết lập mức học phí</h2>

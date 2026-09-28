@@ -9,7 +9,7 @@ export default async function XacThucQrPage({ params }: { params: Promise<{ ma: 
   const { ma } = await params;
   const ketQua = await xacThucTheoMa(ma);
   return (
-    <main className="mx-auto flex max-w-xl flex-col gap-5 p-6">
+    <main className="mx-auto flex max-w-xl flex-col gap-5 px-4 py-10">
       <h1 className="text-xl font-bold text-ued-blue-dam">Xác thực văn bằng</h1>
       <KetQuaXacThucView ketQua={ketQua} />
       <Link href="/xac-thuc-van-bang" className="text-sm underline">

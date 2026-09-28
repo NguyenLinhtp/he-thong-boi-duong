@@ -8,6 +8,7 @@ import { danhSachTaiKhoanChuaGan } from "@/server/services/dvlk/dvlk-02-tai-khoa
 import { FormCapTaiKhoan, NutThuHoiTaiKhoan } from "./form-tai-khoan";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { FormSuaDonViLienKet, NutTrangThaiHopTac, NutXoaDonViLienKet } from "../cac-form";
 import { NHAN_TRANG_THAI_HOP_TAC, NHAN_TRANG_THAI_HOP_DONG } from "../nhan";
 
@@ -50,9 +51,7 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-ued-blue-dam">
           Đơn vị liên kết {dv.ma} · {dv.ten}
-          <span className="ml-2 rounded border px-2 py-0.5 text-sm font-normal">
-            {NHAN_TRANG_THAI_HOP_TAC[dv.trangThaiHopTac]}
-          </span>
+          <NhanTrangThai ma={dv.trangThaiHopTac} className="ml-2 align-middle">{NHAN_TRANG_THAI_HOP_TAC[dv.trangThaiHopTac] ?? dv.trangThaiHopTac}</NhanTrangThai>
         </h1>
         <Link href="/don-vi-lien-ket" className="text-sm underline">
           ← Danh mục đơn vị liên kết
@@ -83,7 +82,7 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
             <p>
               <b>{dv.taiKhoan.tenDangNhap}</b> · {dv.taiKhoan.hoTen}
               {dv.taiKhoan.email ? ` · ${dv.taiKhoan.email}` : ""} ·{" "}
-              {NHAN_TRANG_THAI_TAI_KHOAN[dv.taiKhoan.trangThai] ?? dv.taiKhoan.trangThai}
+              <NhanTrangThai ma={dv.taiKhoan.trangThai}>{NHAN_TRANG_THAI_TAI_KHOAN[dv.taiKhoan.trangThai] ?? dv.taiKhoan.trangThai}</NhanTrangThai>
             </p>
             {choPhepDVLK02 && <NutThuHoiTaiKhoan donViId={dv.id} tenDangNhap={dv.taiKhoan.tenDangNhap} />}
           </div>
@@ -130,7 +129,7 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
                 <TableCell>
                   {hd.khoa.maKhoa} · {hd.khoa.chuongTrinh.ten}
                 </TableCell>
-                <TableCell>{NHAN_TRANG_THAI_HOP_DONG[hd.trangThai]}</TableCell>
+                <TableCell><NhanTrangThai ma={hd.trangThai}>{NHAN_TRANG_THAI_HOP_DONG[hd.trangThai] ?? hd.trangThai}</NhanTrangThai></TableCell>
               </TableRow>
             ))}
           </TableBody>

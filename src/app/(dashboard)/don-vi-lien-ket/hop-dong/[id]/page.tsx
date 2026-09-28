@@ -8,6 +8,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { FormSuaHopDong, FormThanhLy } from "../cac-form";
 import { doiChieuThanhLy, NHAN_PHAN_LOAI } from "@/server/services/dvlk/dvlk-06-thanh-ly";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { NHAN_TRANG_THAI_HOP_DONG, NHAN_TRANG_THAI_HO_SO, dinhDangTien } from "../../nhan";
 import { FormXacNhanThuHoSo, ID_FORM_XAC_NHAN } from "../../form-xac-nhan-thu-ho-so";
 import { xacNhanThuHoSoTruongAction } from "../actions";
@@ -53,9 +54,7 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-ued-blue-dam">
           Hợp đồng {hd.maHopDong}
-          <span className="ml-2 rounded border px-2 py-0.5 text-sm font-normal">
-            {NHAN_TRANG_THAI_HOP_DONG[hd.trangThai]}
-          </span>
+          <NhanTrangThai ma={hd.trangThai} className="ml-2 align-middle">{NHAN_TRANG_THAI_HOP_DONG[hd.trangThai] ?? hd.trangThai}</NhanTrangThai>
         </h1>
         <Link href="/don-vi-lien-ket/hop-dong" className="text-sm underline">
           ← Danh sách hợp đồng
@@ -114,9 +113,9 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
         )}
         <div className="flex flex-wrap gap-2 text-xs">
           {Object.entries(hd.theoTrangThai).map(([trangThai, so]) => (
-            <span key={trangThai} className="rounded border px-2 py-0.5">
+            <NhanTrangThai key={trangThai} ma={trangThai}>
               {NHAN_TRANG_THAI_HO_SO[trangThai] ?? trangThai}: {so}
-            </span>
+            </NhanTrangThai>
           ))}
         </div>
         <Table>
@@ -156,7 +155,7 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
                 <TableCell>{dk.hocVien.hoTen}</TableCell>
                 <TableCell>{dk.ngayDangKy.toLocaleDateString("vi-VN")}</TableCell>
                 <TableCell>
-                  {NHAN_TRANG_THAI_HO_SO[dk.trangThai] ?? dk.trangThai}
+                  <NhanTrangThai ma={dk.trangThai}>{NHAN_TRANG_THAI_HO_SO[dk.trangThai] ?? dk.trangThai}</NhanTrangThai>
                   {dk.loNopHoSo && <div className="text-xs text-muted-foreground">Lô {dk.loNopHoSo.maLo}</div>}
                 </TableCell>
               </TableRow>
@@ -204,7 +203,7 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
                 <TableRow key={d.dangKyId}>
                   <TableCell>{d.maHocVien}</TableCell>
                   <TableCell>{d.hoTen}</TableCell>
-                  <TableCell>{NHAN_TRANG_THAI_HO_SO[d.trangThaiDangKy] ?? d.trangThaiDangKy}</TableCell>
+                  <TableCell><NhanTrangThai ma={d.trangThaiDangKy}>{NHAN_TRANG_THAI_HO_SO[d.trangThaiDangKy] ?? d.trangThaiDangKy}</NhanTrangThai></TableCell>
                   <TableCell>{d.diemTongKet ?? "—"}</TableCell>
                   <TableCell>{NHAN_PHAN_LOAI[d.phanLoai]}</TableCell>
                 </TableRow>

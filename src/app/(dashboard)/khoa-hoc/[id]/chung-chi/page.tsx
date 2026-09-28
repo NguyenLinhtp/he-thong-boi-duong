@@ -9,6 +9,8 @@ import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
 import { ChuaPheDuyetKetQuaError } from "@/server/services/cc/loi-chung-chi";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
+import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import {
   NutLapDeNghi,
   NutSinhSoHieu,
@@ -70,17 +72,15 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-ued-blue-dam">
-          CC · Văn bằng khóa {khoa.maKhoa}
-          <span className="ml-2 rounded border px-2 py-0.5 text-sm font-normal">
-            {NHAN_LOAI_VAN_BANG[khoa.chuongTrinh.loaiVanBang]}
+      <DauTrangKhoa
+        khoa={khoa}
+        dangChon="chung-chi"
+        phu={
+          <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+            Cấp {NHAN_LOAI_VAN_BANG[khoa.chuongTrinh.loaiVanBang].toLowerCase()}
           </span>
-        </h1>
-        <a href={`/khoa-hoc/${khoa.id}`} className="text-sm underline">
-          Về trang khóa
-        </a>
-      </div>
+        }
+      />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold text-ued-blue-dam">CC-01 · Lập danh sách đề nghị cấp chứng chỉ</h2>
@@ -283,7 +283,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
                 <TableCell className="font-mono">{cc.soHieu ?? "—"}</TableCell>
                 <TableCell>{cc.hocVien.hoTen}</TableCell>
                 <TableCell>
-                  {NHAN_TRANG_THAI_CHUNG_CHI[cc.trangThai]}
+                  <NhanTrangThai ma={cc.trangThai}>{NHAN_TRANG_THAI_CHUNG_CHI[cc.trangThai] ?? cc.trangThai}</NhanTrangThai>
                   {cc.soQuyetDinh && (
                     <span className="ml-1 text-xs text-muted-foreground">
                       (QĐ {cc.soQuyetDinh}, {cc.nguoiKy})

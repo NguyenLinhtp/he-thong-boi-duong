@@ -6,6 +6,7 @@ import { danhSachDonViLienKet } from "@/server/services/dvlk/dvlk-01-danh-muc";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { FormTaoDonViLienKet } from "./cac-form";
 import { NHAN_TRANG_THAI_HOP_TAC } from "./nhan";
 
@@ -82,7 +83,7 @@ export default async function DonViLienKetPage({
               <TableCell>{dv.ten}</TableCell>
               <TableCell>{dv.nguoiDaiDien ?? "—"}</TableCell>
               <TableCell>{[dv.soDienThoai, dv.email].filter(Boolean).join(" · ") || "—"}</TableCell>
-              <TableCell>{NHAN_TRANG_THAI_HOP_TAC[dv.trangThaiHopTac]}</TableCell>
+              <TableCell><NhanTrangThai ma={dv.trangThaiHopTac}>{NHAN_TRANG_THAI_HOP_TAC[dv.trangThaiHopTac] ?? dv.trangThaiHopTac}</NhanTrangThai></TableCell>
               <TableCell>
                 {dv.hopDongs.filter((hd) => hd.trangThai !== "DA_THANH_LY").length} / {dv.hopDongs.length}
               </TableCell>

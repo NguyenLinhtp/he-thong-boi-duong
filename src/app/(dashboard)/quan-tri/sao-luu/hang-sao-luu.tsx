@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { phucHoiAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   DANG_CHAY: "Đang chạy",
@@ -40,7 +41,7 @@ export function HangSaoLuu({ banGhi }: { banGhi: SaoLuuDong }) {
   return (
     <TableRow>
       <TableCell>{new Date(banGhi.thoiGianBatDau).toLocaleString("vi-VN")}</TableCell>
-      <TableCell>{NHAN_TRANG_THAI[banGhi.trangThai] ?? banGhi.trangThai}</TableCell>
+      <TableCell><NhanTrangThai ma={banGhi.trangThai}>{NHAN_TRANG_THAI[banGhi.trangThai] ?? banGhi.trangThai}</NhanTrangThai></TableCell>
       <TableCell>{NHAN_LOAI[banGhi.loaiKichHoat] ?? banGhi.loaiKichHoat}</TableCell>
       <TableCell>{banGhi.nguoiKichHoat ?? "(hệ thống)"}</TableCell>
       <TableCell>{dinhDangDung(banGhi.kichThuocByte)}</TableCell>

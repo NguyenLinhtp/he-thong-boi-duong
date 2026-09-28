@@ -7,6 +7,7 @@ import { KhongPhaiTaiKhoanDvlkError } from "@/server/services/dvlk/loi-dvlk";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { NHAN_TRANG_THAI_HO_SO, NHAN_TRANG_THAI_HOP_DONG } from "../../don-vi-lien-ket/nhan";
 import { FormXacNhanThuHoSo, ID_FORM_XAC_NHAN } from "../../don-vi-lien-ket/form-xac-nhan-thu-ho-so";
 import { xacNhanThuHoSoDvlkAction } from "./actions";
@@ -163,7 +164,7 @@ export default async function HoSoDonViLienKetPage({
               <TableCell>{hs.ngayDangKy.toLocaleDateString("vi-VN")}</TableCell>
               <TableCell>{hs.hanNopGiay ? hs.hanNopGiay.toLocaleDateString("vi-VN") : "—"}</TableCell>
               <TableCell>
-                {NHAN_TRANG_THAI_HO_SO[hs.trangThai] ?? hs.trangThai}
+                <NhanTrangThai ma={hs.trangThai}>{NHAN_TRANG_THAI_HO_SO[hs.trangThai] ?? hs.trangThai}</NhanTrangThai>
                 {hs.loNopHoSo && <div className="text-xs text-muted-foreground">Lô {hs.loNopHoSo.maLo}</div>}
               </TableCell>
               <TableCell>

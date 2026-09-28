@@ -70,14 +70,15 @@ test.describe("Nghiệp vụ qua giao diện", () => {
     await dangNhap(page, TAI_KHOAN_E2E.daoTao.tenDangNhap, MAT_KHAU_E2E, "/chuong-trinh");
     await expect(page).toHaveURL(/\/chuong-trinh$/);
 
+    await page.getByRole("button", { name: "Thêm chương trình" }).click();
     await page.getByLabel("Tên chương trình").fill(ten);
     await page.getByLabel("Loại hình").selectOption({ label: LOAI_HINH_E2E.ten });
     await page.getByLabel("Tổng thời lượng (tiết)").fill("30");
     await page.getByRole("button", { name: "Tạo chương trình (Dự thảo)" }).click();
 
-    const dong = page.getByRole("row", { name: new RegExp(ten) });
-    await expect(dong).toBeVisible();
-    await expect(dong).toContainText(/Dự thảo/i);
+    const the = page.getByRole("listitem").filter({ hasText: ten });
+    await expect(the).toBeVisible();
+    await expect(the).toContainText(/Dự thảo/i);
   });
 });
 

@@ -14,7 +14,7 @@ export default async function TraCuuVanBangPage({
   const ketQua = daNhap ? await traCuuTheoSoHieu(soHieu ?? "", hoTen ?? "") : null;
 
   return (
-    <main className="mx-auto flex max-w-xl flex-col gap-5 p-6">
+    <main className="mx-auto flex max-w-xl flex-col gap-5 px-4 py-10">
       <h1 className="text-xl font-bold text-ued-blue-dam">Tra cứu, xác thực chứng chỉ / giấy chứng nhận</h1>
       <p className="text-sm text-muted-foreground">
         Nhập số hiệu và họ tên người được cấp như ghi trên văn bằng, hoặc quét mã QR in trên văn bằng.

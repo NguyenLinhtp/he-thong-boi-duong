@@ -6,6 +6,7 @@ import { danhSachHopDong, tuyChonLapHopDong } from "@/server/services/dvlk/dvlk-
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { FormTaoHopDong } from "./cac-form";
 import { NHAN_TRANG_THAI_HOP_DONG, dinhDangTien } from "../nhan";
 
@@ -102,7 +103,7 @@ export default async function HopDongLienKetPage({
                 {hd.soLuongDuKien ?? "—"} / {hd.thucTe}
               </TableCell>
               <TableCell>{dinhDangTien(hd.donGiaThoaThuan)}</TableCell>
-              <TableCell>{NHAN_TRANG_THAI_HOP_DONG[hd.trangThai]}</TableCell>
+              <TableCell><NhanTrangThai ma={hd.trangThai}>{NHAN_TRANG_THAI_HOP_DONG[hd.trangThai] ?? hd.trangThai}</NhanTrangThai></TableCell>
             </TableRow>
           ))}
         </TableBody>

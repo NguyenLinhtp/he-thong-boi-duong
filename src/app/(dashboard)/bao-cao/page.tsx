@@ -5,6 +5,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { tongQuanDashboard } from "@/server/services/bc/bc-01-dashboard";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { TuLamMoi } from "./tu-lam-moi";
+import { DanhMucBaoCao } from "./danh-muc-bao-cao";
 
 const tien = (so: number) => `${so.toLocaleString("vi-VN")} đ`;
 
@@ -12,16 +13,16 @@ function The({ nhan, giaTri, phu, href }: { nhan: string; giaTri: string | numbe
   const noiDung = (
     <>
       <p className="text-xs text-muted-foreground">{nhan}</p>
-      <p className="text-2xl font-semibold">{giaTri}</p>
+      <p className="text-2xl font-bold text-ued-blue-dam">{giaTri}</p>
       {phu && <p className="text-xs text-muted-foreground">{phu}</p>}
     </>
   );
   return href ? (
-    <Link href={href} className="rounded-lg border bg-card p-3 shadow-sm hover:bg-muted">
+    <Link href={href} className="rounded-lg border border-l-4 border-l-primary bg-card p-3 shadow-sm transition-shadow hover:shadow-md">
       {noiDung}
     </Link>
   ) : (
-    <div className="rounded-lg border bg-card p-3 shadow-sm">{noiDung}</div>
+    <div className="rounded-lg border border-l-4 border-l-primary bg-card p-3 shadow-sm">{noiDung}</div>
   );
 }
 
@@ -78,17 +79,20 @@ export default async function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
           <h2 className="text-sm font-bold text-ued-blue-dam">Thu học phí 6 tháng gần nhất</h2>
-          <div className="flex h-40 items-end gap-3">
+          <div className="flex h-44 gap-3">
             {d.hocPhi.thuTheoThang.map((t) => (
               <div key={t.thang} className="flex flex-1 flex-col items-center gap-1">
                 <span className="text-[10px] text-muted-foreground">
                   {t.soTien ? `${(t.soTien / 1e6).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}tr` : ""}
                 </span>
-                <div
-                  className="w-full rounded-t bg-primary"
-                  style={{ height: `${Math.max(2, (t.soTien / thuCaoNhat) * 100)}%` }}
-                  title={tien(t.soTien)}
-                />
+                {/* khung cao cố định để chiều cao cột theo % có tác dụng */}
+                <div className="flex w-full flex-1 items-end">
+                  <div
+                    className="w-full rounded-t bg-ued-blue"
+                    style={{ height: `${Math.max(2, (t.soTien / thuCaoNhat) * 100)}%` }}
+                    title={tien(t.soTien)}
+                  />
+                </div>
                 <span className="text-xs text-muted-foreground">{t.thang}</span>
               </div>
             ))}
@@ -118,23 +122,7 @@ export default async function DashboardPage() {
         </section>
       </div>
 
-      <section className="flex flex-wrap gap-3 text-sm">
-        <Link href="/bao-cao/dao-tao" className="underline">
-          BC-02 Báo cáo hoạt động đào tạo
-        </Link>
-        <Link href="/bao-cao/tai-chinh" className="underline">
-          BC-03 Báo cáo tài chính học phí
-        </Link>
-        <Link href="/bao-cao/mau-bieu" className="underline">
-          BC-04 Báo cáo theo mẫu gửi cấp trên
-        </Link>
-        <Link href="/bao-cao/ho-so-luu-tru" className="underline">
-          BC-05 Tra cứu hồ sơ lưu trữ
-        </Link>
-        <Link href="/don-vi-lien-ket/bao-cao" className="underline">
-          DVLK-07 Công nợ, doanh thu theo đơn vị liên kết
-        </Link>
-      </section>
+      <DanhMucBaoCao />
     </main>
   );
 }

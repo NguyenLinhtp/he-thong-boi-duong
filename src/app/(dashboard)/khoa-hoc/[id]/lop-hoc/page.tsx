@@ -12,6 +12,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { FormTaoLop, NutChiaTuDong, HangLop, BangChonHocVien } from "./cac-form";
 
 type BoLocUrl = { q?: string; dvct?: string; dvlk?: string; lop?: string };
@@ -64,12 +65,7 @@ export default async function LopHocPage({
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-ued-blue-dam">KH-07 · Lớp trong khóa {khoa.maKhoa}</h1>
-        <a href={`/khoa-hoc/${khoa.id}`} className="text-sm underline">
-          Về trang khóa
-        </a>
-      </div>
+      <DauTrangKhoa khoa={khoa} dangChon="lop-hoc" />
       <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
         Chuyển lớp chỉ trong cùng khóa và không làm mất điểm, điểm danh, học phí đã có - các dữ liệu
         này gắn theo khóa. Mỗi lớp có thời khóa biểu và giảng viên riêng (chọn lớp khi phân công/xếp

@@ -6,6 +6,7 @@ import { hocVienTinhKetQua, laKhoaChiDuThi } from "@/server/services/kq/dung-chu
 import { bangDiemChiTietKhoa, bangTongHopKetQua } from "@/server/services/kq/kq-02-tong-hop";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { NutTongHop, NutXetHoanThanh, FormPheDuyet, FormKetQuaThi, FormPhucKhao } from "./cac-form";
 
 async function coQuyen(maCN: string): Promise<boolean> {
@@ -59,12 +60,7 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-ued-blue-dam">KQ · Kết quả học tập khóa {khoa.maKhoa}</h1>
-        <a href={`/khoa-hoc/${khoa.id}`} className="text-sm underline">
-          Về trang khóa
-        </a>
-      </div>
+      <DauTrangKhoa khoa={khoa} dangChon="ket-qua" />
       <div className="rounded-lg border bg-card p-4 shadow-sm text-sm">
         <p>
           {chiDuThi

@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   CHUA_NOP: "Chưa nộp",
@@ -65,7 +66,7 @@ export function HangHocPhi({
         <TableCell>{hocPhi.soTienPhaiNop.toLocaleString("vi-VN")}đ</TableCell>
         <TableCell>{hocPhi.soTienDaNop.toLocaleString("vi-VN")}đ</TableCell>
         <TableCell>
-          {NHAN_TRANG_THAI[hocPhi.trangThai] ?? hocPhi.trangThai}
+          <NhanTrangThai ma={hocPhi.trangThai}>{NHAN_TRANG_THAI[hocPhi.trangThai] ?? hocPhi.trangThai}</NhanTrangThai>
           {hocPhi.boQuaKiemTra && <span className="ml-1 text-xs text-muted-foreground">(đã bỏ qua điều kiện)</span>}
         </TableCell>
         <TableCell>{hocPhi.hanNop ? new Date(hocPhi.hanNop).toLocaleDateString("vi-VN") : "—"}</TableCell>

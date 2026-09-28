@@ -15,6 +15,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { NutIn } from "@/app/(dashboard)/khoa-hoc/[id]/chung-chi/in/nut-in";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 
 type ThamSo = { tuNgay?: string; denNgay?: string; dot?: string; loaiHinh?: string; trangThai?: string };
 
@@ -220,7 +221,7 @@ export default async function BaoCaoDaoTaoPage({ searchParams }: { searchParams:
                     <TableCell className="text-xs">
                       {d.khaiGiang?.toLocaleDateString("vi-VN") ?? "—"} - {d.beGiang?.toLocaleDateString("vi-VN") ?? "—"}
                     </TableCell>
-                    <TableCell>{NHAN_TRANG_THAI_KHOA[d.trangThai]}</TableCell>
+                    <TableCell><NhanTrangThai ma={d.trangThai}>{NHAN_TRANG_THAI_KHOA[d.trangThai] ?? d.trangThai}</NhanTrangThai></TableCell>
                     <TableCell>{d.siSoToiDa}</TableCell>
                     <TableCell>{d.soDaNhan}</TableCell>
                     <TableCell>{d.soThoiHoc}</TableCell>

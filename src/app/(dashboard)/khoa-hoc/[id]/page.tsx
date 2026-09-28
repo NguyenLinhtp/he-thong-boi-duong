@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
@@ -27,6 +28,9 @@ import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
+import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
+import { dinhDangNgay, dinhDangTien } from "@/lib/dinh-dang";
 import { FormPhanCong } from "./form-phan-cong";
 import { FormBuoiHoc } from "./form-buoi-hoc";
 import { FormHinhThuc } from "./form-hinh-thuc";
@@ -161,69 +165,51 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     })),
   );
 
-  const choPhepHocPhi = await coQuyen("HP-01");
-  const choPhepLop = await coQuyen("KH-07");
   const dsLop = (await danhSachLop(khoa.id)).map((l) => ({ id: l.id, maLop: l.maLop, ten: l.ten }));
   // khóa có lớp: mỗi học phần có thể phân công thêm theo từng lớp nên luôn hiện đủ học phần
   const hocPhanDePhanCong = dsLop.length > 0 ? khoa.chuongTrinh.hocPhans : hocPhanChuaPhanCong;
-  const choPhepKetQua = (await coQuyen("KQ-02")) || (await coQuyen("KQ-03"));
-  const choPhepChungChi = await coQuyen("CC-01");
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-ued-blue-dam">
-          {khoa.maKhoa} · {khoa.chuongTrinh.ten}
-        </h1>
-        <div className="flex gap-4">
-          {choPhepLop && (
-            <a href={`/khoa-hoc/${khoa.id}/lop-hoc`} className="text-sm underline">
-              Lớp học (KH-07)
-            </a>
-          )}
-          {choPhepKetQua && (
-            <a href={`/khoa-hoc/${khoa.id}/ket-qua`} className="text-sm underline">
-              Kết quả học tập (KQ)
-            </a>
-          )}
-          {choPhepChungChi && (
-            <a href={`/khoa-hoc/${khoa.id}/chung-chi`} className="text-sm underline">
-              Chứng chỉ (CC)
-            </a>
-          )}
-          {choPhepHocPhi && (
-            <a href={`/khoa-hoc/${khoa.id}/hoc-phi`} className="text-sm underline">
-              Quản lý học phí (HP)
-            </a>
-          )}
+      <DauTrangKhoa khoa={khoa} dangChon="tong-quan" />
+      <dl className="grid gap-x-6 gap-y-3 rounded-lg border bg-card p-4 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div className="sm:col-span-2">
+          <dt className="text-muted-foreground">Chương trình</dt>
+          <dd className="font-medium">
+            <Link href={`/chuong-trinh/${khoa.chuongTrinh.id}`}>
+              {khoa.chuongTrinh.maCT} · {khoa.chuongTrinh.ten}
+            </Link>
+          </dd>
         </div>
-      </div>
-      <div className="rounded-lg border bg-card p-4 shadow-sm text-sm">
-        <p>Chương trình: {khoa.chuongTrinh.maCT} · {khoa.chuongTrinh.ten}</p>
-        <p>Trạng thái: {NHAN_TRANG_THAI[khoa.trangThai] ?? khoa.trangThai}</p>
-        <p>
-          Phương thức đăng ký (kế thừa từ chương trình):{" "}
-          {khoa.chuongTrinh.phuongThucDangKy
-            ? (NHAN_PHUONG_THUC[khoa.chuongTrinh.phuongThucDangKy] ??
-              khoa.chuongTrinh.phuongThucDangKy)
-            : "Chưa thiết lập ở chương trình"}
-        </p>
-        <p>
-          Khai giảng:{" "}
-          {khoa.thoiGianKhaiGiang
-            ? new Date(khoa.thoiGianKhaiGiang).toLocaleDateString("vi-VN")
-            : "—"}
-        </p>
-        <p>
-          Bế giảng:{" "}
-          {khoa.thoiGianBeGiang ? new Date(khoa.thoiGianBeGiang).toLocaleDateString("vi-VN") : "—"}
-        </p>
-        <p>
-          Sĩ số: {siSo.siSoHienTai}/{siSo.siSoToiDa} {siSo.daDayDu && "(đã đủ)"}
-        </p>
-        <p>Mức học phí: {khoa.mucHocPhi ? khoa.mucHocPhi.toString() : "—"}</p>
-        <p>Đợt tuyển sinh: {khoa.dotTuyenSinh?.ten ?? "—"}</p>
-      </div>
+        <div className="sm:col-span-2">
+          <dt className="text-muted-foreground">Phương thức đăng ký (kế thừa từ chương trình)</dt>
+          <dd className="font-medium">
+            {khoa.chuongTrinh.phuongThucDangKy
+              ? (NHAN_PHUONG_THUC[khoa.chuongTrinh.phuongThucDangKy] ?? khoa.chuongTrinh.phuongThucDangKy)
+              : "Chưa thiết lập ở chương trình"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Khai giảng – bế giảng</dt>
+          <dd className="font-medium">
+            {dinhDangNgay(khoa.thoiGianKhaiGiang)} – {dinhDangNgay(khoa.thoiGianBeGiang)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Sĩ số</dt>
+          <dd className="font-medium">
+            {siSo.siSoHienTai}/{siSo.siSoToiDa} {siSo.daDayDu && <span className="text-warning">(đã đủ)</span>}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Mức học phí</dt>
+          <dd className="font-medium">{dinhDangTien(khoa.mucHocPhi)}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Đợt tuyển sinh</dt>
+          <dd className="font-medium">{khoa.dotTuyenSinh?.ten ?? "—"}</dd>
+        </div>
+      </dl>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-bold text-ued-blue-dam">KH-05 · Trạng thái khóa</h2>
@@ -478,7 +464,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
               <TableRow key={dk.id}>
                 <TableCell>{dk.hocVien.hoTen}</TableCell>
                 <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
-                <TableCell>{NHAN_TRANG_THAI_DANG_KY[dk.trangThai] ?? dk.trangThai}</TableCell>
+                <TableCell><NhanTrangThai ma={dk.trangThai}>{NHAN_TRANG_THAI_DANG_KY[dk.trangThai] ?? dk.trangThai}</NhanTrangThai></TableCell>
                 <TableCell>
                   <div className="flex flex-wrap items-center gap-2">
                     <FormChuyenKhoa khoaId={khoa.id} dangKyId={dk.id} dsKhoaKhac={dsKhoaKhacRutGon} />

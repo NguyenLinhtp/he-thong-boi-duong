@@ -16,6 +16,15 @@ export async function requirePermission(maCN: string): Promise<PhienDangNhap> {
 }
 
 /**
+ * Chỉ để hiển thị (ẩn/hiện nút, tab, liên kết) - không thay cho
+ * requirePermission() ở nơi thực thi thao tác.
+ */
+export async function coQuyen(maCN: string): Promise<boolean> {
+  const session = await auth();
+  return Boolean(session?.phienDangNhap?.maCNDuocPhep.includes(maCN));
+}
+
+/**
  * Bọc quanh mọi route handler API để chuẩn hóa lỗi 401/403 từ
  * requirePermission() thành response JSON - tránh mỗi route tự viết
  * try/catch riêng, chỉ cần khai báo 1 lần ở đây.

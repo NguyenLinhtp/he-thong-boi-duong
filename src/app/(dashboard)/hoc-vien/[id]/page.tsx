@@ -7,6 +7,7 @@ import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-
 import { danhSachThongBaoCuaHocVien } from "@/server/services/hv/hv-10-thong-bao";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { FormSuaHoSo } from "./form-sua-ho-so";
 
 const NHAN_LOAI_SU_KIEN: Record<string, string> = {
@@ -99,7 +100,7 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
                 <TableCell>{dk.khoa.maKhoa}</TableCell>
                 <TableCell>{dk.khoa.chuongTrinh.ten}</TableCell>
                 <TableCell>{new Date(dk.ngayDangKy).toLocaleDateString("vi-VN")}</TableCell>
-                <TableCell>{NHAN_TRANG_THAI_DANG_KY[dk.trangThai] ?? dk.trangThai}</TableCell>
+                <TableCell><NhanTrangThai ma={dk.trangThai}>{NHAN_TRANG_THAI_DANG_KY[dk.trangThai] ?? dk.trangThai}</NhanTrangThai></TableCell>
               </TableRow>
             ))}
             {hocVien.dangKys.length === 0 && (

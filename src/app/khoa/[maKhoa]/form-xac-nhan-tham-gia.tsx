@@ -27,7 +27,7 @@ export function FormXacNhanThamGia({
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
+    <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="khoaId" value={khoaId} />
       {hocVienDangNhap && <input type="hidden" name="cachXacNhan" value="TAI_KHOAN" />}
       <p className="text-sm text-muted-foreground">

@@ -18,7 +18,7 @@ export function FormDangKyQuaDVLK({
   const [loi, formAction, dangXuLy] = useActionState(dangKyQuaDonViLienKetAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
+    <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="khoaId" value={khoaId} />
       <input type="hidden" name="maKhoa" value={maKhoa} />
       <div className="flex flex-col gap-1.5">
