@@ -18,8 +18,8 @@ export function KhoiNgungHieuLuc({ chuongTrinh }: { chuongTrinh: ChuongTrinhNgun
 
   if (chuongTrinh.trangThai === "NGUNG_HIEU_LUC") {
     return (
-      <section className="flex flex-col gap-1 rounded-lg border p-4 text-sm">
-        <h2 className="text-base font-semibold">CT-06 · Đã lưu trữ (ngừng hiệu lực)</h2>
+      <section className="flex flex-col gap-1 rounded-lg border bg-card p-4 shadow-sm text-sm">
+        <h2 className="text-base font-bold text-ued-blue-dam">CT-06 · Đã lưu trữ (ngừng hiệu lực)</h2>
         <p>Lý do: {chuongTrinh.lyDoNgungHieuLuc ?? "—"}</p>
         <p>
           Ngày ngừng hiệu lực:{" "}
@@ -32,8 +32,8 @@ export function KhoiNgungHieuLuc({ chuongTrinh }: { chuongTrinh: ChuongTrinhNgun
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border p-4">
-      <h2 className="text-base font-semibold">CT-06 · Ngừng hiệu lực/lưu trữ chương trình</h2>
+    <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
+      <h2 className="text-base font-bold text-ued-blue-dam">CT-06 · Ngừng hiệu lực/lưu trữ chương trình</h2>
       <form
         action={formAction}
         onSubmit={(e) => {

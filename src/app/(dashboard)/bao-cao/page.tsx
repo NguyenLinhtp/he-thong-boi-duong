@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { tongQuanDashboard } from "@/server/services/bc/bc-01-dashboard";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { TuLamMoi } from "./tu-lam-moi";
 
 const tien = (so: number) => `${so.toLocaleString("vi-VN")} đ`;
@@ -16,11 +17,11 @@ function The({ nhan, giaTri, phu, href }: { nhan: string; giaTri: string | numbe
     </>
   );
   return href ? (
-    <Link href={href} className="rounded-lg border p-3 hover:bg-muted">
+    <Link href={href} className="rounded-lg border bg-card p-3 shadow-sm hover:bg-muted">
       {noiDung}
     </Link>
   ) : (
-    <div className="rounded-lg border p-3">{noiDung}</div>
+    <div className="rounded-lg border bg-card p-3 shadow-sm">{noiDung}</div>
   );
 }
 
@@ -31,7 +32,7 @@ export default async function DashboardPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -40,9 +41,9 @@ export default async function DashboardPage() {
   const thuCaoNhat = Math.max(1, ...d.hocPhi.thuTheoThang.map((t) => t.soTien));
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">BC-01 · Tổng quan hoạt động bồi dưỡng</h1>
+        <h1 className="text-xl font-bold text-ued-blue-dam">BC-01 · Tổng quan hoạt động bồi dưỡng</h1>
         <TuLamMoi capNhatLuc={d.capNhatLuc.toISOString()} />
       </div>
 
@@ -75,8 +76,8 @@ export default async function DashboardPage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="flex flex-col gap-2 rounded-lg border p-4">
-          <h2 className="text-sm font-semibold">Thu học phí 6 tháng gần nhất</h2>
+        <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-ued-blue-dam">Thu học phí 6 tháng gần nhất</h2>
           <div className="flex h-40 items-end gap-3">
             {d.hocPhi.thuTheoThang.map((t) => (
               <div key={t.thang} className="flex flex-1 flex-col items-center gap-1">
@@ -94,8 +95,8 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section className="flex flex-col gap-2 rounded-lg border p-4">
-          <h2 className="text-sm font-semibold">Tiến độ các khóa đang học</h2>
+        <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-ued-blue-dam">Tiến độ các khóa đang học</h2>
           {d.giangDay.theoKhoa.length === 0 && <p className="text-sm text-muted-foreground">Không có khóa đang học.</p>}
           <ul className="flex flex-col gap-2">
             {d.giangDay.theoKhoa.map((k) => (

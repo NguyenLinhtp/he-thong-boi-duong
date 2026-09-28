@@ -10,7 +10,7 @@ export function FormDangKy({ khoaId, maKhoa }: { khoaId: string; maKhoa: string 
   const [loi, formAction, dangXuLy] = useActionState(dangKyTrucTuyenAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="khoaId" value={khoaId} />
       <input type="hidden" name="maKhoa" value={maKhoa} />
       <div className="flex flex-col gap-1.5">

@@ -4,6 +4,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layChuongTrinh } from "@/server/services/ct/ct-01-tao-chuong-trinh";
 import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-boi-duong";
 import { coKhoaDangHoatDong, lichSuPhienBan } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormSuaChuongTrinh } from "./form-sua-chuong-trinh";
 import { DanhSachHocPhan } from "./danh-sach-hoc-phan";
 import { KhoiPheDuyet } from "./khoi-phe-duyet";
@@ -40,7 +41,7 @@ export default async function ChiTietChuongTrinhPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -63,8 +64,8 @@ export default async function ChiTietChuongTrinhPage({
   const tongTietKhop = chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong;
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">
         {chuongTrinh.maCT} · {chuongTrinh.ten}
       </h1>
       <p className="text-sm text-muted-foreground">
@@ -104,7 +105,7 @@ export default async function ChiTietChuongTrinhPage({
           coKhoaDangHoatDong={await coKhoaDangHoatDong(chuongTrinh.id)}
         />
       ) : (
-        <div className="rounded-lg border p-4 text-sm">
+        <div className="rounded-lg border bg-card p-4 shadow-sm text-sm">
           <p>Mục tiêu: {chuongTrinh.mucTieu ?? "—"}</p>
           <p>Đối tượng áp dụng: {chuongTrinh.doiTuongApDung ?? "—"}</p>
           <p>Tổng thời lượng: {chuongTrinh.tongThoiLuong ?? "—"}</p>

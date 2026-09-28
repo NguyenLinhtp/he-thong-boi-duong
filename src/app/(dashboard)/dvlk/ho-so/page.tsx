@@ -6,6 +6,7 @@ import { hoSoCuaDonVi } from "@/server/services/dvlk/dvlk-04-tiep-nhan";
 import { KhongPhaiTaiKhoanDvlkError } from "@/server/services/dvlk/loi-dvlk";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NHAN_TRANG_THAI_HO_SO, NHAN_TRANG_THAI_HOP_DONG } from "../../don-vi-lien-ket/nhan";
 import { FormXacNhanThuHoSo, ID_FORM_XAC_NHAN } from "../../don-vi-lien-ket/form-xac-nhan-thu-ho-so";
 import { xacNhanThuHoSoDvlkAction } from "./actions";
@@ -34,7 +35,7 @@ export default async function HoSoDonViLienKetPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -50,7 +51,7 @@ export default async function HoSoDonViLienKetPage({
         : null,
     });
   } catch (error) {
-    if (error instanceof KhongPhaiTaiKhoanDvlkError) return <p className="p-6 text-destructive">{error.message}</p>;
+    if (error instanceof KhongPhaiTaiKhoanDvlkError) return <KhongCoQuyen thongBao={error.message} />;
     throw error;
   }
   const { donVi, dsHopDong, dsHoSo } = duLieu;
@@ -61,9 +62,9 @@ export default async function HoSoDonViLienKetPage({
     hs.trangThai === "CHO_NOP_GIAY" && hopDongTheoId.get(hs.hopDongLienKetId!)?.trangThai === "DANG_TRIEN_KHAI";
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">
+        <h1 className="text-xl font-bold text-ued-blue-dam">
           DVLK-04 · Hồ sơ học viên qua đơn vị {donVi.ten}
         </h1>
         <Link href="/dvlk/dang-ky" className="text-sm underline">
@@ -77,7 +78,7 @@ export default async function HoSoDonViLienKetPage({
 
       {choPhepDVLK05 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold">DVLK-05 · Xác nhận đã thu hồ sơ giấy, gửi về trường theo lô</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">DVLK-05 · Xác nhận đã thu hồ sơ giấy, gửi về trường theo lô</h2>
           <p className="text-xs text-muted-foreground">
             Hồ sơ chưa được xác nhận thu trước hạn nộp giấy sẽ tự động bị hủy đăng ký.
           </p>
@@ -103,7 +104,7 @@ export default async function HoSoDonViLienKetPage({
           ))}
         </select>
         <Input name="q" defaultValue={q ?? ""} placeholder="Họ tên, mã HV, CCCD" className="w-56" />
-        <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+        <button type="submit" className="h-8 rounded-lg border bg-white px-3 text-sm hover:bg-muted">
           Lọc
         </button>
       </form>

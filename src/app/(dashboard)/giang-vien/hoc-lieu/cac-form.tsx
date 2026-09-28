@@ -51,7 +51,7 @@ export function FormDangTaiLieu({ dsPhanCong, toiDaMb }: { dsPhanCong: PhanCong[
     return <p className="text-sm text-muted-foreground">Bạn chưa được phân công học phần nào có giảng dạy.</p>;
   }
   return (
-    <form onSubmit={gui} className="flex flex-col gap-2 rounded-lg border p-4">
+    <form onSubmit={gui} className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-end gap-2">
         <select name="phanCong" required className="h-8 rounded-lg border px-2 text-sm" aria-label="Khóa / học phần / lớp">
           {dsPhanCong.map((pc) => (

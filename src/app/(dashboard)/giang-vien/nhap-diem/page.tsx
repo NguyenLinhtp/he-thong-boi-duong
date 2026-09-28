@@ -5,6 +5,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
 import { hocPhanPhuTrach } from "@/server/services/kq/kq-01-nhap-diem";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 export default async function HocPhanNhapDiemPage() {
   let phien;
@@ -13,7 +14,7 @@ export default async function HocPhanNhapDiemPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -28,8 +29,8 @@ export default async function HocPhanNhapDiemPage() {
   const dsPhanCong = await hocPhanPhuTrach(giangVien.id);
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">KQ-01 · Nhập điểm học phần phụ trách</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">KQ-01 · Nhập điểm học phần phụ trách</h1>
       <Table>
         <TableHeader>
           <TableRow>

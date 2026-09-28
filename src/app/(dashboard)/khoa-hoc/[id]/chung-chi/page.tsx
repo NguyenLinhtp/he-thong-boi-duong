@@ -8,6 +8,7 @@ import { danhSachQuyetDinhCuaKhoa, soVanBangChoQuyetDinh } from "@/server/servic
 import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
 import { ChuaPheDuyetKetQuaError } from "@/server/services/cc/loi-chung-chi";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import {
   NutLapDeNghi,
   NutSinhSoHieu,
@@ -36,7 +37,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -68,9 +69,9 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
   const coChungChiDeIn = dsChungChi.some((cc) => cc.soHieu && cc.trangThai !== "DA_HUY");
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">
+        <h1 className="text-xl font-bold text-ued-blue-dam">
           CC · Văn bằng khóa {khoa.maKhoa}
           <span className="ml-2 rounded border px-2 py-0.5 text-sm font-normal">
             {NHAN_LOAI_VAN_BANG[khoa.chuongTrinh.loaiVanBang]}
@@ -82,7 +83,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
       </div>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">CC-01 · Lập danh sách đề nghị cấp chứng chỉ</h2>
+        <h2 className="text-sm font-bold text-ued-blue-dam">CC-01 · Lập danh sách đề nghị cấp chứng chỉ</h2>
         <p className="text-sm text-muted-foreground">
           Đủ điều kiện = kết quả đã phê duyệt (KQ-04) đạt học tập/thi <b>và</b> hoàn tất tài chính:
           học phí cá nhân đã nộp đủ, hoặc - với học viên do đơn vị liên kết tuyển sinh - hợp đồng
@@ -90,7 +91,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
           viên qua đơn vị liên kết sẽ tự xuất hiện ở đây ngay khi hợp đồng được thanh lý.
         </p>
         {!xet ? (
-          <p className="rounded-lg border p-4 text-sm text-destructive">
+          <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-destructive">
             Kết quả khóa chưa được phê duyệt (KQ-04) - chưa lập được danh sách đề nghị.
           </p>
         ) : (
@@ -100,7 +101,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
             <form
               method="get"
               action={`/api/cc/khoa/${khoa.id}/danh-sach-hoan-thanh`}
-              className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
+              className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 shadow-sm"
             >
               <span className="text-sm">Xuất danh sách hoàn thành (Excel) để ban hành quyết định:</span>
               <select name="lop" defaultValue="" className="h-8 rounded-lg border px-2 text-sm">
@@ -111,7 +112,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
                   </option>
                 ))}
               </select>
-              <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+              <button type="submit" className="h-8 rounded-lg border bg-white px-3 text-sm hover:bg-muted">
                 Tải Excel
               </button>
             </form>
@@ -155,7 +156,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
 
       {choPhepCC02 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">CC-02 · Sinh số hiệu và in chứng chỉ</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">CC-02 · Sinh số hiệu và in chứng chỉ</h2>
           <p className="text-sm text-muted-foreground">
             Số hiệu tăng dần theo năm, không trùng; số của chứng chỉ đã hủy không bao giờ được cấp
             lại. Điều kiện cấp được kiểm tra lại ngay trước khi cấp số.
@@ -173,7 +174,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
 
       {(choPhepCC03 || dsQuyetDinh.length > 0) && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">CC-03 · Nhập quyết định cấp văn bằng</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">CC-03 · Nhập quyết định cấp văn bằng</h2>
           <p className="text-sm text-muted-foreground">
             Sau khi ban hành quyết định (căn cứ danh sách hoàn thành đã xuất Excel), nhập số quyết
             định, ngày ký, người ký theo cả khóa hoặc từng lớp. Văn bằng chưa có số hiệu được cấp số
@@ -217,7 +218,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
 
       {choPhepCC04 && dsHopDong.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">CC-04 · Bàn giao theo lô về đơn vị liên kết</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">CC-04 · Bàn giao theo lô về đơn vị liên kết</h2>
           <p className="text-sm text-muted-foreground">
             Chứng chỉ của học viên do đơn vị liên kết tuyển sinh chỉ được bàn giao theo lô, sau khi
             hợp đồng liên kết đã thanh lý. Học viên tự đăng ký nhận trực tiếp ở bảng dưới.
@@ -260,7 +261,7 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Chứng chỉ của khóa</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">Chứng chỉ của khóa</h2>
           {choPhepCC04 && (
             <a href="/chung-chi/so-cap" className="text-sm underline">
               Sổ cấp chứng chỉ (CC-04)

@@ -15,7 +15,7 @@ export function KetQuaXacThucView({ ketQua }: { ketQua: KetQuaXacThuc }) {
   }
   const hopLe = ketQua.trangThai === "HOP_LE";
   return (
-    <div className={`rounded-lg border p-4 text-sm ${hopLe ? "border-green-600/40 bg-green-600/5" : "border-destructive/40 bg-destructive/5"}`}>
+    <div className={`rounded-lg border bg-card p-4 shadow-sm text-sm ${hopLe ? "border-green-600/40 bg-green-600/5" : "border-destructive/40 bg-destructive/5"}`}>
       <p className={`text-base font-semibold ${hopLe ? "text-green-700 dark:text-green-400" : "text-destructive"}`}>
         {hopLe ? `✓ Văn bằng hợp lệ` : `✗ Văn bằng đã bị hủy`}
       </p>

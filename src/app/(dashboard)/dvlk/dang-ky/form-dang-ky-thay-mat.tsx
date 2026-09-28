@@ -14,7 +14,7 @@ export function FormDangKyThayMat({
   const [loi, formAction, dangXuLy] = useActionState(dangKyThayMatAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="khoaId">Khóa đăng ký</Label>
         <select id="khoaId" name="khoaId" required className="h-9 rounded-lg border px-3 text-sm">

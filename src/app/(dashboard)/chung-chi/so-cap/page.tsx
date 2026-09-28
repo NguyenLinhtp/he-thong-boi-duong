@@ -6,6 +6,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NHAN_KENH_NHAN } from "@/app/(dashboard)/khoa-hoc/[id]/chung-chi/nhan";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 // CC-04: sổ cấp chứng chỉ điện tử - chỉ đọc; hồ sơ lưu vĩnh viễn, không có thao tác sửa/xóa.
 export default async function SoCapChungChiPage({
@@ -18,7 +19,7 @@ export default async function SoCapChungChiPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -28,8 +29,8 @@ export default async function SoCapChungChiPage({
   const dsChungChi = await soCapChungChi({ tuKhoa: q, nam: namSo });
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">CC-04 · Sổ cấp chứng chỉ</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">CC-04 · Sổ cấp chứng chỉ</h1>
       <form method="get" className="flex flex-wrap items-end gap-2">
         <Input name="q" defaultValue={q ?? ""} placeholder="Họ tên / mã học viên / số hiệu / số vào sổ" className="w-80" />
         <Input name="nam" defaultValue={nam ?? ""} placeholder="Năm cấp (vd 2026)" className="w-36" />

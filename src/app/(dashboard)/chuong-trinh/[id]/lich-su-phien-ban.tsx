@@ -14,7 +14,7 @@ export function LichSuPhienBan({ danhSach }: { danhSach: PhienBan[] }) {
 
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-base font-semibold">Lịch sử phiên bản trước khi sửa</h2>
+      <h2 className="text-base font-bold text-ued-blue-dam">Lịch sử phiên bản trước khi sửa</h2>
       <Table>
         <TableHeader>
           <TableRow>

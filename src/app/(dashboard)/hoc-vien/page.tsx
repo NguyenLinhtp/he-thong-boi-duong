@@ -6,6 +6,7 @@ import { danhSachHocVien, phamViHoSoHocVien } from "@/server/services/hv/hv-08-h
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 export default async function HocVienPage({
   searchParams,
@@ -18,7 +19,7 @@ export default async function HocVienPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -33,8 +34,8 @@ export default async function HocVienPage({
   const dsHocVien = await danhSachHocVien(q || undefined, phamVi);
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">HV-08 · Hồ sơ học viên</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">HV-08 · Hồ sơ học viên</h1>
 
       <form method="get" className="flex items-end gap-2">
         <Input name="q" defaultValue={q ?? ""} placeholder="Tìm theo tên, mã học viên, CCCD..." />

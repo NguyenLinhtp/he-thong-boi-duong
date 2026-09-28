@@ -44,6 +44,26 @@ test.describe("Xác thực và phân quyền", () => {
   });
 });
 
+test.describe("Khung giao diện", () => {
+  test("menu chỉ hiện module theo quyền, chuyển tab con, đăng xuất về trang đăng nhập", async ({ page }) => {
+    await dangNhap(page, TAI_KHOAN_E2E.taiChinh.tenDangNhap, MAT_KHAU_E2E, "/bao-cao/tai-chinh");
+    const menu = page.getByRole("navigation", { name: "Module" });
+    await expect(menu.getByRole("link", { name: "Báo cáo" })).toHaveAttribute("aria-current", "page");
+    // cán bộ tài chính không có module Quản trị / Danh mục
+    await expect(menu.getByRole("link", { name: "Quản trị" })).toHaveCount(0);
+    await expect(menu.getByRole("link", { name: "Danh mục" })).toHaveCount(0);
+
+    await menu.getByRole("link", { name: "Học phí" }).click();
+    await expect(page).toHaveURL(/\/hoc-phi\/bao-cao$/);
+
+    await page.getByRole("button", { name: /E2E Cán bộ tài chính/ }).click();
+    await page.getByRole("menuitem", { name: "Đăng xuất" }).click();
+    await expect(page).toHaveURL(/\/dang-nhap/);
+    await page.goto("/bao-cao/tai-chinh");
+    await expect(page).toHaveURL(/\/dang-nhap/);
+  });
+});
+
 test.describe("Nghiệp vụ qua giao diện", () => {
   test("cán bộ đào tạo tạo chương trình (CT-01) - xuất hiện ở trạng thái Dự thảo", async ({ page }) => {
     const ten = `${TIEN_TO_CHUONG_TRINH} ${Date.now()}`;

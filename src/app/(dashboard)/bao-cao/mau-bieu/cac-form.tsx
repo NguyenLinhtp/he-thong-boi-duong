@@ -48,7 +48,7 @@ export function FormMauBieu({
     );
   }
   return (
-    <form action={formAction} className="flex flex-col gap-2 rounded-lg border p-3">
+    <form action={formAction} className="flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-sm">
       {mau && <input type="hidden" name="maCu" value={mau.ma} />}
       <div className="flex flex-wrap items-end gap-2">
         <Input name="ma" defaultValue={mau?.ma ?? ""} disabled={Boolean(mau)} required={!mau} placeholder="Số hiệu biểu (VD: BIEU-01)" className="w-44" />

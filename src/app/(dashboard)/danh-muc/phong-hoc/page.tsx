@@ -5,6 +5,7 @@ import { danhSachPhongHoc } from "@/server/services/dm/dm-04-phong-hoc";
 import { xoaPhongHocAction } from "./actions";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { NutXoa } from "@/components/danh-muc/nut-xoa";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormPhongHoc } from "./form-phong-hoc";
 
 export default async function PhongHocPage() {
@@ -13,7 +14,7 @@ export default async function PhongHocPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -21,8 +22,8 @@ export default async function PhongHocPage() {
   const dsPhongHoc = await danhSachPhongHoc();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">DM-04 · Danh mục phòng học/địa điểm</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">DM-04 · Danh mục phòng học/địa điểm</h1>
       <FormPhongHoc />
       <Table>
         <TableHeader>

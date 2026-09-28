@@ -5,6 +5,7 @@ import { danhSachDotTuyenSinh } from "@/server/services/dm/dm-05-dot-tuyen-sinh"
 import { xoaDotTuyenSinhAction } from "./actions";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { NutXoa } from "@/components/danh-muc/nut-xoa";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormDotTuyenSinh } from "./form-dot-tuyen-sinh";
 
 function dinhDangNgay(ngay: Date) {
@@ -17,7 +18,7 @@ export default async function DotTuyenSinhPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -25,8 +26,8 @@ export default async function DotTuyenSinhPage() {
   const dsDot = await danhSachDotTuyenSinh();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">DM-05 · Danh mục đợt/kỳ tuyển sinh</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">DM-05 · Danh mục đợt/kỳ tuyển sinh</h1>
       <FormDotTuyenSinh />
       <Table>
         <TableHeader>

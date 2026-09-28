@@ -4,6 +4,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { bangDiemCaNhan } from "@/server/services/kq/kq-05-tra-cuu";
 import { KhongPhaiTaiKhoanHocVienError } from "@/server/services/kq/loi-ket-qua";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 export default async function TraCuuDiemPage() {
   let phien;
@@ -12,7 +13,7 @@ export default async function TraCuuDiemPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -23,19 +24,19 @@ export default async function TraCuuDiemPage() {
     bang = await bangDiemCaNhan(phien.userId);
   } catch (error) {
     if (error instanceof KhongPhaiTaiKhoanHocVienError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">
         KQ-05 · Bảng điểm của {bang.hocVien.hoTen} ({bang.hocVien.maHocVien})
       </h1>
       {bang.khoas.map((k) => (
-        <section key={k.khoaId} className="flex flex-col gap-2 rounded-lg border p-4">
-          <h2 className="text-sm font-semibold">
+        <section key={k.khoaId} className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-ued-blue-dam">
             {k.maKhoa} · {k.tenChuongTrinh}
           </h2>
           {k.diemHocPhan.length > 0 && (

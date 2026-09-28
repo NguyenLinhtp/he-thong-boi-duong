@@ -5,6 +5,7 @@ import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-b
 import { xoaLoaiHinhAction } from "./actions";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { NutXoa } from "@/components/danh-muc/nut-xoa";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormLoaiHinh } from "./form-loai-hinh";
 
 export default async function LoaiHinhPage() {
@@ -13,7 +14,7 @@ export default async function LoaiHinhPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -21,8 +22,8 @@ export default async function LoaiHinhPage() {
   const dsLoaiHinh = await danhSachLoaiHinhBoiDuong();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">DM-03 · Danh mục loại hình bồi dưỡng</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">DM-03 · Danh mục loại hình bồi dưỡng</h1>
       <FormLoaiHinh />
       <Table>
         <TableHeader>

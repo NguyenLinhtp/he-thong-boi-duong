@@ -14,7 +14,7 @@ export function FormTaoChuongTrinh({
   const [, formAction, dangXuLy] = useActionState(taoChuongTrinhAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="ten">Tên chương trình</Label>
         <Input id="ten" name="ten" required className="w-64" />

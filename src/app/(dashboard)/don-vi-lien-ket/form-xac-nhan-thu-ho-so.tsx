@@ -31,7 +31,7 @@ export function FormXacNhanThuHoSo({
     return <p className="text-sm text-muted-foreground">Không có hồ sơ nào đang chờ thu hồ sơ giấy.</p>;
   }
   return (
-    <form id={ID_FORM_XAC_NHAN} action={formAction} className="flex flex-col gap-2 rounded-lg border p-3">
+    <form id={ID_FORM_XAC_NHAN} action={formAction} className="flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-sm">
       {Object.entries(truongAn).map(([ten, giaTri]) => (
         <input key={ten} type="hidden" name={ten} value={giaTri} />
       ))}

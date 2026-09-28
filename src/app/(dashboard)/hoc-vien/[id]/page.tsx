@@ -6,6 +6,7 @@ import { KhongTimThayHocVienError, NgoaiPhamViHoSoHocVienError } from "@/server/
 import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
 import { danhSachThongBaoCuaHocVien } from "@/server/services/hv/hv-10-thong-bao";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormSuaHoSo } from "./form-sua-ho-so";
 
 const NHAN_LOAI_SU_KIEN: Record<string, string> = {
@@ -48,7 +49,7 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -61,7 +62,7 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
   } catch (error) {
     if (error instanceof KhongTimThayHocVienError) notFound();
     if (error instanceof NgoaiPhamViHoSoHocVienError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -69,8 +70,8 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
   const dsChucDanhHocVi = await danhSachChucDanhHocVi();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">
         {hocVien.maHocVien} · {hocVien.hoTen}
       </h1>
 
@@ -81,7 +82,7 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
       />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Lịch sử các khóa/kỳ thi đã hoặc đang tham gia</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">Lịch sử các khóa/kỳ thi đã hoặc đang tham gia</h2>
 
         <Table>
           <TableHeader>
@@ -114,7 +115,7 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
 
       {(await coQuyen("HV-10")) && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">HV-10 · Nhật ký thông báo đã gửi</h2>
+          <h2 className="text-base font-bold text-ued-blue-dam">HV-10 · Nhật ký thông báo đã gửi</h2>
           <Table>
             <TableHeader>
               <TableRow>

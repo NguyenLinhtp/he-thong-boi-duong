@@ -28,7 +28,7 @@ export function FormSuaHoSo({
   const [loi, formAction, dangXuLy] = useActionState(capNhatHoSoAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="id" value={hocVien.id} />
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1.5">

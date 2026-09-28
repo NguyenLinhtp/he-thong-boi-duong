@@ -26,6 +26,7 @@ import { buoiHocDaKetThuc } from "@/server/services/gd/gd-05-link-truc-tuyen";
 import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormPhanCong } from "./form-phan-cong";
 import { FormBuoiHoc } from "./form-buoi-hoc";
 import { FormHinhThuc } from "./form-hinh-thuc";
@@ -94,7 +95,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -169,9 +170,9 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   const choPhepChungChi = await coQuyen("CC-01");
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">
+        <h1 className="text-xl font-bold text-ued-blue-dam">
           {khoa.maKhoa} · {khoa.chuongTrinh.ten}
         </h1>
         <div className="flex gap-4">
@@ -197,7 +198,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           )}
         </div>
       </div>
-      <div className="rounded-lg border p-4 text-sm">
+      <div className="rounded-lg border bg-card p-4 shadow-sm text-sm">
         <p>Chương trình: {khoa.chuongTrinh.maCT} · {khoa.chuongTrinh.ten}</p>
         <p>Trạng thái: {NHAN_TRANG_THAI[khoa.trangThai] ?? khoa.trangThai}</p>
         <p>
@@ -225,17 +226,17 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
       </div>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">KH-05 · Trạng thái khóa</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">KH-05 · Trạng thái khóa</h2>
         <FormTrangThai khoaId={khoa.id} trangThaiHienTai={khoa.trangThai} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">KH-04 · Hình thức giảng dạy</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">KH-04 · Hình thức giảng dạy</h2>
 
         <FormHinhThuc khoaId={khoa.id} hinhThucHienTai={khoa.hinhThucGiangDay} />
 
         {tinhTrangLink.apDung && (
-          <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4 text-sm">
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-4 shadow-sm text-sm">
             <p>
               {tinhTrangLink.daDu
                 ? "Mọi buổi học đã có link trực tuyến."
@@ -255,13 +256,13 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">KH-06 · Thông báo tuyển sinh/mở khóa</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">KH-06 · Thông báo tuyển sinh/mở khóa</h2>
         <FormThongBao khoaId={khoa.id} linkHienTai={linkCongKhai} />
       </section>
 
       {khoa.chuongTrinh.phuongThucDangKy === "TRUC_TUYEN_NOP_GIAY" && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">HV-02 · Xác nhận đã nhận hồ sơ giấy</h2>
+          <h2 className="text-base font-bold text-ued-blue-dam">HV-02 · Xác nhận đã nhận hồ sơ giấy</h2>
 
           <Table>
             <TableHeader>
@@ -305,7 +306,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
 
       {khoa.chuongTrinh.phuongThucDangKy === "IMPORT_TU_XAC_NHAN" && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">HV-03 · Import danh sách học viên</h2>
+          <h2 className="text-base font-bold text-ued-blue-dam">HV-03 · Import danh sách học viên</h2>
 
           <FormImport khoaId={khoa.id} />
 
@@ -341,7 +342,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
 
       {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">HV-05 · Danh sách thí sinh dự thi</h2>
+          <h2 className="text-base font-bold text-ued-blue-dam">HV-05 · Danh sách thí sinh dự thi</h2>
 
           <Table>
             <TableHeader>
@@ -372,7 +373,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">HV-06 · Kiểm tra, thẩm định hồ sơ đăng ký</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">HV-06 · Kiểm tra, thẩm định hồ sơ đăng ký</h2>
 
         <Table>
           <TableHeader>
@@ -427,7 +428,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">HV-07 · Xét duyệt danh sách chính thức</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">HV-07 · Xét duyệt danh sách chính thức</h2>
 
         <FormXetDuyet
           khoaId={khoa.id}
@@ -459,7 +460,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">HV-09 · Quản lý danh sách học viên theo khóa</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">HV-09 · Quản lý danh sách học viên theo khóa</h2>
 
         <FormThemHocVien khoaId={khoa.id} />
 
@@ -520,7 +521,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">KH-02 · Phân công giảng viên phụ trách học phần</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">KH-02 · Phân công giảng viên phụ trách học phần</h2>
 
         {hocPhanDePhanCong.length > 0 && dsGiangVien.length > 0 ? (
           <FormPhanCong
@@ -530,7 +531,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
             dsLop={dsLop}
           />
         ) : (
-          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+          <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
             {dsGiangVien.length === 0
               ? "Chưa có giảng viên nào trong hệ thống."
               : "Mọi học phần của chương trình đã được phân công giảng viên."}
@@ -565,10 +566,10 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">KH-03 · Thời khóa biểu</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">KH-03 · Thời khóa biểu</h2>
 
         {lichDayTheoGiangVien.some((l) => l.lich.length > 0) && (
-          <div className="rounded-lg border p-4 text-sm">
+          <div className="rounded-lg border bg-card p-4 shadow-sm text-sm">
             <p className="font-medium">
               Lịch dạy hiện có của giảng viên đã phân công (ở khóa khác đang vận hành) - tham khảo
               trước khi xếp thêm buổi học để tránh trùng lịch:

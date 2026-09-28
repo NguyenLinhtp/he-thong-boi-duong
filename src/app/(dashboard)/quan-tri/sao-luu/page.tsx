@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachSaoLuu } from "@/server/services/qt/qt-04-sao-luu";
 import { Table, TableHeader, TableBody, TableHead, TableRow } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { HangSaoLuu } from "./hang-sao-luu";
 import { NutBackupNgay } from "./nut-backup-ngay";
 
@@ -12,7 +13,7 @@ export default async function SaoLuuPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -20,9 +21,9 @@ export default async function SaoLuuPage() {
   const banGhis = await danhSachSaoLuu();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">QT-04 · Sao lưu và phục hồi dữ liệu</h1>
+        <h1 className="text-xl font-bold text-ued-blue-dam">QT-04 · Sao lưu và phục hồi dữ liệu</h1>
         <NutBackupNgay />
       </div>
       <p className="text-sm text-muted-foreground">

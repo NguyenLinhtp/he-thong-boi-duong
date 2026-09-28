@@ -5,6 +5,7 @@ import { danhSachNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 type SearchParams = Promise<{ doiTuong?: string; doiTuongId?: string }>;
 
@@ -14,7 +15,7 @@ export default async function NhatKyPage({ searchParams }: { searchParams: Searc
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -23,14 +24,14 @@ export default async function NhatKyPage({ searchParams }: { searchParams: Searc
   const dsNhatKy = await danhSachNhatKy({ doiTuong, doiTuongId });
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">QT-03 · Nhật ký thao tác</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">QT-03 · Nhật ký thao tác</h1>
       <p className="text-sm text-muted-foreground">
         Ghi lại các thao tác quan trọng (xác nhận thanh toán, ký duyệt, cấu hình hệ thống...).
         Không thể sửa/xóa nhật ký đã ghi. Hiển thị tối đa 500 dòng gần nhất theo bộ lọc.
       </p>
 
-      <form className="flex items-end gap-3 rounded-lg border p-4">
+      <form className="flex items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="doiTuong">
             Đối tượng

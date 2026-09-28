@@ -20,7 +20,7 @@ export function FormTraCuuChuongTrinh({
     giaTriHienTai.ten || giaTriHienTai.maCT || giaTriHienTai.loaiHinhBoiDuongId || giaTriHienTai.trangThai;
 
   return (
-    <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border p-4">
+    <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-col gap-1">
         <label className="text-sm">Tên chương trình</label>
         <Input name="ten" defaultValue={giaTriHienTai.ten ?? ""} placeholder="Từ khóa tên..." />

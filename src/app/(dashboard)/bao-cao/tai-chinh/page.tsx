@@ -10,6 +10,7 @@ import { danhSachKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { NutIn } from "@/app/(dashboard)/khoa-hoc/[id]/chung-chi/in/nut-in";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 type ThamSo = { tuNgay?: string; denNgay?: string; dot?: string; khoa?: string };
 
@@ -22,7 +23,7 @@ export default async function BaoCaoTaiChinhPage({ searchParams }: { searchParam
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -42,15 +43,15 @@ export default async function BaoCaoTaiChinhPage({ searchParams }: { searchParam
   ).toString();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <h1 className="text-lg font-semibold">BC-03 · Báo cáo tài chính học phí</h1>
+        <h1 className="text-xl font-bold text-ued-blue-dam">BC-03 · Báo cáo tài chính học phí</h1>
         <Link href="/bao-cao/dao-tao" className="text-sm underline">
           ← Báo cáo hoạt động đào tạo (BC-02)
         </Link>
       </div>
 
-      <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border p-3 print:hidden">
+      <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 shadow-sm print:hidden">
         <label className="flex flex-col gap-1 text-sm">
           Từ ngày
           <Input name="tuNgay" type="date" defaultValue={thamSo.tuNgay ?? ""} className="w-40" />
@@ -75,7 +76,7 @@ export default async function BaoCaoTaiChinhPage({ searchParams }: { searchParam
             </option>
           ))}
         </select>
-        <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+        <button type="submit" className="h-8 rounded-lg border bg-white px-3 text-sm hover:bg-muted">
           Xem báo cáo
         </button>
         {!("loi" in duLieu) && (
@@ -113,7 +114,7 @@ export default async function BaoCaoTaiChinhPage({ searchParams }: { searchParam
               ["Phải thu lũy kế", tien(duLieu.bc.tongTheoKhoa.phaiThu), `${duLieu.bc.tongTheoKhoa.soHocVien} học viên`],
               ["Đã thu lũy kế", tien(duLieu.bc.tongTheoKhoa.daThuLuyKe), `${duLieu.bc.tongTheoKhoa.soMienGiam} miễn giảm`],
             ].map(([nhan, giaTri, phu]) => (
-              <div key={nhan} className="rounded-lg border p-3">
+              <div key={nhan} className="rounded-lg border bg-card p-3 shadow-sm">
                 <p className="text-xs text-muted-foreground">{nhan}</p>
                 <p className="text-xl font-semibold">{giaTri}</p>
                 <p className="text-xs text-muted-foreground">{phu}</p>
@@ -121,7 +122,7 @@ export default async function BaoCaoTaiChinhPage({ searchParams }: { searchParam
             ))}
           </section>
 
-          <section className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
+          <section className="flex flex-col gap-1 rounded-lg border bg-card p-3 shadow-sm text-sm">
             <h2 className="font-semibold">Đối soát với module Quản lý học phí</h2>
             {[
               ["Doanh thu = tổng phiếu thu trong kỳ", duLieu.bc.doiSoat.doanhThuKhopPhieuThu],
@@ -140,7 +141,7 @@ export default async function BaoCaoTaiChinhPage({ searchParams }: { searchParam
           </section>
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">Tình hình học phí theo khóa</h2>
+            <h2 className="text-sm font-bold text-ued-blue-dam">Tình hình học phí theo khóa</h2>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -201,12 +202,12 @@ export default async function BaoCaoTaiChinhPage({ searchParams }: { searchParam
           </section>
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">
+            <h2 className="text-sm font-bold text-ued-blue-dam">
               Doanh thu theo hình thức nộp ·{" "}
               {duLieu.bc.doanhThu.theoHinhThuc.map((h) => `${h.hinhThuc}: ${tien(h.soTien)} (${h.soPhieu} phiếu)`).join(" · ") ||
                 "—"}
             </h2>
-            <h2 className="text-sm font-semibold">Bảng kê phiếu thu trong kỳ ({duLieu.bc.phieuThu.length})</h2>
+            <h2 className="text-sm font-bold text-ued-blue-dam">Bảng kê phiếu thu trong kỳ ({duLieu.bc.phieuThu.length})</h2>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -236,7 +237,7 @@ export default async function BaoCaoTaiChinhPage({ searchParams }: { searchParam
           </section>
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">Học viên còn nợ ({duLieu.bc.congNo.chiTiet.length})</h2>
+            <h2 className="text-sm font-bold text-ued-blue-dam">Học viên còn nợ ({duLieu.bc.congNo.chiTiet.length})</h2>
             <Table>
               <TableHeader>
                 <TableRow>

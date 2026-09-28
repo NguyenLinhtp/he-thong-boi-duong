@@ -14,6 +14,7 @@ import { khoangNgay } from "@/server/services/bc/khoang-ngay";
 import { LoiBaoCao } from "@/server/services/bc/loi-bao-cao";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 type ThamSo = { q?: string; loai?: string; tuNgay?: string; denNgay?: string };
 
@@ -25,7 +26,7 @@ export default async function TraCuuHoSoLuuTruPage({ searchParams }: { searchPar
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -49,14 +50,14 @@ export default async function TraCuuHoSoLuuTruPage({ searchParams }: { searchPar
   const dsLichSu = await lichSuTraCuu(10);
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">BC-05 · Tra cứu hồ sơ lưu trữ điện tử</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">BC-05 · Tra cứu hồ sơ lưu trữ điện tử</h1>
       <p className="text-sm text-muted-foreground">
         Tìm hồ sơ chương trình, khóa, học viên, chứng chỉ phục vụ kiểm định, thanh tra. Mọi lượt tra cứu được ghi vào
         nhật ký thao tác.
       </p>
 
-      <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+      <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 shadow-sm">
         <Input name="q" defaultValue={thamSo.q ?? ""} placeholder="Từ khóa: mã, tên, họ tên, CCCD, số hiệu, số QĐ..." className="w-80" />
         <select name="loai" defaultValue={loai ?? ""} className="h-8 rounded-lg border px-2 text-sm" aria-label="Loại hồ sơ">
           <option value="">Mọi loại hồ sơ</option>
@@ -74,7 +75,7 @@ export default async function TraCuuHoSoLuuTruPage({ searchParams }: { searchPar
           Đến ngày
           <Input name="denNgay" type="date" defaultValue={thamSo.denNgay ?? ""} className="w-40" />
         </label>
-        <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+        <button type="submit" className="h-8 rounded-lg border bg-white px-3 text-sm hover:bg-muted">
           Tra cứu
         </button>
       </form>
@@ -126,7 +127,7 @@ export default async function TraCuuHoSoLuuTruPage({ searchParams }: { searchPar
       )}
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">Nhật ký tra cứu gần đây</h2>
+        <h2 className="text-sm font-bold text-ued-blue-dam">Nhật ký tra cứu gần đây</h2>
         <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
           {dsLichSu.map((n) => (
             <li key={n.id}>

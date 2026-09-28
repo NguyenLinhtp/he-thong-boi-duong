@@ -41,7 +41,7 @@ export default async function TrangDangKyCongKhaiKhoa({
       <h1 className="text-xl font-semibold">{khoa.chuongTrinh.ten}</h1>
       <p className="text-sm text-muted-foreground">Mã khóa: {khoa.maKhoa}</p>
 
-      <div className="rounded-lg border p-4 text-sm">
+      <div className="rounded-lg border bg-card p-4 shadow-sm text-sm">
         <p>
           Khai giảng:{" "}
           {khoa.thoiGianKhaiGiang
@@ -59,7 +59,7 @@ export default async function TrangDangKyCongKhaiKhoa({
         (conMo ? (
           <FormDangKy khoaId={khoa.id} maKhoa={khoa.maKhoa} />
         ) : (
-          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+          <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
             Khóa hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).
           </p>
         ))}
@@ -68,7 +68,7 @@ export default async function TrangDangKyCongKhaiKhoa({
         (conMoXacNhanThamGia ? (
           <FormXacNhanThamGia khoaId={khoa.id} hocVienDangNhap={await hocVienDangNhap()} />
         ) : (
-          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+          <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
             Khóa hiện chưa/không còn mở xác nhận tham gia.
           </p>
         ))}
@@ -77,18 +77,18 @@ export default async function TrangDangKyCongKhaiKhoa({
         (conMo ? (
           <FormDangKyDuThi khoaId={khoa.id} />
         ) : (
-          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+          <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
             Đợt thi hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).
           </p>
         ))}
 
       {khoa.chuongTrinh.phuongThucDangKy === "QUA_DON_VI_LIEN_KET" &&
         (!conMo ? (
-          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+          <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
             Khóa hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).
           </p>
         ) : dsDonViLienKet.length === 0 ? (
-          <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+          <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
             Khóa chưa có đơn vị liên kết nào được phân công tiếp nhận hồ sơ. Vui lòng liên hệ trực
             tiếp trung tâm.
           </p>

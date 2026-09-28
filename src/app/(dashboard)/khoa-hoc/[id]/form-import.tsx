@@ -9,7 +9,7 @@ export function FormImport({ khoaId }: { khoaId: string }) {
   const [trangThai, formAction, dangXuLy] = useActionState(importDanhSachAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="khoaId" value={khoaId} />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="file">File CSV danh sách học viên</Label>

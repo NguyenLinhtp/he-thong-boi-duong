@@ -7,6 +7,7 @@ import { KhongTimThayDonViLienKetError } from "@/server/services/dvlk/loi-dvlk";
 import { danhSachTaiKhoanChuaGan } from "@/server/services/dvlk/dvlk-02-tai-khoan";
 import { FormCapTaiKhoan, NutThuHoiTaiKhoan } from "./form-tai-khoan";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormSuaDonViLienKet, NutTrangThaiHopTac, NutXoaDonViLienKet } from "../cac-form";
 import { NHAN_TRANG_THAI_HOP_TAC, NHAN_TRANG_THAI_HOP_DONG } from "../nhan";
 
@@ -28,7 +29,7 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -38,16 +39,16 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
   try {
     dv = await layDonViLienKet(id);
   } catch (error) {
-    if (error instanceof KhongTimThayDonViLienKetError) return <p className="p-6 text-destructive">{error.message}</p>;
+    if (error instanceof KhongTimThayDonViLienKetError) return <KhongCoQuyen thongBao={error.message} />;
     throw error;
   }
   const choPhepDVLK02 = await coQuyen("DVLK-02");
   const dsTaiKhoanChuaGan = choPhepDVLK02 && !dv.taiKhoan ? await danhSachTaiKhoanChuaGan() : [];
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">
+        <h1 className="text-xl font-bold text-ued-blue-dam">
           Đơn vị liên kết {dv.ma} · {dv.ten}
           <span className="ml-2 rounded border px-2 py-0.5 text-sm font-normal">
             {NHAN_TRANG_THAI_HOP_TAC[dv.trangThaiHopTac]}
@@ -58,8 +59,8 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
         </Link>
       </div>
 
-      <section className="flex flex-col gap-3 rounded-lg border p-4">
-        <h2 className="text-sm font-semibold">DVLK-01 · Thông tin đơn vị</h2>
+      <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
+        <h2 className="text-sm font-bold text-ued-blue-dam">DVLK-01 · Thông tin đơn vị</h2>
         <FormSuaDonViLienKet dv={dv} />
         <div className="flex flex-wrap items-start gap-3">
           <NutTrangThaiHopTac id={dv.id} dangHopTac={dv.trangThaiHopTac === "DANG_HOP_TAC"} />
@@ -71,8 +72,8 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
         </p>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg border p-4">
-        <h2 className="text-sm font-semibold">DVLK-02 · Tài khoản đơn vị liên kết</h2>
+      <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
+        <h2 className="text-sm font-bold text-ued-blue-dam">DVLK-02 · Tài khoản đơn vị liên kết</h2>
         <p className="text-xs text-muted-foreground">
           Tài khoản chỉ đăng ký hộ và xem/xác nhận hồ sơ trên các khóa có hợp đồng với đơn vị này; không
           xem được học phí cá nhân của học viên hay dữ liệu khóa/đơn vị khác.
@@ -98,7 +99,7 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">Hợp đồng liên kết (các khóa được phân công)</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">Hợp đồng liên kết (các khóa được phân công)</h2>
           <Link href={`/don-vi-lien-ket/hop-dong?donVi=${dv.id}`} className="text-sm underline">
             Lập / quản lý hợp đồng (DVLK-03) →
           </Link>

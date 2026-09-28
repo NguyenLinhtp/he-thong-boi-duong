@@ -15,11 +15,11 @@ export default async function TraCuuVanBangPage({
 
   return (
     <main className="mx-auto flex max-w-xl flex-col gap-5 p-6">
-      <h1 className="text-lg font-semibold">Tra cứu, xác thực chứng chỉ / giấy chứng nhận</h1>
+      <h1 className="text-xl font-bold text-ued-blue-dam">Tra cứu, xác thực chứng chỉ / giấy chứng nhận</h1>
       <p className="text-sm text-muted-foreground">
         Nhập số hiệu và họ tên người được cấp như ghi trên văn bằng, hoặc quét mã QR in trên văn bằng.
       </p>
-      <form method="get" className="flex flex-col gap-3 rounded-lg border p-4">
+      <form method="get" className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
         <label className="flex flex-col gap-1 text-sm">
           Số hiệu văn bằng
           <input name="soHieu" defaultValue={soHieu ?? ""} required placeholder="VD: CC2026-00001" className="h-9 rounded-lg border px-3" />

@@ -5,6 +5,7 @@ import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { hocPhiCuaKhoa } from "@/server/services/hp/hp-01-thiet-lap";
 import { danhSachPhieuThu } from "@/server/services/hp/hp-04-phieu-thu";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormThietLap } from "./form-thiet-lap";
 import { HangHocPhi } from "./hang-hoc-phi";
 
@@ -24,7 +25,7 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -44,11 +45,11 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
   const choPhepBoQua = true;
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">HP · Học phí khóa {khoa.maKhoa}</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">HP · Học phí khóa {khoa.maKhoa}</h1>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">HP-01 · Thiết lập mức học phí</h2>
+        <h2 className="text-sm font-bold text-ued-blue-dam">HP-01 · Thiết lập mức học phí</h2>
         <FormThietLap
           khoaId={khoa.id}
           mucHocPhi={khoa.mucHocPhi ? Number(khoa.mucHocPhi) : null}
@@ -59,7 +60,7 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">HP-02/03 · Công nợ theo học viên</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">HP-02/03 · Công nợ theo học viên</h2>
           <a href="/hoc-phi/bao-cao" className="text-sm underline">
             Báo cáo doanh thu/công nợ (HP-05)
           </a>
@@ -105,7 +106,7 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">HP-04 · Phiếu thu đã lập</h2>
+        <h2 className="text-sm font-bold text-ued-blue-dam">HP-04 · Phiếu thu đã lập</h2>
         <Table>
           <TableHeader>
             <TableRow>

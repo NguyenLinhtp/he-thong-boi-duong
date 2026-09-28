@@ -8,8 +8,8 @@ export function KhoiLoaiVanBang({ chuongTrinhId, loaiHienTai }: { chuongTrinhId:
   const [loi, action, dangLuu] = useActionState(thietLapLoaiVanBangAction, undefined);
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border p-4">
-      <h2 className="text-base font-semibold">Văn bằng cấp cho học viên hoàn thành</h2>
+    <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
+      <h2 className="text-base font-bold text-ued-blue-dam">Văn bằng cấp cho học viên hoàn thành</h2>
       <p className="text-sm text-muted-foreground">
         Chương trình cấp chứng chỉ hay giấy chứng nhận - quyết định tiêu đề khi in, dãy số hiệu và
         sổ cấp riêng cho từng loại. Không đổi được nữa khi đã có văn bằng được lập cho khóa của

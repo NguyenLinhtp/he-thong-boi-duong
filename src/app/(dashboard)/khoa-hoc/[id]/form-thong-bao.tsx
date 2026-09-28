@@ -23,7 +23,7 @@ export function FormThongBao({ khoaId, linkHienTai }: { khoaId: string; linkHien
         )}
       </p>
 
-      <form action={formAction} className="flex flex-col gap-3 rounded-lg border p-4">
+      <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
         <input type="hidden" name="khoaId" value={khoaId} />
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="noiDung">Nội dung thông báo</Label>

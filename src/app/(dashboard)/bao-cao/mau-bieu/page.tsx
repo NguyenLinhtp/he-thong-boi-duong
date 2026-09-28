@@ -4,6 +4,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachMauBieu, CHI_TIEU, NHAN_NHOM, type CotMauBieu } from "@/server/services/bc/bc-04-mau-bieu";
 import { danhSachDotTuyenSinh } from "@/server/services/dm/dm-05-dot-tuyen-sinh";
 import { Input } from "@/components/ui/input";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormMauBieu, NutNgungMauBieu, NutTaoMauMacDinh } from "./cac-form";
 
 // BC-04: quản lý mẫu biểu gửi cấp trên (theo phiên bản) và xuất báo cáo đúng mẫu
@@ -13,7 +14,7 @@ export default async function MauBieuPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -25,8 +26,8 @@ export default async function MauBieuPage() {
   const dsNhom = Object.entries(NHAN_NHOM).map(([ma, nhan]) => ({ ma, nhan }));
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">BC-04 · Xuất báo cáo theo mẫu gửi cấp trên</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">BC-04 · Xuất báo cáo theo mẫu gửi cấp trên</h1>
       <p className="text-sm text-muted-foreground">
         Mỗi mẫu biểu cấu hình cơ quan nhận, căn cứ, cách nhóm dòng và các cột chỉ tiêu (số liệu lấy từ BC-02/BC-03). Khi
         quy định thay đổi, cập nhật mẫu sẽ tạo phiên bản mới; phiên bản cũ vẫn xuất lại được cho kỳ trước.
@@ -40,9 +41,9 @@ export default async function MauBieuPage() {
         const hienHanh = dsPhienBan.find((m) => m.dangApDung);
         const moiNhat = dsPhienBan[0];
         return (
-          <section key={ma} className="flex flex-col gap-3 rounded-lg border p-4">
+          <section key={ma} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold">
+              <h2 className="text-sm font-bold text-ued-blue-dam">
                 {ma} · {moiNhat.ten}
                 <span className="ml-2 rounded border px-2 py-0.5 text-xs font-normal">
                   {hienHanh ? `Đang áp dụng phiên bản ${hienHanh.phienBan}` : "Đã ngừng áp dụng"}
@@ -80,7 +81,7 @@ export default async function MauBieuPage() {
                   </option>
                 ))}
               </select>
-              <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+              <button type="submit" className="h-8 rounded-lg border bg-white px-3 text-sm hover:bg-muted">
                 Xuất Excel
               </button>
             </form>

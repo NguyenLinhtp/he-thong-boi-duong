@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
 import { dsHocVienDeDiemDanh } from "@/server/services/gd/gd-01-diem-danh";
 import { KhongDuocPhanCongBuoiHocError } from "@/server/services/gd/loi-giang-day";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormDiemDanh } from "./form-diem-danh";
 import { FormNhatKy } from "./form-nhat-ky";
 
@@ -29,7 +30,7 @@ export default async function ChiTietBuoiHocGiangVienPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -55,14 +56,14 @@ export default async function ChiTietBuoiHocGiangVienPage({
     dsHocVien = await dsHocVienDeDiemDanh(giangVien.id, id);
   } catch (error) {
     if (error instanceof KhongDuocPhanCongBuoiHocError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">
         {buoiHoc.khoa.maKhoa} · {buoiHoc.hocPhan?.ten ?? "Buổi học"}
       </h1>
       <p className="text-sm text-muted-foreground">
@@ -72,13 +73,13 @@ export default async function ChiTietBuoiHocGiangVienPage({
       </p>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">GD-01 · Điểm danh</h2>
+        <h2 className="text-base font-bold text-ued-blue-dam">GD-01 · Điểm danh</h2>
         <FormDiemDanh buoiHocId={id} dsHocVien={dsHocVien} />
       </section>
 
       {(await coQuyen("GD-02")) && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">GD-02 · Nhật ký buổi học</h2>
+          <h2 className="text-base font-bold text-ued-blue-dam">GD-02 · Nhật ký buổi học</h2>
           <FormNhatKy
             buoiHocId={id}
             noiDungDaGiang={buoiHoc.noiDungDaGiang}

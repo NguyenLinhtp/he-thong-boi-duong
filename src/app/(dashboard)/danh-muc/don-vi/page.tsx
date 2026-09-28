@@ -5,6 +5,7 @@ import { danhSachDonVi } from "@/server/services/dm/dm-01-don-vi";
 import { xoaDonViAction } from "./actions";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { NutXoa } from "@/components/danh-muc/nut-xoa";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormDonVi } from "./form-don-vi";
 
 export default async function DonViPage() {
@@ -13,7 +14,7 @@ export default async function DonViPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -21,8 +22,8 @@ export default async function DonViPage() {
   const dsDonVi = await danhSachDonVi();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">DM-01 · Danh mục đơn vị/phòng ban</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">DM-01 · Danh mục đơn vị/phòng ban</h1>
       <FormDonVi dsDonVi={dsDonVi.map((dv) => ({ id: dv.id, ten: dv.ten }))} />
       <Table>
         <TableHeader>

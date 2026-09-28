@@ -21,8 +21,8 @@ export function KhoiPhuongThucDangKy({
   const [loi, action, dangLuu] = useActionState(thietLapPhuongThucDangKyAction, undefined);
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border p-4">
-      <h2 className="text-base font-semibold">CT-07 · Phương thức tiếp cận đăng ký học viên</h2>
+    <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
+      <h2 className="text-base font-bold text-ued-blue-dam">CT-07 · Phương thức tiếp cận đăng ký học viên</h2>
       <p className="text-sm text-muted-foreground">
         Mọi khóa mở từ chương trình này sẽ kế thừa phương thức đã chọn. Riêng Phương thức 4 (qua
         đơn vị liên kết): việc bắt buộc có hợp đồng liên kết còn hiệu lực được kiểm tra ở bước học

@@ -5,6 +5,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { timKiemChuongTrinh } from "@/server/services/ct/ct-05-tra-cuu";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormTaoKhoa } from "./form-tao-khoa";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
@@ -21,7 +22,7 @@ export default async function KhoaHocPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -32,8 +33,8 @@ export default async function KhoaHocPage() {
   ]);
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">KH-01 · Khóa bồi dưỡng</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">KH-01 · Khóa bồi dưỡng</h1>
 
       {dsChuongTrinhDaBanHanh.length > 0 ? (
         <FormTaoKhoa
@@ -44,7 +45,7 @@ export default async function KhoaHocPage() {
           }))}
         />
       ) : (
-        <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+        <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
           Chưa có chương trình nào ở trạng thái Đã ban hành để khởi tạo khóa.
         </p>
       )}

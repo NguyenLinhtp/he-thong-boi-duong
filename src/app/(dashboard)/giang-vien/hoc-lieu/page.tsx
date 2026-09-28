@@ -5,6 +5,7 @@ import { hocLieuCuaGiangVien } from "@/server/services/gd/gd-04-hoc-lieu";
 import { KhongPhaiTaiKhoanGiangVienError } from "@/server/services/gd/loi-giang-day";
 import { layThamSoSo } from "@/server/services/qt/qt-05-tham-so";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormDangTaiLieu, NutXoaTaiLieu } from "./cac-form";
 
 const kichThuoc = (byte: number | null) =>
@@ -18,7 +19,7 @@ export default async function HocLieuGiangVienPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -27,14 +28,14 @@ export default async function HocLieuGiangVienPage() {
   try {
     duLieu = await hocLieuCuaGiangVien(phien.userId);
   } catch (error) {
-    if (error instanceof KhongPhaiTaiKhoanGiangVienError) return <p className="p-6 text-destructive">{error.message}</p>;
+    if (error instanceof KhongPhaiTaiKhoanGiangVienError) return <KhongCoQuyen thongBao={error.message} />;
     throw error;
   }
   const toiDaMb = await layThamSoSo("GD_HOC_LIEU_TOI_DA_MB", 20);
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">GD-04 · Học liệu số của tôi</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">GD-04 · Học liệu số của tôi</h1>
       <p className="text-sm text-muted-foreground">
         Tài liệu đăng theo học phần bạn phụ trách. Chọn &quot;cả khóa&quot; (phân công cấp khóa) hoặc lớp cụ thể; chỉ học viên
         trong khóa/lớp đó mới xem và tải được.

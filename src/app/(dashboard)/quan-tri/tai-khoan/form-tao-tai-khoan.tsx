@@ -20,8 +20,8 @@ export function FormTaoTaiKhoan() {
   const [loi, formAction, dangXuLy] = useActionState(taoTaiKhoanAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border p-4">
-      <h2 className="text-sm font-semibold">Tạo tài khoản mới</h2>
+    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
+      <h2 className="text-sm font-bold text-ued-blue-dam">Tạo tài khoản mới</h2>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="tenDangNhap">Tên đăng nhập</Label>

@@ -14,6 +14,7 @@ import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-b
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { NutIn } from "@/app/(dashboard)/khoa-hoc/[id]/chung-chi/in/nut-in";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 type ThamSo = { tuNgay?: string; denNgay?: string; dot?: string; loaiHinh?: string; trangThai?: string };
 
@@ -26,7 +27,7 @@ export default async function BaoCaoDaoTaoPage({ searchParams }: { searchParams:
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -46,15 +47,15 @@ export default async function BaoCaoDaoTaoPage({ searchParams }: { searchParams:
   ).toString();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <h1 className="text-lg font-semibold">BC-02 · Báo cáo định kỳ hoạt động đào tạo</h1>
+        <h1 className="text-xl font-bold text-ued-blue-dam">BC-02 · Báo cáo định kỳ hoạt động đào tạo</h1>
         <Link href="/bao-cao/tai-chinh" className="text-sm underline">
           Báo cáo tài chính học phí (BC-03) →
         </Link>
       </div>
 
-      <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border p-3 print:hidden">
+      <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 shadow-sm print:hidden">
         <label className="flex flex-col gap-1 text-sm">
           Từ ngày
           <Input name="tuNgay" type="date" defaultValue={thamSo.tuNgay ?? ""} className="w-40" />
@@ -97,7 +98,7 @@ export default async function BaoCaoDaoTaoPage({ searchParams }: { searchParams:
             </option>
           ))}
         </select>
-        <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+        <button type="submit" className="h-8 rounded-lg border bg-white px-3 text-sm hover:bg-muted">
           Xem báo cáo
         </button>
         {!("loi" in duLieu) && (
@@ -132,7 +133,7 @@ export default async function BaoCaoDaoTaoPage({ searchParams }: { searchParams:
               ["Hoàn thành", duLieu.bc.tong.soHoanThanh],
               ["Tỷ lệ hoàn thành", phanTram(duLieu.bc.tong.tyLeHoanThanh)],
             ].map(([nhan, giaTri]) => (
-              <div key={nhan} className="rounded-lg border p-3">
+              <div key={nhan} className="rounded-lg border bg-card p-3 shadow-sm">
                 <p className="text-xs text-muted-foreground">{nhan}</p>
                 <p className="text-xl font-semibold">{giaTri}</p>
               </div>
@@ -147,7 +148,7 @@ export default async function BaoCaoDaoTaoPage({ searchParams }: { searchParams:
           </p>
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">Tổng hợp theo loại hình bồi dưỡng</h2>
+            <h2 className="text-sm font-bold text-ued-blue-dam">Tổng hợp theo loại hình bồi dưỡng</h2>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -181,7 +182,7 @@ export default async function BaoCaoDaoTaoPage({ searchParams }: { searchParams:
           </section>
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">Chi tiết theo khóa ({duLieu.bc.dong.length})</h2>
+            <h2 className="text-sm font-bold text-ued-blue-dam">Chi tiết theo khóa ({duLieu.bc.dong.length})</h2>
             <Table>
               <TableHeader>
                 <TableRow>

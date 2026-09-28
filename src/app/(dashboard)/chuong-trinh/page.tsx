@@ -6,6 +6,7 @@ import { timKiemChuongTrinh } from "@/server/services/ct/ct-05-tra-cuu";
 import type { TrangThaiChuongTrinh } from "@/generated/prisma/client";
 import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-boi-duong";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormTaoChuongTrinh } from "./form-tao-chuong-trinh";
 import { FormTraCuuChuongTrinh } from "./form-tra-cuu-chuong-trinh";
 
@@ -36,7 +37,7 @@ export default async function ChuongTrinhPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -56,8 +57,8 @@ export default async function ChuongTrinhPage({
   const dsLoaiHinhRutGon = dsLoaiHinh.map((lh) => ({ id: lh.id, ten: lh.ten }));
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">Chương trình bồi dưỡng</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">Chương trình bồi dưỡng</h1>
 
       {choPhepTao && <FormTaoChuongTrinh dsLoaiHinh={dsLoaiHinhRutGon} />}
 

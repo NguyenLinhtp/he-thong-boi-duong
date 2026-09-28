@@ -5,6 +5,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
 import { lichDayGiangVien } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 export default async function DanhSachBuoiHocGiangVienPage() {
   let phien;
@@ -13,7 +14,7 @@ export default async function DanhSachBuoiHocGiangVienPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -30,8 +31,8 @@ export default async function DanhSachBuoiHocGiangVienPage() {
   const dsBuoiHoc = await lichDayGiangVien(giangVien.id);
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">Buổi học được phân công</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">Buổi học được phân công</h1>
       <Table>
         <TableHeader>
           <TableRow>

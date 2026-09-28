@@ -20,7 +20,7 @@ export function FormBuoiHoc({
   const [loi, formAction, dangXuLy] = useActionState(themBuoiHocAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="khoaId" value={khoaId} />
       {dsLop.length > 0 && (
         <div className="flex flex-col gap-1.5">

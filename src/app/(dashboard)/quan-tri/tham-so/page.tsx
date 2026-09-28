@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachThamSo } from "@/server/services/qt/qt-05-tham-so";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormThamSo } from "./form-tham-so";
 import { NutXoaThamSo } from "./nut-xoa-tham-so";
 
@@ -12,7 +13,7 @@ export default async function ThamSoPage() {
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -20,8 +21,8 @@ export default async function ThamSoPage() {
   const dsThamSo = await danhSachThamSo();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">QT-05 · Cấu hình tham số hệ thống</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">QT-05 · Cấu hình tham số hệ thống</h1>
       <p className="text-sm text-muted-foreground">
         Tham số dùng chung toàn hệ thống (vd số ngày hạn nộp bản giấy, chính sách mật khẩu...).
         Mỗi lần thêm/sửa/xóa được ghi vào{" "}

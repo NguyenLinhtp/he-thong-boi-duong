@@ -10,7 +10,7 @@ export function FormThamSo() {
   const [loi, formAction, dangLuu] = useActionState(capNhatThamSoAction, undefined);
 
   return (
-    <form action={formAction} className="grid grid-cols-4 items-end gap-3 rounded-lg border p-4">
+    <form action={formAction} className="grid grid-cols-4 items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="ma">Mã tham số</Label>
         <Input id="ma" name="ma" placeholder="SO_NGAY_HAN_NOP_GIAY" required />

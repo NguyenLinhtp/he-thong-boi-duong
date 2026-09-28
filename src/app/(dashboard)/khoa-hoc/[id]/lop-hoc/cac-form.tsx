@@ -18,7 +18,7 @@ export type LopRutGon = { id: string; maLop: string; ten: string; siSoToiDa: num
 export function FormTaoLop({ khoaId }: { khoaId: string }) {
   const [loi, formAction, dangXuLy] = useActionState(taoLopAction, undefined);
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-2 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="khoaId" value={khoaId} />
       <Input name="ten" placeholder="Tên lớp (vd Lớp sáng)" className="w-56" />
       <Input name="siSoToiDa" type="number" min={1} placeholder="Sĩ số tối đa" className="w-32" />
@@ -165,7 +165,7 @@ export function BangChonHocVien({
         <input key={hv.dangKyId} type="hidden" name="dangKyId" value={hv.dangKyId} />
       ))}
 
-      <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+      <div className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 shadow-sm">
         <span className="text-sm">
           Đã chọn <b>{dangChon.length}</b> học viên
           {coChuyenLop && " (có người đang ở lớp khác - sẽ chuyển lớp)"}

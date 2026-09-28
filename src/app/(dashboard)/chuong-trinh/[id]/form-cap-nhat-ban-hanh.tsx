@@ -29,8 +29,8 @@ export function FormCapNhatBanHanh({
   const tenLoaiHinhHienTai = dsLoaiHinh.find((lh) => lh.id === chuongTrinh.loaiHinhBoiDuongId)?.ten;
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border p-4">
-      <h2 className="text-base font-semibold">
+    <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
+      <h2 className="text-base font-bold text-ued-blue-dam">
         CT-04 · Cập nhật chương trình đã ban hành (phiên bản hiện tại: {chuongTrinh.phienBanHienTai})
       </h2>
       {coKhoaDangHoatDong && (

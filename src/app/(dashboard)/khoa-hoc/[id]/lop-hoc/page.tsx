@@ -11,6 +11,7 @@ import {
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormTaoLop, NutChiaTuDong, HangLop, BangChonHocVien } from "./cac-form";
 
 type BoLocUrl = { q?: string; dvct?: string; dvlk?: string; lop?: string };
@@ -27,7 +28,7 @@ export default async function LopHocPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -62,14 +63,14 @@ export default async function LopHocPage({
   const tongSiSoLop = dsLop.reduce((t, l) => t + (l.siSoToiDa ?? 0), 0);
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">KH-07 · Lớp trong khóa {khoa.maKhoa}</h1>
+        <h1 className="text-xl font-bold text-ued-blue-dam">KH-07 · Lớp trong khóa {khoa.maKhoa}</h1>
         <a href={`/khoa-hoc/${khoa.id}`} className="text-sm underline">
           Về trang khóa
         </a>
       </div>
-      <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+      <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
         Chuyển lớp chỉ trong cùng khóa và không làm mất điểm, điểm danh, học phí đã có - các dữ liệu
         này gắn theo khóa. Mỗi lớp có thời khóa biểu và giảng viên riêng (chọn lớp khi phân công/xếp
         buổi ở trang khóa); phân công &ldquo;Cả khóa&rdquo; áp dụng cho lớp chưa có phân công riêng. Tổng sĩ số
@@ -77,7 +78,7 @@ export default async function LopHocPage({
       </p>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Danh sách lớp</h2>
+        <h2 className="text-sm font-bold text-ued-blue-dam">Danh sách lớp</h2>
         <FormTaoLop khoaId={khoa.id} />
         <Table>
           <TableHeader>
@@ -104,12 +105,12 @@ export default async function LopHocPage({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Học viên chính thức theo lớp</h2>
+        <h2 className="text-sm font-bold text-ued-blue-dam">Học viên chính thức theo lớp</h2>
         {dsLop.length > 0 && <NutChiaTuDong khoaId={khoa.id} soChuaXep={soChuaXep} />}
 
         <h3 className="text-sm font-medium">Chia / chuyển lớp thủ công</h3>
         {/* form GET: bộ lọc nằm trên URL nên tải lại trang hay chia sẻ link vẫn giữ nguyên */}
-        <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+        <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 shadow-sm">
           <Input
             name="q"
             defaultValue={boLoc.q ?? ""}
@@ -175,7 +176,7 @@ export default async function LopHocPage({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Lịch sử xếp/chuyển lớp</h2>
+        <h2 className="text-sm font-bold text-ued-blue-dam">Lịch sử xếp/chuyển lớp</h2>
         <Table>
           <TableHeader>
             <TableRow>

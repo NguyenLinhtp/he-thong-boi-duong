@@ -7,6 +7,7 @@ import { KhongTimThayHopDongDvlkError } from "@/server/services/dvlk/loi-dvlk";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { FormSuaHopDong, FormThanhLy } from "../cac-form";
 import { doiChieuThanhLy, NHAN_PHAN_LOAI } from "@/server/services/dvlk/dvlk-06-thanh-ly";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NHAN_TRANG_THAI_HOP_DONG, NHAN_TRANG_THAI_HO_SO, dinhDangTien } from "../../nhan";
 import { FormXacNhanThuHoSo, ID_FORM_XAC_NHAN } from "../../form-xac-nhan-thu-ho-so";
 import { xacNhanThuHoSoTruongAction } from "../actions";
@@ -28,7 +29,7 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -38,7 +39,7 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
   try {
     hd = await layHopDong(id);
   } catch (error) {
-    if (error instanceof KhongTimThayHopDongDvlkError) return <p className="p-6 text-destructive">{error.message}</p>;
+    if (error instanceof KhongTimThayHopDongDvlkError) return <KhongCoQuyen thongBao={error.message} />;
     throw error;
   }
   const daThanhLy = hd.trangThai === "DA_THANH_LY";
@@ -48,9 +49,9 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
   const doiChieu = choPhepDVLK06 && !daThanhLy ? await doiChieuThanhLy(hd.id) : null;
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">
+        <h1 className="text-xl font-bold text-ued-blue-dam">
           Hợp đồng {hd.maHopDong}
           <span className="ml-2 rounded border px-2 py-0.5 text-sm font-normal">
             {NHAN_TRANG_THAI_HOP_DONG[hd.trangThai]}
@@ -61,7 +62,7 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
         </Link>
       </div>
 
-      <section className="flex flex-col gap-3 rounded-lg border p-4 text-sm">
+      <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm text-sm">
         <h2 className="font-semibold">DVLK-03 · Thông tin hợp đồng</h2>
         <p>
           Đơn vị liên kết:{" "}
@@ -101,7 +102,7 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Học viên theo hợp đồng ({hd.dangKys.length})</h2>
+        <h2 className="text-sm font-bold text-ued-blue-dam">Học viên theo hợp đồng ({hd.dangKys.length})</h2>
         {choPhepDVLK05 && (
           <div className="flex flex-col gap-1">
             <p className="text-xs text-muted-foreground">
@@ -164,8 +165,8 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
         </Table>
       </section>
       {doiChieu && (
-        <section className="flex flex-col gap-3 rounded-lg border p-4">
-          <h2 className="text-sm font-semibold">DVLK-06 · Thanh lý hợp đồng cuối khóa</h2>
+        <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-ued-blue-dam">DVLK-06 · Thanh lý hợp đồng cuối khóa</h2>
           <p className="text-sm font-medium">Bước 1 · Đối chiếu số học viên với hợp đồng</p>
           {!doiChieu.ketQuaDaPheDuyet && (
             <p className="text-sm text-destructive">
@@ -223,7 +224,7 @@ export default async function ChiTietHopDongPage({ params }: { params: Promise<{
 
       {hd.loNopHoSos.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">DVLK-05 · Các lô hồ sơ đã gửi về trường</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">DVLK-05 · Các lô hồ sơ đã gửi về trường</h2>
           <Table>
             <TableHeader>
               <TableRow>

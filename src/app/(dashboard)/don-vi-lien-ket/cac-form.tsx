@@ -63,7 +63,7 @@ function CacTruong({ dv }: { dv: ThongTinDonVi }) {
 export function FormTaoDonViLienKet() {
   const [ketQua, formAction, dangXuLy] = useActionState(taoDonViLienKetAction, undefined);
   return (
-    <form action={formAction} className="flex flex-col gap-2 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-end gap-3">
         <CacTruong dv={{}} />
         <Button type="submit" disabled={dangXuLy}>

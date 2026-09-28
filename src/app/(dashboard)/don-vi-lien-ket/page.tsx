@@ -5,6 +5,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachDonViLienKet } from "@/server/services/dvlk/dvlk-01-danh-muc";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormTaoDonViLienKet } from "./cac-form";
 import { NHAN_TRANG_THAI_HOP_TAC } from "./nhan";
 
@@ -18,7 +19,7 @@ export default async function DonViLienKetPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -30,9 +31,9 @@ export default async function DonViLienKetPage({
   });
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">DVLK-01 · Danh mục đơn vị liên kết</h1>
+        <h1 className="text-xl font-bold text-ued-blue-dam">DVLK-01 · Danh mục đơn vị liên kết</h1>
         <Link href="/don-vi-lien-ket/hop-dong" className="text-sm underline">
           Hợp đồng liên kết (DVLK-03) →
         </Link>
@@ -46,7 +47,7 @@ export default async function DonViLienKetPage({
           <option value="DANG_HOP_TAC">Đang hợp tác</option>
           <option value="TAM_NGUNG">Tạm ngừng</option>
         </select>
-        <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+        <button type="submit" className="h-8 rounded-lg border bg-white px-3 text-sm hover:bg-muted">
           Tra cứu
         </button>
       </form>

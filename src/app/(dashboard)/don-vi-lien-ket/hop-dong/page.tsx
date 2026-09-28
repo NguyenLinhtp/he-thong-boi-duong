@@ -5,6 +5,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachHopDong, tuyChonLapHopDong } from "@/server/services/dvlk/dvlk-03-hop-dong";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormTaoHopDong } from "./cac-form";
 import { NHAN_TRANG_THAI_HOP_DONG, dinhDangTien } from "../nhan";
 
@@ -18,7 +19,7 @@ export default async function HopDongLienKetPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -34,9 +35,9 @@ export default async function HopDongLienKetPage({
   ]);
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">DVLK-03 · Hợp đồng liên kết tuyển sinh theo khóa</h1>
+        <h1 className="text-xl font-bold text-ued-blue-dam">DVLK-03 · Hợp đồng liên kết tuyển sinh theo khóa</h1>
         <div className="flex gap-4 text-sm">
           <Link href="/don-vi-lien-ket/bao-cao" className="underline">
             Báo cáo công nợ, doanh thu (DVLK-07)
@@ -60,7 +61,7 @@ export default async function HopDongLienKetPage({
           <option value="DANG_TRIEN_KHAI">Đang triển khai</option>
           <option value="DA_THANH_LY">Đã thanh lý</option>
         </select>
-        <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+        <button type="submit" className="h-8 rounded-lg border bg-white px-3 text-sm hover:bg-muted">
           Lọc
         </button>
       </form>

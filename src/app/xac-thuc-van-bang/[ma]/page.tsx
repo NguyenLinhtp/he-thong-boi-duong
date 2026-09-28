@@ -10,7 +10,7 @@ export default async function XacThucQrPage({ params }: { params: Promise<{ ma: 
   const ketQua = await xacThucTheoMa(ma);
   return (
     <main className="mx-auto flex max-w-xl flex-col gap-5 p-6">
-      <h1 className="text-lg font-semibold">Xác thực văn bằng</h1>
+      <h1 className="text-xl font-bold text-ued-blue-dam">Xác thực văn bằng</h1>
       <KetQuaXacThucView ketQua={ketQua} />
       <Link href="/xac-thuc-van-bang" className="text-sm underline">
         Tra cứu văn bằng khác theo số hiệu

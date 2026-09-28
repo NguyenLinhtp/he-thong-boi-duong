@@ -18,7 +18,7 @@ export function FormCauHinhSmtp({ cauHinh }: { cauHinh: CauHinhHienTai }) {
   const [loi, formAction, dangLuu] = useActionState(luuCauHinhSmtpAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
       {cauHinh ? (
         <p className="text-sm text-muted-foreground">
           Đã cấu hình lần cuối: {new Date(cauHinh.capNhatLuc).toLocaleString("vi-VN")} - đang gửi

@@ -15,14 +15,14 @@ export function FormXetDuyet({
 
   if (dsHopLe.length === 0) {
     return (
-      <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+      <p className="rounded-lg border bg-card p-4 shadow-sm text-sm text-muted-foreground">
         Chưa có hồ sơ nào ở trạng thái Hợp lệ (HV-06) để xét duyệt.
       </p>
     );
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-2 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="khoaId" value={khoaId} />
       {dsHopLe.map((hv) => (
         <label key={hv.id} className="flex items-center gap-2 text-sm">

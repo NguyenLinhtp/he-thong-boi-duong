@@ -5,6 +5,7 @@ import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { hocVienTinhKetQua, laKhoaChiDuThi } from "@/server/services/kq/dung-chung";
 import { bangDiemChiTietKhoa, bangTongHopKetQua } from "@/server/services/kq/kq-02-tong-hop";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NutTongHop, NutXetHoanThanh, FormPheDuyet, FormKetQuaThi, FormPhucKhao } from "./cac-form";
 
 async function coQuyen(maCN: string): Promise<boolean> {
@@ -35,7 +36,7 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -57,14 +58,14 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
   const maLopTheoHocVien = new Map(dsDangKy.map((dk) => [dk.hocVienId, dk.lop?.maLop ?? null]));
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">KQ · Kết quả học tập khóa {khoa.maKhoa}</h1>
+        <h1 className="text-xl font-bold text-ued-blue-dam">KQ · Kết quả học tập khóa {khoa.maKhoa}</h1>
         <a href={`/khoa-hoc/${khoa.id}`} className="text-sm underline">
           Về trang khóa
         </a>
       </div>
-      <div className="rounded-lg border p-4 text-sm">
+      <div className="rounded-lg border bg-card p-4 shadow-sm text-sm">
         <p>
           {chiDuThi
             ? "Phương thức 3 (chỉ dự thi): kết quả = điểm thi nhập trực tiếp (KQ-06), không tính chuyên cần."
@@ -80,7 +81,7 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
 
       {chiDuThi ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">KQ-06 · Nhập kết quả thi</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">KQ-06 · Nhập kết quả thi</h2>
           {quyen.kq06 && !daPheDuyet ? (
             <FormKetQuaThi
               khoaId={khoa.id}
@@ -102,7 +103,7 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
         </section>
       ) : (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">KQ-01 · Bảng điểm học phần (giảng viên nhập)</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">KQ-01 · Bảng điểm học phần (giảng viên nhập)</h2>
           <Table>
             <TableHeader>
               <TableRow>
@@ -146,7 +147,7 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">KQ-02/03 · Kết quả toàn khóa và điều kiện hoàn thành</h2>
+        <h2 className="text-sm font-bold text-ued-blue-dam">KQ-02/03 · Kết quả toàn khóa và điều kiện hoàn thành</h2>
         <Table>
           <TableHeader>
             <TableRow>
@@ -202,7 +203,7 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
 
       {quyen.kq04 && !daPheDuyet && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">KQ-04 · Phê duyệt kết quả cuối cùng</h2>
+          <h2 className="text-sm font-bold text-ued-blue-dam">KQ-04 · Phê duyệt kết quả cuối cùng</h2>
           <FormPheDuyet khoaId={khoa.id} />
         </section>
       )}

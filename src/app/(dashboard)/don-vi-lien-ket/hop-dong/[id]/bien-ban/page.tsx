@@ -5,6 +5,7 @@ import { duLieuBienBanThanhLy, NHAN_PHAN_LOAI } from "@/server/services/dvlk/dvl
 import { layThamSo } from "@/server/services/qt/qt-05-tham-so";
 import { LoiDonViLienKet } from "@/server/services/dvlk/loi-dvlk";
 import { NutIn } from "@/app/(dashboard)/khoa-hoc/[id]/chung-chi/in/nut-in";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { dinhDangTien } from "../../../nhan";
 
 // DVLK-06: biên bản thanh lý hợp đồng - trang HTML in được (Ctrl+P / Lưu PDF), số liệu chốt lúc thanh lý
@@ -14,7 +15,7 @@ export default async function BienBanThanhLyPage({ params }: { params: Promise<{
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -24,7 +25,7 @@ export default async function BienBanThanhLyPage({ params }: { params: Promise<{
   try {
     duLieu = await duLieuBienBanThanhLy(id);
   } catch (error) {
-    if (error instanceof LoiDonViLienKet) return <p className="p-6 text-destructive">{error.message}</p>;
+    if (error instanceof LoiDonViLienKet) return <KhongCoQuyen thongBao={error.message} />;
     throw error;
   }
   const { hopDong, dong } = duLieu;

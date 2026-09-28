@@ -22,7 +22,7 @@ export function FormThietLap({
   const canLyDo = daCoDangKy && mucHocPhi !== null && mucMoi !== mucHocPhi;
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="khoaId" value={khoaId} />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="mucHocPhi">Mức học phí (đ)</Label>

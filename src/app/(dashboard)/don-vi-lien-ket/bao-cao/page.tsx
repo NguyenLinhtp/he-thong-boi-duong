@@ -8,6 +8,7 @@ import { LoiBaoCao } from "@/server/services/bc/loi-bao-cao";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { NutIn } from "@/app/(dashboard)/khoa-hoc/[id]/chung-chi/in/nut-in";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 type ThamSo = { tuNgay?: string; denNgay?: string; donVi?: string; khoa?: string };
 
@@ -20,7 +21,7 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -40,15 +41,15 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
   ).toString();
 
   return (
-    <main className="flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <h1 className="text-lg font-semibold">DVLK-07 · Báo cáo công nợ và doanh thu theo đơn vị liên kết</h1>
+        <h1 className="text-xl font-bold text-ued-blue-dam">DVLK-07 · Báo cáo công nợ và doanh thu theo đơn vị liên kết</h1>
         <Link href="/don-vi-lien-ket/hop-dong" className="text-sm underline">
           ← Hợp đồng liên kết (DVLK-03)
         </Link>
       </div>
 
-      <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border p-3 print:hidden">
+      <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 shadow-sm print:hidden">
         <label className="flex flex-col gap-1 text-sm">
           Từ ngày
           <Input name="tuNgay" type="date" defaultValue={thamSo.tuNgay ?? ""} className="w-40" />
@@ -73,7 +74,7 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
             </option>
           ))}
         </select>
-        <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+        <button type="submit" className="h-8 rounded-lg border bg-white px-3 text-sm hover:bg-muted">
           Xem báo cáo
         </button>
         {!("loi" in duLieu) && (
@@ -115,7 +116,7 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
               ["Học viên hợp lệ", duLieu.bc.tong.soHopLe, `${duLieu.bc.tong.soThucTe} thực tế / ${duLieu.bc.tong.soDuKien} dự kiến`],
               ["Đơn vị liên kết", duLieu.bc.theoDonVi.length, `${duLieu.bc.tong.soHopDong} hợp đồng`],
             ].map(([nhan, giaTri, phu]) => (
-              <div key={String(nhan)} className="rounded-lg border p-3">
+              <div key={String(nhan)} className="rounded-lg border bg-card p-3 shadow-sm">
                 <p className="text-xs text-muted-foreground">{nhan}</p>
                 <p className="text-xl font-semibold">{giaTri}</p>
                 <p className="text-xs text-muted-foreground">{phu}</p>
@@ -123,7 +124,7 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
             ))}
           </section>
 
-          <section className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
+          <section className="flex flex-col gap-1 rounded-lg border bg-card p-3 shadow-sm text-sm">
             <h2 className="font-semibold">Đối soát với các hợp đồng đã/chưa thanh lý</h2>
             {[
               ["Doanh thu = tổng quyết toán hợp đồng thanh lý trong kỳ", duLieu.bc.doiSoat.doanhThuKhop],
@@ -142,7 +143,7 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
           </section>
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">Tổng hợp theo đơn vị liên kết</h2>
+            <h2 className="text-sm font-bold text-ued-blue-dam">Tổng hợp theo đơn vị liên kết</h2>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -202,7 +203,7 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
           </section>
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold">Chi tiết hợp đồng ({duLieu.bc.chiTiet.length})</h2>
+            <h2 className="text-sm font-bold text-ued-blue-dam">Chi tiết hợp đồng ({duLieu.bc.chiTiet.length})</h2>
             <Table>
               <TableHeader>
                 <TableRow>

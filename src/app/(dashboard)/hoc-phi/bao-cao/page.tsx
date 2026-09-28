@@ -7,6 +7,7 @@ import { LoiBaoCao } from "@/server/services/bc/loi-bao-cao";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 type SearchParams = Promise<{ tuNgay?: string; denNgay?: string }>;
 
@@ -16,7 +17,7 @@ export default async function BaoCaoHocPhiPage({ searchParams }: { searchParams:
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -27,7 +28,7 @@ export default async function BaoCaoHocPhiPage({ searchParams }: { searchParams:
   try {
     ky = khoangNgay(tuNgay, denNgay);
   } catch (error) {
-    if (error instanceof LoiBaoCao) return <p className="p-6 text-destructive">{error.message}</p>;
+    if (error instanceof LoiBaoCao) return <KhongCoQuyen thongBao={error.message} />;
     throw error;
   }
   const [doanhThu, congNo] = await Promise.all([
@@ -36,10 +37,10 @@ export default async function BaoCaoHocPhiPage({ searchParams }: { searchParams:
   ]);
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">HP-05 · Báo cáo doanh thu và công nợ học phí</h1>
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">HP-05 · Báo cáo doanh thu và công nợ học phí</h1>
 
-      <form className="flex items-end gap-3 rounded-lg border p-4">
+      <form className="flex items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="tuNgay">
             Từ ngày
@@ -58,7 +59,7 @@ export default async function BaoCaoHocPhiPage({ searchParams }: { searchParams:
       </form>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">
+        <h2 className="text-sm font-bold text-ued-blue-dam">
           Doanh thu: {doanhThu.tongDoanhThu.toLocaleString("vi-VN")}đ ({doanhThu.soPhieuThu} phiếu thu)
         </h2>
         <Table>
@@ -82,7 +83,7 @@ export default async function BaoCaoHocPhiPage({ searchParams }: { searchParams:
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">
+        <h2 className="text-sm font-bold text-ued-blue-dam">
           Công nợ hiện tại: {congNo.tongConNo.toLocaleString("vi-VN")}đ ({congNo.soHocVienConNo} học viên)
         </h2>
         <Table>

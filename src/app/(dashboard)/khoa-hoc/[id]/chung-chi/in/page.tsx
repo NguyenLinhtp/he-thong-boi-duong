@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachChungChiCuaKhoa } from "@/server/services/cc/cc-01-de-nghi";
 import { duLieuInChungChi } from "@/server/services/cc/cc-02-so-hieu";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NutIn } from "./nut-in";
 
 // CC-02: "xuất bản in/PDF theo mẫu" - như phiếu thu HP-04, dùng trang HTML in
@@ -22,7 +23,7 @@ export default async function InChungChiPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }

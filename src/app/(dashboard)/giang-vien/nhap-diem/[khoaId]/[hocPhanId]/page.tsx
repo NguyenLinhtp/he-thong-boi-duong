@@ -4,6 +4,7 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
 import { bangDiemHocPhan } from "@/server/services/kq/kq-01-nhap-diem";
 import { LoiKetQua } from "@/server/services/kq/loi-ket-qua";
+import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormNhapDiem } from "./form-nhap-diem";
 
 export default async function NhapDiemHocPhanPage({
@@ -17,7 +18,7 @@ export default async function NhapDiemHocPhanPage({
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
-      return <p className="p-6 text-destructive">{error.message}</p>;
+      return <KhongCoQuyen thongBao={error.message} />;
     }
     throw error;
   }
@@ -34,13 +35,13 @@ export default async function NhapDiemHocPhanPage({
   try {
     bang = await bangDiemHocPhan(giangVien.id, khoaId, hocPhanId);
   } catch (error) {
-    if (error instanceof LoiKetQua) return <p className="p-6 text-destructive">{error.message}</p>;
+    if (error instanceof LoiKetQua) return <KhongCoQuyen thongBao={error.message} />;
     throw error;
   }
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">
+    <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+      <h1 className="text-xl font-bold text-ued-blue-dam">
         KQ-01 · {bang.hocPhan.ten} · khóa {bang.khoa.maKhoa}
       </h1>
       <p className="text-sm text-muted-foreground">

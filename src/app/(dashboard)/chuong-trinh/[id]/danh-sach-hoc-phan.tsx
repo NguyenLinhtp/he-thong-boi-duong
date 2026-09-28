@@ -28,7 +28,7 @@ export function DanhSachHocPhan({
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold">CT-02 · Học phần/chuyên đề</h2>
+      <h2 className="text-base font-bold text-ued-blue-dam">CT-02 · Học phần/chuyên đề</h2>
       <p className={`text-sm ${khop ? "text-green-600" : "text-muted-foreground"}`}>
         Tổng số tiết học phần: {tongTiet}
         {tongThoiLuong != null && ` / ${tongThoiLuong} (tổng thời lượng chương trình)`}
@@ -66,7 +66,7 @@ export function DanhSachHocPhan({
       </Table>
 
       {choPhepSua && (
-        <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
+        <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
           <input type="hidden" name="chuongTrinhId" value={chuongTrinhId} />
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="ten">Tên học phần</Label>

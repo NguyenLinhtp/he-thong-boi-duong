@@ -8,7 +8,7 @@ export async function dangNhap(_prevState: string | undefined, formData: FormDat
     await signIn("credentials", {
       dinhDanh: formData.get("dinhDanh"),
       matKhau: formData.get("matKhau"),
-      redirectTo: (formData.get("callbackUrl") as string) || "/quan-tri/tai-khoan",
+      redirectTo: (formData.get("callbackUrl") as string) || "/",
     });
   } catch (error) {
     if (error instanceof AuthError) {

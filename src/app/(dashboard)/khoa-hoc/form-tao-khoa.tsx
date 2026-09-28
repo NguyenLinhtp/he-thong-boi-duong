@@ -14,7 +14,7 @@ export function FormTaoKhoa({
   const [loi, formAction, dangXuLy] = useActionState(khoiTaoKhoaAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="chuongTrinhId">Chương trình (đã ban hành)</Label>
         <select

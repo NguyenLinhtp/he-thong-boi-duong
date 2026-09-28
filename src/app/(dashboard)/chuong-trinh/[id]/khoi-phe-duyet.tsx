@@ -26,8 +26,8 @@ export function KhoiPheDuyet({
 
   if (chuongTrinh.trangThai === "DU_THAO") {
     return (
-      <section className="flex flex-col gap-2 rounded-lg border p-4">
-        <h2 className="text-base font-semibold">CT-03 · Trình thẩm định</h2>
+      <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
+        <h2 className="text-base font-bold text-ued-blue-dam">CT-03 · Trình thẩm định</h2>
         <form action={trinhAction} className="flex flex-wrap items-end gap-3">
           <input type="hidden" name="id" value={chuongTrinh.id} />
           <div className="flex flex-col gap-1.5">
@@ -50,8 +50,8 @@ export function KhoiPheDuyet({
 
   if (chuongTrinh.trangThai === "CHO_THAM_DINH") {
     return (
-      <section className="flex flex-col gap-3 rounded-lg border p-4">
-        <h2 className="text-base font-semibold">CT-03 · Chờ thẩm định</h2>
+      <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
+        <h2 className="text-base font-bold text-ued-blue-dam">CT-03 · Chờ thẩm định</h2>
         {chuongTrinh.yKienThamDinh && (
           <p className="text-sm text-muted-foreground">Ý kiến: {chuongTrinh.yKienThamDinh}</p>
         )}
@@ -80,8 +80,8 @@ export function KhoiPheDuyet({
 
   if (chuongTrinh.trangThai === "DA_BAN_HANH") {
     return (
-      <section className="flex flex-col gap-1 rounded-lg border p-4 text-sm">
-        <h2 className="text-base font-semibold">CT-03 · Đã ban hành</h2>
+      <section className="flex flex-col gap-1 rounded-lg border bg-card p-4 shadow-sm text-sm">
+        <h2 className="text-base font-bold text-ued-blue-dam">CT-03 · Đã ban hành</h2>
         <p>Số quyết định: {chuongTrinh.soQuyetDinh}</p>
         <p>
           Ngày ban hành:{" "}

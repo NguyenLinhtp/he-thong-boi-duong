@@ -61,7 +61,7 @@ export function FormTaoHopDong({
     );
   }
   return (
-    <form action={formAction} className="flex flex-col gap-2 rounded-lg border p-4">
+    <form action={formAction} className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-end gap-2">
         <select
           name="donViLienKetId"
@@ -136,7 +136,7 @@ export function FormThanhLy({ id, soTienGoiY, choPhep }: { id: string; soTienGoi
           e.preventDefault();
         }
       }}
-      className="flex flex-col gap-2 rounded-lg border p-3"
+      className="flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-sm"
     >
       <input type="hidden" name="id" value={id} />
       <div className="flex flex-wrap items-end gap-2">
