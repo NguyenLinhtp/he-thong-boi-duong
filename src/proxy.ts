@@ -30,5 +30,7 @@ export const config = {
     "/bao-cao/:path*",
     "/quan-tri/:path*",
     "/don-vi-lien-ket/:path*",
+    "/hoc-tap/:path*",
+    "/hoc/:path*",
   ],
 };

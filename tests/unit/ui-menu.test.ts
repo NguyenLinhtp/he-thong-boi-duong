@@ -18,7 +18,7 @@ describe("Menu điều hướng theo quyền", () => {
     // GD-04: học viên thấy học liệu phía học viên, không thấy màn hình tải lên của giảng viên
     const hv = menuTheoQuyen({ maCNDuocPhep: ["GD-04", "KQ-05"], vaiTros: ["HOC_VIEN"] });
     const hrefs = hv.flatMap((n) => n.muc.map((m) => m.href));
-    expect(hrefs).toContain("/giang-day/hoc-lieu");
+    expect(hrefs).toContain("/hoc-tap");
     expect(hrefs).not.toContain("/giang-vien/hoc-lieu");
 
     // DVLK-04: cán bộ đào tạo có mã nhưng không phải tài khoản đơn vị liên kết

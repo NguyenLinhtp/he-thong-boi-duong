@@ -42,6 +42,7 @@ import { taoDonViLienKet } from "../src/server/services/dvlk/dvlk-01-danh-muc";
 import { capTaiKhoanDonViLienKet } from "../src/server/services/dvlk/dvlk-02-tai-khoan";
 import { taoHopDong } from "../src/server/services/dvlk/dvlk-03-hop-dong";
 import { xacNhanThuHoSo } from "../src/server/services/dvlk/dvlk-05-xac-nhan-thu-ho-so";
+import { themHocLieu, taoBaiTracNghiem, themCauHoi, taoYeuCauSanPham } from "../src/server/services/ct/ct-02-hoc-lieu";
 
 const MAT_KHAU_DEMO = process.env.DEMO_MAT_KHAU ?? "DemoBoiDuong2026";
 const CB = { nguoiThucHienTen: "Cán bộ đào tạo (dữ liệu mẫu)" };
@@ -174,10 +175,99 @@ async function taoTaiKhoanHocVienDangHoc() {
   await prisma.hocVien.update({ where: { id: dk.hocVienId }, data: { nguoiDungId: nd.id } });
 }
 
+/** Tệp PDF tiếng Việt cho học liệu mẫu - in HTML bằng Chromium của Playwright (chỉ dùng cho dữ liệu mẫu). */
+async function taoPdf(tieuDe: string, doan: string[]): Promise<Buffer | null> {
+  try {
+    const { chromium } = await import("@playwright/test");
+    const trinhDuyet = await chromium.launch();
+    const trang = await trinhDuyet.newPage();
+    await trang.setContent(
+      `<html><body style="font-family:Arial,sans-serif;padding:48px;line-height:1.6">
+        <p style="color:#034a82;font-weight:bold">TRƯỜNG ĐẠI HỌC SƯ PHẠM - ĐẠI HỌC ĐÀ NẴNG</p>
+        <h1 style="color:#054fa8">${tieuDe}</h1>${doan.map((d) => `<p>${d}</p>`).join("")}
+        <p style="color:#888;margin-top:48px">(Học liệu mẫu phục vụ chạy thử hệ thống)</p></body></html>`,
+    );
+    const pdf = await trang.pdf({ format: "A4" });
+    await trinhDuyet.close();
+    return Buffer.from(pdf);
+  } catch {
+    console.log("Không tạo được PDF mẫu (chưa cài Chromium của Playwright) - bỏ qua tệp PDF.");
+    return null;
+  }
+}
+
+/**
+ * Học liệu khung mẫu (CT-02/GD-04 bổ sung 28-29/09/2026) cho chương trình CDNN
+ * giáo viên THCS hạng II - khóa KH đang diễn ra của demo_hocvien_danghoc.
+ */
+async function taoHocLieuMau() {
+  const ct = await prisma.chuongTrinh.findFirst({
+    where: { ten: "Bồi dưỡng theo tiêu chuẩn CDNN giáo viên THCS hạng II", loaiHinhBoiDuong: { ma: { startsWith: "DEMO_" } } },
+    include: { hocPhans: { orderBy: { thuTu: "asc" } } },
+  });
+  if (!ct || ct.hocPhans.length < 2) return;
+  if ((await prisma.hocLieuHocPhan.count({ where: { hocPhan: { chuongTrinhId: ct.id } } })) > 0) return;
+  const nguoi = { nguoiThucHienTen: "Cán bộ đào tạo (dữ liệu mẫu)" };
+  const [hp1, hp2] = ct.hocPhans;
+  const pdf = async (loai: "TAI_LIEU" | "SLIDE", hocPhanId: string, tieuDe: string, doan: string[]) => {
+    const noiDung = await taoPdf(tieuDe, doan);
+    if (noiDung) await themHocLieu(hocPhanId, { loai, tieuDe, tep: { ten: `${tieuDe}.pdf`, loai: "application/pdf", noiDung } }, nguoi);
+  };
+
+  await themHocLieu(hp1.id, {
+    loai: "THONG_TIN",
+    tieuDe: "Nhiệm vụ học tập của học viên",
+    noiDung:
+      "Đây là khóa học được thiết kế theo hình thức kết hợp trực tiếp và trực tuyến. Nhiệm vụ của học viên:\n\n" +
+      "• Nghiên cứu tài liệu và slide bài giảng của từng chuyên đề.\n" +
+      "• Làm bài kiểm tra nhanh sau mỗi chuyên đề để tự đánh giá.\n" +
+      "• Tham gia thảo luận với giảng viên và học viên khác ở khung Thảo luận.\n" +
+      "• Hoàn thành và nộp sản phẩm cuối khóa đúng hạn.",
+  }, nguoi);
+  await pdf("TAI_LIEU", hp1.id, "Tài liệu chuyên đề 1 - Hệ thống văn bản quản lý nhà nước về giáo dục", [
+    "Luật Giáo dục số 43/2019/QH14 được Quốc hội thông qua ngày 14/6/2019, có hiệu lực từ ngày 01/7/2020.",
+    "Chương trình giáo dục phổ thông 2018 ban hành kèm theo Thông tư số 32/2018/TT-BGDĐT.",
+    "Học viên đọc tài liệu, ghi chép các nội dung chính ở khung Ghi chép bên phải màn hình học.",
+  ]);
+  await pdf("SLIDE", hp1.id, "Slide bài giảng chuyên đề 1", [
+    "Phần 1. Tổng quan quản lý nhà nước về giáo dục.",
+    "Phần 2. Quyền và nghĩa vụ của nhà giáo theo Luật Giáo dục 2019.",
+    "Phần 3. Liên hệ thực tiễn tại cơ sở giáo dục.",
+  ]);
+  const bai1 = await taoBaiTracNghiem(hp1.id, { tieuDe: "Kiểm tra nhanh chuyên đề 1", tinhDiem: false }, nguoi);
+  await themCauHoi(bai1.id, { noiDung: "Luật Giáo dục hiện hành được Quốc hội thông qua năm nào?", phuongAn: ["2005", "2019", "2023"], dapAnDung: [1] });
+  await themCauHoi(bai1.id, { noiDung: "Chương trình giáo dục phổ thông 2018 ban hành kèm theo văn bản nào?", phuongAn: ["Thông tư 32/2018/TT-BGDĐT", "Nghị định 71/2020/NĐ-CP", "Luật Giáo dục 2019"], dapAnDung: [0] });
+
+  await themHocLieu(hp2.id, {
+    loai: "THONG_TIN",
+    tieuDe: "Hướng dẫn học tập chuyên đề 2",
+    noiDung: "Chuyên đề tập trung vào phát triển phẩm chất, năng lực học sinh. Học viên đọc tài liệu, làm bài kiểm tra (tính điểm) và nộp kế hoạch bài dạy minh họa làm sản phẩm cuối khóa.",
+  }, nguoi);
+  await pdf("TAI_LIEU", hp2.id, "Tài liệu chuyên đề 2 - Phát triển phẩm chất, năng lực học sinh", [
+    "Chương trình GDPT 2018 hình thành 5 phẩm chất chủ yếu: yêu nước, nhân ái, chăm chỉ, trung thực, trách nhiệm.",
+    "Ba năng lực chung: tự chủ và tự học; giao tiếp và hợp tác; giải quyết vấn đề và sáng tạo.",
+  ]);
+  const bai2 = await taoBaiTracNghiem(hp2.id, { tieuDe: "Bài kiểm tra chuyên đề 2", tinhDiem: true, heSo: 1, thoiGianPhut: 10, soLanToiDa: 2 }, nguoi);
+  await themCauHoi(bai2.id, {
+    noiDung: "Những năng lực chung trong Chương trình GDPT 2018 gồm (chọn tất cả đáp án đúng):",
+    phuongAn: ["Tự chủ và tự học", "Giao tiếp và hợp tác", "Tin học", "Giải quyết vấn đề và sáng tạo"],
+    dapAnDung: [0, 1, 3],
+  });
+  await themCauHoi(bai2.id, { noiDung: "Chương trình GDPT 2018 hình thành bao nhiêu phẩm chất chủ yếu?", phuongAn: ["3", "5", "7"], dapAnDung: [1] });
+  await themCauHoi(bai2.id, { noiDung: "“Trung thực” là một phẩm chất chủ yếu trong Chương trình GDPT 2018.", phuongAn: ["Đúng", "Sai"], dapAnDung: [0] });
+  await taoYeuCauSanPham(hp2.id, {
+    tieuDe: "Kế hoạch bài dạy minh họa",
+    moTa: "Xây dựng 1 kế hoạch bài dạy theo định hướng phát triển phẩm chất, năng lực học sinh (tệp Word hoặc PDF).",
+    tinhDiem: true,
+    heSo: 2,
+  }, nguoi);
+}
+
 async function taoDuLieu() {
   await taoTaiKhoanTongHop();
   if (await prisma.loaiHinhBoiDuong.findUnique({ where: { ma: "DEMO_CDNN" } })) {
     await taoTaiKhoanHocVienDangHoc();
+    await taoHocLieuMau();
     console.log("Đã có dữ liệu mẫu (đã bổ sung tài khoản còn thiếu) - chạy với --xoa trước nếu muốn tạo lại.");
     return;
   }
@@ -352,6 +442,7 @@ async function taoDuLieu() {
   await themHocPhan(p5.id, { ten: "Học liệu số trong giáo dục mầm non", soTiet: 30 });
 
   await taoTaiKhoanHocVienDangHoc();
+  await taoHocLieuMau();
   console.log(`Đã tạo dữ liệu mẫu. Tài khoản demo_tonghop / demo_daotao / demo_taichinh / demo_giangvien / demo_hocvien / demo_hocvien_danghoc / demo_dvlk / demo_admin, mật khẩu: ${MAT_KHAU_DEMO}`);
 }
 
@@ -364,6 +455,11 @@ async function xoaDuLieu() {
   const nguoiDungId = { in: dsTaiKhoan.map((x) => x.id) };
 
   await prisma.thongBao.deleteMany({ where: { hocVienId } });
+  await prisma.lanLamTracNghiem.deleteMany({ where: { khoaId } });
+  await prisma.baiNopSanPham.deleteMany({ where: { khoaId } });
+  await prisma.tienDoHocTap.deleteMany({ where: { khoaId } });
+  await prisma.thaoLuanHocTap.deleteMany({ where: { khoaId } });
+  await prisma.ghiChepHocTap.deleteMany({ where: { khoaId } });
   await prisma.banGiaoChungChi.deleteMany({ where: { hopDongLienKet: { khoaId } } });
   await prisma.chungChi.deleteMany({ where: { khoaId } });
   await prisma.quyetDinhCapVanBang.deleteMany({ where: { khoaId } });

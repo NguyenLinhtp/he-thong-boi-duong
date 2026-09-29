@@ -472,6 +472,7 @@ model HocVien {
   thongBaos         ThongBao[]
   lanLamTracNghiems LanLamTracNghiem[]
   baiNopSanPhams    BaiNopSanPham[]
+  tienDoHocTaps     TienDoHocTap[]
 
   @@map("hoc_vien")
 }
@@ -1117,4 +1118,47 @@ model BaiNopSanPham {
 
   @@unique([yeuCauId, khoaId, hocVienId])
   @@map("bai_nop_san_pham")
+}
+
+// ---- GD-04 bổ sung 29/09/2026: tiến độ, thảo luận, ghi chép trên màn hình học ----
+// mucKey: "HL-<id>" học liệu khung, "GV-<id>" tài liệu giảng viên bổ sung,
+// "TN-<id>" bài trắc nghiệm, "SP-<id>" yêu cầu sản phẩm.
+
+/// Mục học liệu học viên đã hoàn thành (trắc nghiệm/sản phẩm suy ra từ bài làm, không lưu ở đây).
+model TienDoHocTap {
+  id           String   @id @default(cuid())
+  khoaId       String
+  hocVienId    String
+  hocVien      HocVien  @relation(fields: [hocVienId], references: [id])
+  mucKey       String
+  hoanThanhLuc DateTime @default(now())
+
+  @@unique([khoaId, hocVienId, mucKey])
+  @@map("tien_do_hoc_tap")
+}
+
+model ThaoLuanHocTap {
+  id          String   @id @default(cuid())
+  khoaId      String
+  mucKey      String
+  nguoiDungId String
+  hoTen       String
+  vaiTro      String
+  noiDung     String
+  createdAt   DateTime @default(now())
+
+  @@index([mucKey, khoaId])
+  @@map("thao_luan_hoc_tap")
+}
+
+model GhiChepHocTap {
+  id          String   @id @default(cuid())
+  nguoiDungId String
+  khoaId      String
+  mucKey      String
+  noiDung     String
+  updatedAt   DateTime @updatedAt
+
+  @@unique([nguoiDungId, khoaId, mucKey])
+  @@map("ghi_chep_hoc_tap")
 }

@@ -59,8 +59,8 @@ export const MENU: NhomMenu[] = [
     ma: "hoc-tap",
     nhan: "Học tập",
     muc: [
+      { href: "/hoc-tap", nhan: "Quá trình học tập", maCN: "GD-04", vaiTro: ["HOC_VIEN"] },
       { href: "/ket-qua/ca-nhan", nhan: "Kết quả học tập", maCN: "KQ-05" },
-      { href: "/giang-day/hoc-lieu", nhan: "Học liệu", maCN: "GD-04", vaiTro: ["HOC_VIEN"] },
     ],
   },
   {

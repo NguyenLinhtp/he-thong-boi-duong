@@ -411,11 +411,11 @@
     "ma_cn": "GD-04",
     "nhom_chuc_nang": "5. Quản lý giảng dạy",
     "ten_chuc_nang": "Quản lý tài liệu học tập/học liệu số",
-    "mo_ta_chi_tiet": "Tải lên, chia sẻ tài liệu học tập theo học phần cho học viên trong khóa; (bổ sung 28/09/2026) học viên xem học liệu khung của chương trình (CT-02) kèm tài liệu giảng viên bổ sung theo khóa/lớp, làm bài trắc nghiệm trực tuyến và nộp sản phẩm cuối khóa theo từng học phần",
+    "mo_ta_chi_tiet": "Tải lên, chia sẻ tài liệu học tập theo học phần cho học viên trong khóa; (bổ sung 28/09/2026) học viên xem học liệu khung của chương trình (CT-02) kèm tài liệu giảng viên bổ sung theo khóa/lớp, làm bài trắc nghiệm trực tuyến và nộp sản phẩm cuối khóa theo từng học phần; (bổ sung 29/09/2026) giao diện học tập theo mẫu taphuan.csdl.edu.vn: trang quá trình học tập (dòng thời gian các chuyên đề kèm % tiến độ) và màn hình học 3 phần - trái: đề mục theo chuyên đề, giữa: học liệu (xem trực tiếp, cuộn, mục trước/tiếp theo), phải: thảo luận theo mục và ghi chép cá nhân",
     "actor": "Giảng viên (tải lên) / Học viên trong khóa (xem, tải - bổ sung 27/09/2026 theo quy tắc nghiệp vụ)",
     "input": "File tài liệu, học phần gắn kèm",
     "output": "Tài liệu hiển thị cho học viên của khóa",
-    "quy_tac_nghiep_vu": "Chỉ học viên trong khóa mới xem/tải được tài liệu; (bổ sung 28/09/2026) chỉ học viên chính thức của khóa làm trắc nghiệm/nộp sản phẩm, không nhận sau khi kết quả khóa đã phê duyệt (KQ-04); số lần làm và thời gian làm theo cấu hình bài, điểm bài = lần làm cao nhất; khóa Phương thức 3 không áp dụng",
+    "quy_tac_nghiep_vu": "Chỉ học viên trong khóa mới xem/tải được tài liệu; (bổ sung 28/09/2026) chỉ học viên chính thức của khóa làm trắc nghiệm/nộp sản phẩm, không nhận sau khi kết quả khóa đã phê duyệt (KQ-04); số lần làm và thời gian làm theo cấu hình bài, điểm bài = lần làm cao nhất; khóa Phương thức 3 không áp dụng; (bổ sung 29/09/2026) tiến độ = % mục đã hoàn thành theo chuyên đề và cả khóa: tài liệu/slide/thông tin mở xem ≥ 30 giây hoặc tải về, video tải lên xem ≥ 90%, video/link ngoài học viên tự đánh dấu, trắc nghiệm đã nộp, sản phẩm đã nộp; khóa đã kết thúc/kết quả đã phê duyệt vẫn xem lại được nhưng không cập nhật tiến độ; thảo luận chỉ học viên và giảng viên của khóa, có thể xem thảo luận các khóa khác cùng bài giảng; ghi chép chỉ người viết xem được",
     "do_uu_tien": "Thấp",
     "giai_doan": "Đợt 3"
   },
