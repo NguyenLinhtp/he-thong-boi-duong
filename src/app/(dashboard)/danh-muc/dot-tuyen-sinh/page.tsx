@@ -47,7 +47,7 @@ export default async function DotTuyenSinhPage() {
               <TableCell>{dinhDangNgay(dot.ngayBatDau)}</TableCell>
               <TableCell>{dinhDangNgay(dot.ngayKetThuc)}</TableCell>
               <TableCell>
-                <NutXoa ten={dot.ten} onXoa={() => xoaDotTuyenSinhAction(dot.id)} />
+                <NutXoa ten={dot.ten} onXoa={xoaDotTuyenSinhAction.bind(null, dot.id)} />
               </TableCell>
             </TableRow>
           ))}

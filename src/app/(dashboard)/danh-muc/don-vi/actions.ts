@@ -46,8 +46,14 @@ export async function suaDonViAction(_prevState: string | undefined, formData: F
   revalidatePath(DUONG_DAN);
 }
 
-export async function xoaDonViAction(id: string) {
+// trả thông báo nghiệp vụ thay vì throw: bản production che message của lỗi ném từ server action
+export async function xoaDonViAction(id: string): Promise<string | undefined> {
   await requirePermission("DM-01");
-  await xoaDonVi(id);
+  try {
+    await xoaDonVi(id);
+  } catch (error) {
+    if (error instanceof DangDuocThamChieuError) return error.message;
+    throw error;
+  }
   revalidatePath(DUONG_DAN);
 }

@@ -41,7 +41,7 @@ export default async function DonViPage() {
               <TableCell>{dv.ten}</TableCell>
               <TableCell>{dv.donViCha?.ten ?? "—"}</TableCell>
               <TableCell>
-                <NutXoa ten={dv.ten} onXoa={() => xoaDonViAction(dv.id)} />
+                <NutXoa ten={dv.ten} onXoa={xoaDonViAction.bind(null, dv.id)} />
               </TableCell>
             </TableRow>
           ))}

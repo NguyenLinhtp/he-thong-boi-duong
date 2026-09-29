@@ -47,7 +47,7 @@ export default async function ChucDanhPage() {
               <TableCell>{cd.ten}</TableCell>
               <TableCell>{NHAN_LOAI[cd.loai] ?? cd.loai}</TableCell>
               <TableCell>
-                <NutXoa ten={cd.ten} onXoa={() => xoaChucDanhAction(cd.id)} />
+                <NutXoa ten={cd.ten} onXoa={xoaChucDanhAction.bind(null, cd.id)} />
               </TableCell>
             </TableRow>
           ))}

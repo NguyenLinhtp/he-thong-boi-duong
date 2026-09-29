@@ -39,7 +39,7 @@ export default async function LoaiHinhPage() {
               <TableCell>{lh.ma}</TableCell>
               <TableCell>{lh.ten}</TableCell>
               <TableCell>
-                <NutXoa ten={lh.ten} onXoa={() => xoaLoaiHinhAction(lh.id)} />
+                <NutXoa ten={lh.ten} onXoa={xoaLoaiHinhAction.bind(null, lh.id)} />
               </TableCell>
             </TableRow>
           ))}

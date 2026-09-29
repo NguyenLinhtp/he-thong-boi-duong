@@ -43,7 +43,7 @@ export default async function PhongHocPage() {
               <TableCell>{ph.coSo ?? "—"}</TableCell>
               <TableCell>{ph.sucChua ?? "—"}</TableCell>
               <TableCell>
-                <NutXoa ten={ph.ten} onXoa={() => xoaPhongHocAction(ph.id)} />
+                <NutXoa ten={ph.ten} onXoa={xoaPhongHocAction.bind(null, ph.id)} />
               </TableCell>
             </TableRow>
           ))}

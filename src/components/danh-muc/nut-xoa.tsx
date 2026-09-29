@@ -8,7 +8,8 @@ export function NutXoa({
   onXoa,
 }: {
   ten: string;
-  onXoa: () => Promise<void>;
+  // trả về chuỗi = thông báo lỗi nghiệp vụ (vd. đang được tham chiếu)
+  onXoa: () => Promise<string | undefined | void>;
 }) {
   const [dangXoa, setDangXoa] = useState(false);
 
@@ -21,7 +22,8 @@ export function NutXoa({
         if (!confirm(`Xóa "${ten}"?`)) return;
         setDangXoa(true);
         try {
-          await onXoa();
+          const loi = await onXoa();
+          if (loi) alert(loi);
         } catch (error) {
           alert(error instanceof Error ? error.message : "Có lỗi xảy ra");
         } finally {

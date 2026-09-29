@@ -26,8 +26,14 @@ export async function taoLoaiHinhAction(_prevState: string | undefined, formData
   revalidatePath(DUONG_DAN);
 }
 
-export async function xoaLoaiHinhAction(id: string) {
+// trả thông báo nghiệp vụ thay vì throw: bản production che message của lỗi ném từ server action
+export async function xoaLoaiHinhAction(id: string): Promise<string | undefined> {
   await requirePermission("DM-03");
-  await xoaLoaiHinhBoiDuong(id);
+  try {
+    await xoaLoaiHinhBoiDuong(id);
+  } catch (error) {
+    if (error instanceof DangDuocThamChieuError) return error.message;
+    throw error;
+  }
   revalidatePath(DUONG_DAN);
 }
