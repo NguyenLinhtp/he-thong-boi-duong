@@ -144,9 +144,40 @@ async function taoTaiKhoanTongHop() {
   });
 }
 
+/**
+ * Tài khoản học viên đang học chính thức ở khóa Phương thức 1 đang diễn ra -
+ * để thử làm trắc nghiệm, nộp sản phẩm (demo_hocvien thuộc khóa đã kết thúc).
+ * Gắn hồ sơ qua số CCCD nên đăng nhập bằng CCCD cũng được.
+ */
+async function taoTaiKhoanHocVienDangHoc() {
+  if (await prisma.nguoiDung.findUnique({ where: { tenDangNhap: "demo_hocvien_danghoc" } })) return;
+  const dk = await prisma.dangKyHoc.findFirst({
+    where: {
+      trangThai: "CHINH_THUC",
+      hocVien: { nguoiDungId: null, soCCCD: { not: null } },
+      khoa: { trangThai: "DANG_DIEN_RA", chuongTrinh: { phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY", loaiHinhBoiDuong: { ma: { startsWith: "DEMO_" } } } },
+    },
+    include: { hocVien: true },
+    orderBy: { hocVien: { maHocVien: "asc" } },
+  });
+  if (!dk) return;
+  const vt = await prisma.vaiTroModel.findUniqueOrThrow({ where: { ma: "HOC_VIEN" } });
+  const nd = await prisma.nguoiDung.create({
+    data: {
+      tenDangNhap: "demo_hocvien_danghoc",
+      hoTen: dk.hocVien.hoTen,
+      soCCCD: dk.hocVien.soCCCD,
+      matKhauHash: await bcrypt.hash(MAT_KHAU_DEMO, 10),
+      vaiTros: { create: [{ vaiTroId: vt.id }] },
+    },
+  });
+  await prisma.hocVien.update({ where: { id: dk.hocVienId }, data: { nguoiDungId: nd.id } });
+}
+
 async function taoDuLieu() {
   await taoTaiKhoanTongHop();
   if (await prisma.loaiHinhBoiDuong.findUnique({ where: { ma: "DEMO_CDNN" } })) {
+    await taoTaiKhoanHocVienDangHoc();
     console.log("Đã có dữ liệu mẫu (đã bổ sung tài khoản còn thiếu) - chạy với --xoa trước nếu muốn tạo lại.");
     return;
   }
@@ -320,7 +351,8 @@ async function taoDuLieu() {
   });
   await themHocPhan(p5.id, { ten: "Học liệu số trong giáo dục mầm non", soTiet: 30 });
 
-  console.log(`Đã tạo dữ liệu mẫu. Tài khoản demo_tonghop / demo_daotao / demo_taichinh / demo_giangvien / demo_hocvien / demo_dvlk / demo_admin, mật khẩu: ${MAT_KHAU_DEMO}`);
+  await taoTaiKhoanHocVienDangHoc();
+  console.log(`Đã tạo dữ liệu mẫu. Tài khoản demo_tonghop / demo_daotao / demo_taichinh / demo_giangvien / demo_hocvien / demo_hocvien_danghoc / demo_dvlk / demo_admin, mật khẩu: ${MAT_KHAU_DEMO}`);
 }
 
 async function xoaDuLieu() {
