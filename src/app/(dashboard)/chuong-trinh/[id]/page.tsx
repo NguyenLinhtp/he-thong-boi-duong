@@ -5,7 +5,6 @@ import { layChuongTrinh } from "@/server/services/ct/ct-01-tao-chuong-trinh";
 import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-boi-duong";
 import { coKhoaDangHoatDong, lichSuPhienBan } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
-import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { DauTrangChuongTrinh } from "@/components/chuong-trinh/dau-trang-chuong-trinh";
 import { FormSuaChuongTrinh } from "./form-sua-chuong-trinh";
 import { DanhSachHocPhan } from "./danh-sach-hoc-phan";
@@ -15,13 +14,6 @@ import { LichSuPhienBan } from "./lich-su-phien-ban";
 import { KhoiPhuongThucDangKy } from "./khoi-phuong-thuc-dang-ky";
 import { KhoiLoaiVanBang } from "./khoi-loai-van-bang";
 import { KhoiNgungHieuLuc } from "./khoi-ngung-hieu-luc";
-
-const NHAN_TRANG_THAI: Record<string, string> = {
-  DU_THAO: "Dự thảo",
-  CHO_THAM_DINH: "Chờ thẩm định",
-  DA_BAN_HANH: "Đã ban hành",
-  NGUNG_HIEU_LUC: "Ngừng hiệu lực",
-};
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -38,8 +30,10 @@ export default async function ChiTietChuongTrinhPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // xem chi tiết thuộc tra cứu CT-05 (mọi người dùng nội bộ, giống tab Học liệu);
+  // các khối sửa/duyệt bên dưới vẫn theo quyền riêng từng mã CN
   try {
-    await requirePermission("CT-01");
+    await requirePermission("CT-05");
   } catch (error) {
     if (error instanceof ChuaDangNhapError) redirect("/dang-nhap");
     if (error instanceof KhongCoQuyenError) {
@@ -53,6 +47,7 @@ export default async function ChiTietChuongTrinhPage({
   if (!chuongTrinh) notFound();
 
   const dangDuThao = chuongTrinh.trangThai === "DU_THAO";
+  const choPhepSuaDuThao = dangDuThao && (await coQuyen("CT-01"));
   const daBanHanh = chuongTrinh.trangThai === "DA_BAN_HANH";
   const choPhepSuaHocPhan = dangDuThao && (await coQuyen("CT-02"));
   const choPhepPheDuyet = await coQuyen("CT-03");
@@ -69,7 +64,7 @@ export default async function ChiTietChuongTrinhPage({
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <DauTrangChuongTrinh chuongTrinh={chuongTrinh} dangChon="thong-tin" />
 
-      {dangDuThao ? (
+      {choPhepSuaDuThao ? (
         <FormSuaChuongTrinh
           chuongTrinh={{
             id: chuongTrinh.id,
