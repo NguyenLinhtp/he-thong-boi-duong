@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ChonTep } from "@/components/chung/chon-tep";
 import { Input } from "@/components/ui/input";
 import { batDauLamBaiAction, danhDauHoanThanhAction, nopBaiAction } from "./actions";
 
@@ -240,7 +241,14 @@ export function NopSanPham({ khoaId, yeuCauId, duocNop }: { khoaId: string; yeuC
       }}
       className="flex flex-col gap-2 rounded-lg border bg-white p-4"
     >
-      <input type="file" name="tep" required className="text-sm" aria-label="Tệp sản phẩm" />
+      {/* định dạng khớp DUOI_SAN_PHAM (gd-04-danh-gia) - máy chủ vẫn kiểm tra lại */}
+      <ChonTep
+        name="tep"
+        required
+        nhan="Chọn tệp sản phẩm"
+        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png,.mp4"
+        goiY="Word, PDF, PowerPoint, Excel, ảnh, video hoặc tệp nén"
+      />
       <Input name="ghiChu" placeholder="Ghi chú cho giảng viên (không bắt buộc)" />
       <div className="flex items-center gap-2">
         <Button type="submit" size="sm" disabled={dangGui}>

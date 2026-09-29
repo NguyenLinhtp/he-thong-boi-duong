@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ChonTep } from "@/components/chung/chon-tep";
 import { Input } from "@/components/ui/input";
 import type { KetQuaThaoTac } from "../../actions";
 import { ThongBao, TruongTinhDiem } from "../../cac-form";
@@ -92,7 +93,7 @@ export function FormNhapExcel({ hanhDong }: { hanhDong: HanhDong }) {
         <a href="/api/ct/trac-nghiem/mau-excel">Tải tệp mẫu</a>
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <input type="file" name="tep" required accept=".xlsx" className="text-sm" />
+        <ChonTep name="tep" required accept=".xlsx" nhan="Chọn tệp Excel" goiY="Tệp .xlsx theo mẫu" />
         <Button type="submit" size="sm" disabled={dangLuu}>
           {dangLuu ? "Đang nhập..." : "Nhập"}
         </Button>

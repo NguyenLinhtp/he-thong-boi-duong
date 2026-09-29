@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { importDanhSachAction } from "./actions";
 import { Button } from "@/components/ui/button";
+import { ChonTep } from "@/components/chung/chon-tep";
 import { Label } from "@/components/ui/label";
 
 export function FormImport({ khoaId }: { khoaId: string }) {
@@ -12,8 +13,8 @@ export function FormImport({ khoaId }: { khoaId: string }) {
     <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
       <input type="hidden" name="khoaId" value={khoaId} />
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="file">File CSV danh sách học viên</Label>
-        <input id="file" name="file" type="file" accept=".csv,text/csv" required className="text-sm" />
+        <Label>File CSV danh sách học viên</Label>
+        <ChonTep name="file" accept=".csv,text/csv" required nhan="Chọn tệp CSV" className="max-w-xl" />
         <p className="text-xs text-muted-foreground">
           Cột theo đúng thứ tự, dòng đầu là tiêu đề: họ tên, CCCD/mã số, đơn vị công tác, số điện
           thoại, email.

@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ChonTep } from "@/components/chung/chon-tep";
 import { Input } from "@/components/ui/input";
 import type { KetQuaThaoTac } from "./actions";
 
@@ -94,7 +95,7 @@ export function FormThemHocLieu({ hocPhanId }: { hocPhanId: string }) {
           </label>
         )}
       </div>
-      {kieu === "tep" && <input type="file" name="tep" required accept={ACCEPT[loai]} className="text-sm" />}
+      {kieu === "tep" && <ChonTep name="tep" required accept={ACCEPT[loai]} goiY={ACCEPT[loai]} className="max-w-xl" />}
       {kieu === "link" && <Input name="duongLink" type="url" required placeholder="https://..." className="max-w-xl" />}
       {kieu === "noiDung" && <textarea name="noiDung" required rows={4} className="rounded-lg border p-2 text-sm" placeholder="Nội dung thông tin" />}
       <div className="flex items-center gap-2">

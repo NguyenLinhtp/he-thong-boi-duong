@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ChonTep } from "@/components/chung/chon-tep";
 import { Input } from "@/components/ui/input";
 
 type PhanCong = { giaTri: string; nhan: string };
@@ -71,12 +72,10 @@ export function FormDangTaiLieu({ dsPhanCong, toiDaMb }: { dsPhanCong: PhanCong[
           <input type="radio" checked={kieu === "link"} onChange={() => setKieu("link")} /> Đường link (video, học liệu ngoài)
         </label>
         {kieu === "tep" ? (
-          <input
-            type="file"
+          <ChonTep
             name="tep"
             required
             accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png,.mp3,.mp4"
-            className="text-sm"
           />
         ) : (
           <Input name="duongLink" type="url" required placeholder="https://..." className="w-80" />
