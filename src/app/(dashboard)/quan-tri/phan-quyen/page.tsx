@@ -20,7 +20,13 @@ export default async function PhanQuyenPage() {
 
   const { chucNangs, vaiTros } = await layMaTranPhanQuyen();
 
-  const nhomTheoNhomChucNang = Map.groupBy(chucNangs, (cn) => cn.nhomChucNang);
+  // nhóm theo thứ tự số đầu tên nhóm ("1. ...", "2. ...", ..., "11. ...") như đặc tả; trong nhóm theo mã CN
+  const soThuTu = (nhom: string) => Number.parseInt(nhom, 10) || 99;
+  const nhomTheoNhomChucNang = new Map(
+    [...Map.groupBy(chucNangs, (cn) => cn.nhomChucNang).entries()]
+      .sort(([a], [b]) => soThuTu(a) - soThuTu(b))
+      .map(([nhom, ds]) => [nhom, ds.toSorted((x, y) => x.maCN.localeCompare(y.maCN, "vi", { numeric: true }))] as const),
+  );
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
