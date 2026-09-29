@@ -211,7 +211,7 @@
     "actor": "Phòng/Trung tâm bồi dưỡng",
     "input": "Nội dung thông báo, kênh gửi",
     "output": "Thông báo tuyển sinh đã phát hành; link đăng ký công khai của khóa",
-    "quy_tac_nghiep_vu": "Chỉ gửi/sinh link khi khóa ở trạng thái \"Đang tuyển sinh\"; link tự vô hiệu khi khóa đóng đăng ký hoặc đã đủ sĩ số",
+    "quy_tac_nghiep_vu": "Chỉ gửi/sinh link khi khóa ở trạng thái \"Đang tuyển sinh\"; link tự vô hiệu khi khóa đóng đăng ký hoặc đã đủ sĩ số; (bổ sung 29/09/2026) địa chỉ gốc của link lấy theo tham số QT-05 URL_GOC_HE_THONG, chưa cấu hình thì theo địa chỉ máy chủ đang chạy (chạy thử/UAT bấm được ngay) - dạng {gốc}/khoa/{mã khóa}; mã QR xác thực văn bằng (CC-05) dùng cùng gốc khi chưa cấu hình CC_URL_XAC_THUC",
     "do_uu_tien": "Trung bình",
     "giai_doan": "Đợt 1"
   },

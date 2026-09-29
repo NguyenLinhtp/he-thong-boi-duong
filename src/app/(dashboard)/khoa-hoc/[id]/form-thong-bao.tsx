@@ -1,21 +1,37 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { phatHanhThongBaoAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 export function FormThongBao({ khoaId, linkHienTai }: { khoaId: string; linkHienTai: string | null }) {
   const [trangThai, formAction, dangXuLy] = useActionState(phatHanhThongBaoAction, undefined);
+  const [daChep, setDaChep] = useState(false);
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm">
-        Link đăng ký công khai:{" "}
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+        Link đăng ký công khai:
         {linkHienTai ? (
-          <a href={linkHienTai} className="text-primary underline" target="_blank" rel="noreferrer">
-            {linkHienTai}
-          </a>
+          <>
+            <a href={linkHienTai} className="text-primary underline" target="_blank" rel="noreferrer">
+              {linkHienTai}
+            </a>
+            {/* KH-06: cán bộ dán link vào bài đăng quảng bá trên website */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                await navigator.clipboard.writeText(linkHienTai);
+                setDaChep(true);
+                setTimeout(() => setDaChep(false), 2000);
+              }}
+            >
+              {daChep ? "Đã sao chép ✓" : "Sao chép link"}
+            </Button>
+          </>
         ) : (
           <span className="text-muted-foreground">
             Chưa có hiệu lực (khóa cần ở trạng thái Đang tuyển sinh và chưa đủ sĩ số)

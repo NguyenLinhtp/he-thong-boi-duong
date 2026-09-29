@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { coTheNhanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { KhongTimThayKhoaError, KhoaChuaMoDangKyError } from "@/server/services/kh/loi-khoa";
-
-const GOC_LINK_DANG_KY = "https://dangky.ued.udn.vn/khoa";
+import { urlGocHeThong } from "@/server/services/qt/url-goc";
 
 /**
  * KH-06: "Chỉ gửi/sinh link khi khóa Đang tuyển sinh; link tự vô hiệu khi
@@ -15,7 +14,8 @@ export async function linkDangKyCongKhai(khoaId: string): Promise<string | null>
   if (!khoa) throw new KhongTimThayKhoaError();
 
   const conMo = await coTheNhanDangKy(khoaId);
-  return conMo ? `${GOC_LINK_DANG_KY}/${khoa.maKhoa}` : null;
+  // gốc link theo cấu hình QT-05 / máy chủ đang chạy (bổ sung 29/09/2026) - dạng {gốc}/khoa/{mã khóa}
+  return conMo ? `${await urlGocHeThong()}/khoa/${khoa.maKhoa}` : null;
 }
 
 export type KenhGui = "WEBSITE" | "EMAIL";

@@ -2,17 +2,16 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db/prisma";
 import { layThamSo } from "@/server/services/qt/qt-05-tham-so";
 import { nhanVanBang } from "@/server/services/cc/van-bang";
+import { urlGocHeThong } from "@/server/services/qt/url-goc";
 
 /** 16 ký tự hex ngẫu nhiên (64 bit) - không suy ra được từ số hiệu, không dò tuần tự được. */
 export function sinhMaXacThuc() {
   return randomBytes(8).toString("hex");
 }
 
-const GOC_MAC_DINH = "https://dangky.ued.udn.vn/xac-thuc-van-bang";
-
-/** Link in thành mã QR trên văn bằng - gốc cấu hình ở QT-05 CC_URL_XAC_THUC. */
+/** Link in thành mã QR trên văn bằng - gốc cấu hình ở QT-05 CC_URL_XAC_THUC, không có thì theo gốc hệ thống. */
 export async function duongDanXacThuc(maXacThuc: string) {
-  const goc = ((await layThamSo("CC_URL_XAC_THUC")) ?? GOC_MAC_DINH).replace(/\/+$/, "");
+  const goc = ((await layThamSo("CC_URL_XAC_THUC")) ?? `${await urlGocHeThong()}/xac-thuc-van-bang`).replace(/\/+$/, "");
   return `${goc}/${maXacThuc}`;
 }
 
