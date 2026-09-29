@@ -78,8 +78,9 @@ export function FormTaoDonViLienKet() {
 /** DVLK-01: sửa thông tin đơn vị liên kết. */
 export function FormSuaDonViLienKet({ dv }: { dv: ThongTinDonVi & { id: string } }) {
   const [ketQua, formAction, dangXuLy] = useActionState(capNhatDonViLienKetAction, undefined);
+  // key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form key={JSON.stringify(dv)} action={formAction} className="flex flex-col gap-2">
       <input type="hidden" name="id" value={dv.id} />
       <div className="flex flex-wrap items-end gap-3">
         <CacTruong dv={dv} />

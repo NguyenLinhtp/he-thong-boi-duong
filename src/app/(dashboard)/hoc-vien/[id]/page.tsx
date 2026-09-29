@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
@@ -69,6 +70,16 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
   }
 
   const dsChucDanhHocVi = await danhSachChucDanhHocVi();
+  // mã khóa dẫn tới: học viên -> trang học tập của khóa; cán bộ -> trang quản lý khóa (nếu có quyền)
+  const xemKhoa = phamVi.toanBo && (await coQuyen("KH-01"));
+  const hrefKhoa = (dk: { khoaId: string; trangThai: string }) =>
+    !phamVi.toanBo
+      ? dk.trangThai === "CHINH_THUC" || dk.trangThai === "HOAN_THANH"
+        ? `/hoc-tap/${dk.khoaId}`
+        : null
+      : xemKhoa
+        ? `/khoa-hoc/${dk.khoaId}`
+        : null;
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
@@ -77,7 +88,16 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
       </h1>
 
       <FormSuaHoSo
-        hocVien={hocVien}
+        hocVien={{
+          id: hocVien.id,
+          hoTen: hocVien.hoTen,
+          ngaySinh: hocVien.ngaySinh,
+          donViCongTac: hocVien.donViCongTac,
+          chucDanhHocViId: hocVien.chucDanhHocViId,
+          soCCCD: hocVien.soCCCD,
+          soDienThoai: hocVien.soDienThoai,
+          email: hocVien.email,
+        }}
         hocVienTuCapNhat={!phamVi.toanBo}
         dsChucDanhHocVi={dsChucDanhHocVi.map((cd) => ({ id: cd.id, ten: cd.ten }))}
       />
@@ -97,7 +117,15 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
           <TableBody>
             {hocVien.dangKys.map((dk) => (
               <TableRow key={dk.id}>
-                <TableCell>{dk.khoa.maKhoa}</TableCell>
+                <TableCell>
+                  {hrefKhoa(dk) ? (
+                    <Link href={hrefKhoa(dk)!} className="font-medium underline">
+                      {dk.khoa.maKhoa}
+                    </Link>
+                  ) : (
+                    dk.khoa.maKhoa
+                  )}
+                </TableCell>
                 <TableCell>{dk.khoa.chuongTrinh.ten}</TableCell>
                 <TableCell>{new Date(dk.ngayDangKy).toLocaleDateString("vi-VN")}</TableCell>
                 <TableCell><NhanTrangThai ma={dk.trangThai}>{NHAN_TRANG_THAI_DANG_KY[dk.trangThai] ?? dk.trangThai}</NhanTrangThai></TableCell>

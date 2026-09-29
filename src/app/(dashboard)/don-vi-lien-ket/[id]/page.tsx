@@ -44,6 +44,8 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
     throw error;
   }
   const choPhepDVLK02 = await coQuyen("DVLK-02");
+  // Quản trị có DVLK-01 nhưng không có DVLK-03 -> không gắn link sang hợp đồng
+  const xemHopDong = await coQuyen("DVLK-03");
   const dsTaiKhoanChuaGan = choPhepDVLK02 && !dv.taiKhoan ? await danhSachTaiKhoanChuaGan() : [];
 
   return (
@@ -60,7 +62,9 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
 
       <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
         <h2 className="text-sm font-bold text-ued-blue-dam">DVLK-01 · Thông tin đơn vị</h2>
-        <FormSuaDonViLienKet dv={dv} />
+        <FormSuaDonViLienKet
+          dv={{ id: dv.id, ma: dv.ma, ten: dv.ten, diaChi: dv.diaChi, nguoiDaiDien: dv.nguoiDaiDien, soDienThoai: dv.soDienThoai, email: dv.email }}
+        />
         <div className="flex flex-wrap items-start gap-3">
           <NutTrangThaiHopTac id={dv.id} dangHopTac={dv.trangThaiHopTac === "DANG_HOP_TAC"} />
           <NutXoaDonViLienKet id={dv.id} ten={dv.ten} />
@@ -99,9 +103,11 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-bold text-ued-blue-dam">Hợp đồng liên kết (các khóa được phân công)</h2>
-          <Link href={`/don-vi-lien-ket/hop-dong?donVi=${dv.id}`} className="text-sm underline">
-            Lập / quản lý hợp đồng (DVLK-03) →
-          </Link>
+          {xemHopDong && (
+            <Link href={`/don-vi-lien-ket/hop-dong?donVi=${dv.id}`} className="text-sm underline">
+              Lập / quản lý hợp đồng (DVLK-03) →
+            </Link>
+          )}
         </div>
         <Table>
           <TableHeader>
@@ -122,9 +128,13 @@ export default async function ChiTietDonViLienKetPage({ params }: { params: Prom
             {dv.hopDongs.map((hd) => (
               <TableRow key={hd.id}>
                 <TableCell>
-                  <Link href={`/don-vi-lien-ket/hop-dong/${hd.id}`} className="underline">
-                    {hd.maHopDong}
-                  </Link>
+                  {xemHopDong ? (
+                    <Link href={`/don-vi-lien-ket/hop-dong/${hd.id}`} className="underline">
+                      {hd.maHopDong}
+                    </Link>
+                  ) : (
+                    hd.maHopDong
+                  )}
                 </TableCell>
                 <TableCell>
                   {hd.khoa.maKhoa} · {hd.khoa.chuongTrinh.ten}

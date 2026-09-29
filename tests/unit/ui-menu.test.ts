@@ -20,15 +20,24 @@ describe("Menu điều hướng theo quyền", () => {
     const hrefs = hv.flatMap((n) => n.muc.map((m) => m.href));
     expect(hrefs).toContain("/hoc-tap");
     expect(hrefs).not.toContain("/giang-vien/hoc-lieu");
+    // HV-08: học viên thấy "Hồ sơ cá nhân" trong nhóm Học tập, không thấy module Học viên của cán bộ
+    const hv08 = menuTheoQuyen({ maCNDuocPhep: ["HV-08"], vaiTros: ["HOC_VIEN"] });
+    expect(hv08.map((n) => n.ma)).toEqual(["hoc-tap"]);
+    expect(hv08[0].muc[0].nhan).toBe("Hồ sơ cá nhân");
 
     // DVLK-04: cán bộ đào tạo có mã nhưng không phải tài khoản đơn vị liên kết
     const cb = menuTheoQuyen({ maCNDuocPhep: ["DVLK-01", "DVLK-04"], vaiTros: ["CAN_BO_QUAN_LY_DAO_TAO"] });
     expect(cb.flatMap((n) => n.muc.map((m) => m.href))).toEqual(["/don-vi-lien-ket"]);
   });
 
-  it("trang mặc định: dashboard nếu có BC-01, không thì mục đầu tiên được phép", () => {
+  it("trang mặc định: dashboard nếu có BC-01, học viên vào quá trình học tập, không thì mục đầu tiên được phép", () => {
     expect(trangMacDinh(menuTheoQuyen({ maCNDuocPhep: ["CT-05", "BC-01"], vaiTros: [] }))).toBe("/bao-cao");
+    expect(trangMacDinh(menuTheoQuyen({ maCNDuocPhep: ["HV-08", "GD-04", "KQ-05"], vaiTros: ["HOC_VIEN"] }))).toBe("/hoc-tap");
     expect(trangMacDinh(menuTheoQuyen({ maCNDuocPhep: ["QT-01", "QT-02"], vaiTros: ["ADMIN"] }))).toBe("/quan-tri/tai-khoan");
+    // CT-05 đứng trước trong menu nhưng không phải việc chính của giảng viên/quản trị
+    expect(trangMacDinh(menuTheoQuyen({ maCNDuocPhep: ["CT-05", "GD-01", "KQ-01"], vaiTros: ["GIANG_VIEN"] }))).toBe("/giang-vien/buoi-hoc");
+    expect(trangMacDinh(menuTheoQuyen({ maCNDuocPhep: ["CT-05", "DM-01", "QT-01"], vaiTros: ["ADMIN"] }))).toBe("/quan-tri/tai-khoan");
+    expect(trangMacDinh(menuTheoQuyen({ maCNDuocPhep: ["CT-05", "DM-01"], vaiTros: ["ADMIN"] }))).toBe("/chuong-trinh");
   });
 
   it("mục đang chọn theo tiền tố dài nhất, trang chi tiết thuộc module cha", () => {

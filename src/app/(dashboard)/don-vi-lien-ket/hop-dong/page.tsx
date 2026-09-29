@@ -39,14 +39,6 @@ export default async function HopDongLienKetPage({
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-ued-blue-dam">DVLK-03 · Hợp đồng liên kết tuyển sinh theo khóa</h1>
-        <div className="flex gap-4 text-sm">
-          <Link href="/don-vi-lien-ket/bao-cao" className="underline">
-            Báo cáo công nợ, doanh thu (DVLK-07)
-          </Link>
-          <Link href="/don-vi-lien-ket" className="underline">
-            Danh mục đơn vị liên kết →
-          </Link>
-        </div>
       </div>
 
       <FormTaoHopDong

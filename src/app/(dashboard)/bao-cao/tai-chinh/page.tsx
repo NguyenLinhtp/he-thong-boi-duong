@@ -46,9 +46,6 @@ export default async function BaoCaoTaiChinhPage({ searchParams }: { searchParam
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <h1 className="text-xl font-bold text-ued-blue-dam">BC-03 · Báo cáo tài chính học phí</h1>
-        <Link href="/bao-cao/dao-tao" className="text-sm underline">
-          ← Báo cáo hoạt động đào tạo (BC-02)
-        </Link>
       </div>
 
       <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 shadow-sm print:hidden">

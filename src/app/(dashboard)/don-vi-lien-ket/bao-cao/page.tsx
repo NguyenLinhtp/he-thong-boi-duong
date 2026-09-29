@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requirePermission } from "@/lib/auth/guard";
+import { coQuyen, requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { baoCaoDonViLienKet, docLocBaoCaoDvlk, tuyChonBaoCaoDvlk } from "@/server/services/dvlk/dvlk-07-bao-cao";
 import { nhanKy } from "@/server/services/bc/khoang-ngay";
@@ -27,6 +27,9 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
   }
 
   const thamSo = await searchParams;
+  // chỉ gắn link tới trang người xem có quyền mở (Cán bộ tài chính có DVLK-07 nhưng không có DVLK-01)
+  const xemDonVi = await coQuyen("DVLK-01");
+  const xemHopDong = await coQuyen("DVLK-03");
   const { dsDonVi, dsKhoa } = await tuyChonBaoCaoDvlk();
   let duLieu;
   try {
@@ -44,9 +47,6 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <h1 className="text-xl font-bold text-ued-blue-dam">DVLK-07 · Báo cáo công nợ và doanh thu theo đơn vị liên kết</h1>
-        <Link href="/don-vi-lien-ket/hop-dong" className="text-sm underline">
-          ← Hợp đồng liên kết (DVLK-03)
-        </Link>
       </div>
 
       <form method="get" className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-3 shadow-sm print:hidden">
@@ -165,9 +165,13 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
                 {duLieu.bc.theoDonVi.map((d) => (
                   <TableRow key={d.donViLienKetId}>
                     <TableCell>
-                      <Link href={`/don-vi-lien-ket/${d.donViLienKetId}`} className="font-medium underline print:no-underline">
-                        {d.maDonVi}
-                      </Link>
+                      {xemDonVi ? (
+                        <Link href={`/don-vi-lien-ket/${d.donViLienKetId}`} className="font-medium underline print:no-underline">
+                          {d.maDonVi}
+                        </Link>
+                      ) : (
+                        <span className="font-medium">{d.maDonVi}</span>
+                      )}
                       <div className="text-xs text-muted-foreground">{d.tenDonVi}</div>
                     </TableCell>
                     <TableCell>
@@ -220,9 +224,13 @@ export default async function BaoCaoDonViLienKetPage({ searchParams }: { searchP
                 {duLieu.bc.chiTiet.map((c) => (
                   <TableRow key={c.hopDongId}>
                     <TableCell>
-                      <Link href={`/don-vi-lien-ket/hop-dong/${c.hopDongId}`} className="font-medium underline print:no-underline">
-                        {c.maHopDong}
-                      </Link>
+                      {xemHopDong ? (
+                        <Link href={`/don-vi-lien-ket/hop-dong/${c.hopDongId}`} className="font-medium underline print:no-underline">
+                          {c.maHopDong}
+                        </Link>
+                      ) : (
+                        <span className="font-medium">{c.maHopDong}</span>
+                      )}
                       <div className="text-xs text-muted-foreground">{c.tenDonVi}</div>
                     </TableCell>
                     <TableCell>

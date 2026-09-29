@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requirePermission } from "@/lib/auth/guard";
+import { coQuyen, requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { tongQuanDashboard } from "@/server/services/bc/bc-01-dashboard";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
@@ -39,6 +39,9 @@ export default async function DashboardPage() {
   }
 
   const d = await tongQuanDashboard();
+  // chỉ gắn link tới trang người xem có quyền mở
+  const xemKhoa = await coQuyen("KH-01");
+  const hrefTaiChinh = (await coQuyen("BC-03")) ? "/bao-cao/tai-chinh" : undefined;
   const thuCaoNhat = Math.max(1, ...d.hocPhi.thuTheoThang.map((t) => t.soTien));
 
   return (
@@ -61,12 +64,12 @@ export default async function DashboardPage() {
           giaTri={d.giangDay.phanTram === null ? "—" : `${d.giangDay.phanTram}%`}
           phu={`${d.giangDay.daHoc}/${d.giangDay.tongBuoi} buổi của các khóa đang học`}
         />
-        <The nhan="Thu học phí tháng này" giaTri={tien(d.hocPhi.thuThangNay)} href="/bao-cao/tai-chinh" />
+        <The nhan="Thu học phí tháng này" giaTri={tien(d.hocPhi.thuThangNay)} href={hrefTaiChinh} />
         <The
           nhan="Công nợ học phí"
           giaTri={tien(d.hocPhi.congNo)}
           phu={`${d.hocPhi.soHocVienConNo} học viên`}
-          href="/bao-cao/tai-chinh"
+          href={hrefTaiChinh}
         />
         <The nhan="Tỷ lệ thu (lũy kế)" giaTri={d.hocPhi.tyLeThu === null ? "—" : `${d.hocPhi.tyLeThu.toLocaleString("vi-VN")}%`} phu="đã thu / phải thu cá nhân" />
         <The
@@ -106,9 +109,15 @@ export default async function DashboardPage() {
             {d.giangDay.theoKhoa.map((k) => (
               <li key={k.khoaId} className="text-sm">
                 <div className="flex justify-between gap-2">
-                  <Link href={`/khoa-hoc/${k.khoaId}`} className="truncate underline">
-                    {k.maKhoa} · {k.tenChuongTrinh}
-                  </Link>
+                  {xemKhoa ? (
+                    <Link href={`/khoa-hoc/${k.khoaId}`} className="truncate underline">
+                      {k.maKhoa} · {k.tenChuongTrinh}
+                    </Link>
+                  ) : (
+                    <span className="truncate">
+                      {k.maKhoa} · {k.tenChuongTrinh}
+                    </span>
+                  )}
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {k.daHoc}/{k.tongBuoi} buổi · {k.soHocVien} HV
                   </span>

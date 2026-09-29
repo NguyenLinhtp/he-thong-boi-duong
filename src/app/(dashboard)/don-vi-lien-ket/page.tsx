@@ -35,9 +35,6 @@ export default async function DonViLienKetPage({
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-ued-blue-dam">DVLK-01 · Danh mục đơn vị liên kết</h1>
-        <Link href="/don-vi-lien-ket/hop-dong" className="text-sm underline">
-          Hợp đồng liên kết (DVLK-03) →
-        </Link>
       </div>
       <FormTaoDonViLienKet />
 

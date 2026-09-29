@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
@@ -68,9 +67,6 @@ export default async function HoSoDonViLienKetPage({
         <h1 className="text-xl font-bold text-ued-blue-dam">
           DVLK-04 · Hồ sơ học viên qua đơn vị {donVi.ten}
         </h1>
-        <Link href="/dvlk/dang-ky" className="text-sm underline">
-          Đăng ký hộ học viên (4a) →
-        </Link>
       </div>
       <p className="text-sm text-muted-foreground">
         Gồm hồ sơ đơn vị đăng ký hộ và hồ sơ học viên tự đăng ký trực tuyến chọn đơn vị thu hồ sơ giấy.

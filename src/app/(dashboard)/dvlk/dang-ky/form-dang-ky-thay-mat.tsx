@@ -14,8 +14,8 @@ export function FormDangKyThayMat({
   const [loi, formAction, dangXuLy] = useActionState(dangKyThayMatAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
-      <div className="flex flex-col gap-1.5">
+    <form action={formAction} className="grid max-w-4xl gap-3 rounded-lg border bg-card p-4 shadow-sm md:grid-cols-2">
+      <div className="flex flex-col gap-1.5 md:col-span-2">
         <Label htmlFor="khoaId">Khóa đăng ký</Label>
         <select id="khoaId" name="khoaId" required className="h-9 rounded-lg border px-3 text-sm">
           {dsKhoa.map((k) => (
@@ -49,10 +49,12 @@ export function FormDangKyThayMat({
         <Label htmlFor="donViCongTac">Đơn vị công tác</Label>
         <Input id="donViCongTac" name="donViCongTac" />
       </div>
-      <Button type="submit" disabled={dangXuLy}>
-        {dangXuLy ? "Đang đăng ký..." : "Đăng ký học viên"}
-      </Button>
-      {loi && <p className="text-sm text-destructive">{loi}</p>}
+      <div className="flex flex-wrap items-center gap-3 md:col-span-2">
+        <Button type="submit" disabled={dangXuLy}>
+          {dangXuLy ? "Đang đăng ký..." : "Đăng ký học viên"}
+        </Button>
+        {loi && <p className="text-sm text-destructive">{loi}</p>}
+      </div>
     </form>
   );
 }

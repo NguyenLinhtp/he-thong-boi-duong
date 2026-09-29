@@ -24,6 +24,14 @@ export type NhomMenu = {
   muc: MucMenu[];
 };
 
+const VAI_TRO_CAN_BO: VaiTro[] = [
+  "ADMIN",
+  "CAN_BO_QUAN_LY_DAO_TAO",
+  "CAN_BO_TAI_CHINH",
+  "GIANG_VIEN",
+  "CAN_BO_DON_VI_LIEN_KET",
+];
+
 export const MENU: NhomMenu[] = [
   {
     ma: "tong-quan",
@@ -43,7 +51,8 @@ export const MENU: NhomMenu[] = [
   {
     ma: "hoc-vien",
     nhan: "Học viên",
-    muc: [{ href: "/hoc-vien", nhan: "Hồ sơ học viên", maCN: "HV-08" }],
+    // học viên cũng có HV-08 (tự cập nhật hồ sơ) nhưng xem ở nhóm Học tập
+    muc: [{ href: "/hoc-vien", nhan: "Hồ sơ học viên", maCN: "HV-08", vaiTro: VAI_TRO_CAN_BO }],
   },
   {
     ma: "giang-day",
@@ -52,6 +61,7 @@ export const MENU: NhomMenu[] = [
     muc: [
       { href: "/giang-vien/buoi-hoc", nhan: "Buổi học & điểm danh", maCN: "GD-01" },
       { href: "/giang-vien/nhap-diem", nhan: "Nhập điểm", maCN: "KQ-01" },
+      { href: "/giang-vien/san-pham", nhan: "Chấm sản phẩm", maCN: "KQ-01", vaiTro: ["GIANG_VIEN"] },
       { href: "/giang-vien/hoc-lieu", nhan: "Học liệu", maCN: "GD-04", vaiTro: ["GIANG_VIEN"] },
     ],
   },
@@ -61,13 +71,17 @@ export const MENU: NhomMenu[] = [
     muc: [
       { href: "/hoc-tap", nhan: "Quá trình học tập", maCN: "GD-04", vaiTro: ["HOC_VIEN"] },
       { href: "/ket-qua/ca-nhan", nhan: "Kết quả học tập", maCN: "KQ-05" },
+      { href: "/hoc-vien", nhan: "Hồ sơ cá nhân", maCN: "HV-08", vaiTro: ["HOC_VIEN"] },
     ],
   },
   {
     ma: "hoc-phi",
     nhan: "Học phí",
     tienTo: ["/hoc-phi"],
-    muc: [{ href: "/hoc-phi/bao-cao", nhan: "Doanh thu & công nợ", maCN: "HP-05" }],
+    muc: [
+      { href: "/hoc-phi", nhan: "Học phí theo khóa", maCN: "HP-01" },
+      { href: "/hoc-phi/bao-cao", nhan: "Doanh thu & công nợ", maCN: "HP-05" },
+    ],
   },
   {
     ma: "chung-chi",
@@ -161,7 +175,12 @@ export function mucDangChon(
   return { nhom: tot?.nhom ?? null, muc: tot?.muc ?? null };
 }
 
-/** Trang đích sau đăng nhập: dashboard nếu có quyền, không thì mục đầu tiên. */
+// trang đích ưu tiên theo công việc chính: dashboard (cán bộ đào tạo/tài chính), quá trình học tập
+// (học viên), buổi học (giảng viên), tài khoản (quản trị) - chương trình (CT-05) ai cũng có nên không ưu tiên
+const TRANG_UU_TIEN = ["/bao-cao", "/hoc-tap", "/giang-vien/buoi-hoc", "/quan-tri/tai-khoan"];
+
+/** Trang đích sau đăng nhập: trang ưu tiên nếu có quyền, không thì mục đầu tiên. */
 export function trangMacDinh(menu: NhomMenu[]): string | null {
-  return menu[0]?.muc[0]?.href ?? null;
+  const hrefs = menu.flatMap((n) => n.muc.map((m) => m.href));
+  return TRANG_UU_TIEN.find((h) => hrefs.includes(h)) ?? hrefs[0] ?? null;
 }
