@@ -5,8 +5,11 @@ import { prisma } from "@/lib/db/prisma";
 import { HE_THONG, ghiThaoTac, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { layThamSoSo } from "@/server/services/qt/qt-05-tham-so";
 import { luuTep, xoaTep } from "@/server/services/gd/luu-tru-hoc-lieu";
+import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
+import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
 import {
   BaiDaCoNguoiLamError,
+  KhongDuocXemTaiLieuError,
   ChuongTrinhDaNgungError,
   DanhGiaKhongHopLeError,
   KhongTimThayTaiLieuError,
@@ -377,4 +380,31 @@ export async function layBaiTracNghiem(baiId: string) {
       _count: { select: { lanLams: true } },
     },
   });
+}
+
+/**
+ * Ai xem/tải được học liệu khung: cán bộ nội bộ (CT-02/CT-05), giảng viên
+ * được phân công học phần ở 1 khóa của chương trình, học viên chính thức/hoàn
+ * thành của 1 khóa mở từ chương trình (trừ khóa Phương thức 3).
+ */
+export async function kiemTraQuyenXemHocLieuKhung(phien: { userId: string; maCNDuocPhep: string[] }, id: string) {
+  const hocLieu = await prisma.hocLieuHocPhan.findUnique({ where: { id }, include: { hocPhan: true } });
+  if (!hocLieu) throw new KhongTimThayTaiLieuError();
+  if (phien.maCNDuocPhep.some((ma) => ma === "CT-02" || ma === "CT-05")) return hocLieu;
+  const khoaCuaChuongTrinh = { chuongTrinhId: hocLieu.hocPhan.chuongTrinhId, chuongTrinh: { phuongThucDangKy: { not: "CHI_DU_THI" as const } } };
+
+  const hocVien = await hocVienCuaTaiKhoan(phien.userId);
+  if (
+    hocVien &&
+    (await prisma.dangKyHoc.count({
+      where: { hocVienId: hocVien.id, trangThai: { in: ["CHINH_THUC", "HOAN_THANH"] }, khoa: khoaCuaChuongTrinh },
+    })) > 0
+  ) {
+    return hocLieu;
+  }
+  const giangVien = await giangVienCuaTaiKhoan(phien.userId);
+  if (giangVien && (await prisma.giangVienHocPhan.count({ where: { giangVienId: giangVien.id, hocPhanId: hocLieu.hocPhanId } })) > 0) {
+    return hocLieu;
+  }
+  throw new KhongDuocXemTaiLieuError();
 }

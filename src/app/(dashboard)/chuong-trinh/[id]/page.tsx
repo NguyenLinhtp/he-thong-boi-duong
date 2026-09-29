@@ -6,6 +6,7 @@ import { danhSachLoaiHinhBoiDuong } from "@/server/services/dm/dm-03-loai-hinh-b
 import { coKhoaDangHoatDong, lichSuPhienBan } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
+import { DauTrangChuongTrinh } from "@/components/chuong-trinh/dau-trang-chuong-trinh";
 import { FormSuaChuongTrinh } from "./form-sua-chuong-trinh";
 import { DanhSachHocPhan } from "./danh-sach-hoc-phan";
 import { KhoiPheDuyet } from "./khoi-phe-duyet";
@@ -66,12 +67,7 @@ export default async function ChiTietChuongTrinhPage({
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
-      <h1 className="text-xl font-bold text-ued-blue-dam">
-        {chuongTrinh.maCT} · {chuongTrinh.ten}
-      </h1>
-      <p className="text-sm text-muted-foreground">
-        Trạng thái: <NhanTrangThai ma={chuongTrinh.trangThai}>{NHAN_TRANG_THAI[chuongTrinh.trangThai] ?? chuongTrinh.trangThai}</NhanTrangThai>
-      </p>
+      <DauTrangChuongTrinh chuongTrinh={chuongTrinh} dangChon="thong-tin" />
 
       {dangDuThao ? (
         <FormSuaChuongTrinh

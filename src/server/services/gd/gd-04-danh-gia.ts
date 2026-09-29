@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db/prisma";
 import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
 import { layThamSoSo } from "@/server/services/qt/qt-05-tham-so";
 import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
+import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
+import { timGiangVienChoHocPhan } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import { luuTep, xoaTep } from "@/server/services/gd/luu-tru-hoc-lieu";
 import {
   DaChamKhongNopLaiError,
@@ -10,6 +12,7 @@ import {
   HetGioLamBaiError,
   HetLuotLamBaiError,
   KhongDuocLamDanhGiaError,
+  KhongDuocXemTaiLieuError,
   TaiLieuKhongHopLeError,
 } from "@/server/services/gd/loi-giang-day";
 
@@ -93,6 +96,28 @@ export async function layLanLamDangDo(nguoiDungId: string, lanLamId: string) {
   const lan = await prisma.lanLamTracNghiem.findUnique({ where: { id: lanLamId } });
   if (!hocVien || !lan || lan.hocVienId !== hocVien.id) throw new KhongDuocLamDanhGiaError("Không tìm thấy lần làm bài của bạn");
   return lan;
+}
+
+/**
+ * Mở lại 1 lần làm của chính học viên: đang làm dở -> câu hỏi (không kèm đáp
+ * án) + hạn nộp; đã nộp -> kết quả.
+ */
+export async function moLanLam(nguoiDungId: string, lanLamId: string) {
+  const lan = await layLanLamDangDo(nguoiDungId, lanLamId);
+  const bai = await prisma.baiTracNghiem.findUniqueOrThrow({
+    where: { id: lan.baiId },
+    include: { cauHois: { orderBy: { thuTu: "asc" } }, hocPhan: true },
+  });
+  const khoa = await prisma.khoa.findUniqueOrThrow({ where: { id: lan.khoaId } });
+  return {
+    lan,
+    khoa,
+    bai: { id: bai.id, tieuDe: bai.tieuDe, moTa: bai.moTa, thoiGianPhut: bai.thoiGianPhut, hocPhan: bai.hocPhan.ten },
+    hetHanLuc: hetHanLuc(lan.batDauLuc, bai.thoiGianPhut),
+    cauHois: lan.nopLuc
+      ? []
+      : bai.cauHois.map((c) => ({ id: c.id, noiDung: c.noiDung, phuongAn: c.phuongAn, nhieuDapAn: c.dapAnDung.length > 1 })),
+  };
 }
 
 /** Câu đúng khi tập phương án chọn trùng khớp tập đáp án đúng. */
@@ -241,4 +266,19 @@ export async function hocTapCuaHocVien(nguoiDungId: string) {
     }),
   );
   return { hocVien, dsKhoa };
+}
+
+/** Xem/tải bài nộp: chính học viên nộp, giảng viên phụ trách, cán bộ quản lý kết quả (KQ-02). */
+export async function kiemTraQuyenXemBaiNop(phien: { userId: string; maCNDuocPhep: string[] }, id: string) {
+  const baiNop = await prisma.baiNopSanPham.findUnique({ where: { id }, include: { yeuCau: true } });
+  if (!baiNop) throw new DanhGiaKhongHopLeError("không tìm thấy bài nộp");
+  if (phien.maCNDuocPhep.includes("KQ-02")) return baiNop;
+  const hocVien = await hocVienCuaTaiKhoan(phien.userId);
+  if (hocVien?.id === baiNop.hocVienId) return baiNop;
+  const giangVien = await giangVienCuaTaiKhoan(phien.userId);
+  if (giangVien) {
+    const dk = await prisma.dangKyHoc.findUnique({ where: { hocVienId_khoaId: { hocVienId: baiNop.hocVienId, khoaId: baiNop.khoaId } } });
+    if ((await timGiangVienChoHocPhan(baiNop.khoaId, baiNop.yeuCau.hocPhanId, dk?.lopId ?? null)) === giangVien.id) return baiNop;
+  }
+  throw new KhongDuocXemTaiLieuError();
 }

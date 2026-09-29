@@ -32,3 +32,15 @@ export function kiemTraQuyen(
   }
   return phienDangNhap;
 }
+
+/** Có ít nhất 1 trong các mã chức năng (trang/API dùng chung cho nhiều vai trò). */
+export function kiemTraMotTrongCacQuyen(
+  phienDangNhap: PhienDangNhap | null | undefined,
+  dsMaCN: string[],
+): PhienDangNhap {
+  if (!phienDangNhap) throw new ChuaDangNhapError();
+  if (!dsMaCN.some((ma) => phienDangNhap.maCNDuocPhep.includes(ma))) {
+    throw new KhongCoQuyenError(dsMaCN.join("/"));
+  }
+  return phienDangNhap;
+}

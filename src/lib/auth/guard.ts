@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import type { PhienDangNhap } from "@/lib/auth/permissions";
-import { kiemTraQuyen, ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
+import { kiemTraQuyen, kiemTraMotTrongCacQuyen, ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 
 export { KhongCoQuyenError, ChuaDangNhapError };
 
@@ -13,6 +13,12 @@ export { KhongCoQuyenError, ChuaDangNhapError };
 export async function requirePermission(maCN: string): Promise<PhienDangNhap> {
   const session = await auth();
   return kiemTraQuyen(session?.phienDangNhap, maCN);
+}
+
+/** Như requirePermission nhưng chấp nhận 1 trong nhiều mã chức năng. */
+export async function requireMotTrongCacQuyen(dsMaCN: string[]): Promise<PhienDangNhap> {
+  const session = await auth();
+  return kiemTraMotTrongCacQuyen(session?.phienDangNhap, dsMaCN);
 }
 
 /**

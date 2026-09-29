@@ -1,4 +1,6 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { Readable } from "node:stream";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -34,4 +36,14 @@ export async function docTep(khoaLuuTru: string) {
 
 export async function xoaTep(khoaLuuTru: string) {
   await rm(duongDanTuyetDoi(khoaLuuTru), { force: true });
+}
+
+/** Kích thước tệp (byte) - dùng cho phản hồi Range khi phát video. */
+export async function kichThuocTep(khoaLuuTru: string) {
+  return (await stat(duongDanTuyetDoi(khoaLuuTru))).size;
+}
+
+/** Luồng đọc 1 đoạn [batDau, ketThuc] của tệp (không nạp cả tệp vào bộ nhớ). */
+export function luongTep(khoaLuuTru: string, batDau?: number, ketThuc?: number) {
+  return Readable.toWeb(createReadStream(duongDanTuyetDoi(khoaLuuTru), { start: batDau, end: ketThuc })) as ReadableStream<Uint8Array>;
 }
