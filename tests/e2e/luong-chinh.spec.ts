@@ -54,6 +54,10 @@ test.describe("Khung giao diện", () => {
     await expect(menu.getByRole("link", { name: "Danh mục" })).toHaveCount(0);
 
     await menu.getByRole("link", { name: "Học phí" }).click();
+    // mục đầu của module Học phí: danh sách học phí theo khóa (lối vào HP-01..04 không cần KH-01)
+    await expect(page).toHaveURL(/\/hoc-phi$/);
+    await expect(page.getByRole("heading", { name: "Học phí theo khóa" })).toBeVisible();
+    await page.getByRole("navigation", { name: "Học phí" }).getByRole("link", { name: "Doanh thu & công nợ" }).click();
     await expect(page).toHaveURL(/\/hoc-phi\/bao-cao$/);
 
     await page.getByRole("button", { name: /E2E Cán bộ tài chính/ }).click();
