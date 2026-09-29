@@ -30,6 +30,11 @@ import { DuLieuImportLoiError } from "@/server/services/hv/loi-hoc-vien";
 import type { HinhThucGiangDay, TrangThaiKhoa } from "@/generated/prisma/client";
 import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
+// trang khóa chia tab (Tổng quan / Tuyển sinh / Giảng dạy) - thao tác ở tab nào cũng làm mới cả 3
+function lamMoiKhoa(khoaId: string) {
+  for (const duoi of ["", "/tuyen-sinh", "/giang-day"]) revalidatePath(`/khoa-hoc/${khoaId}${duoi}`);
+}
+
 export async function phanCongGiangVienAction(
   _prevState: string | undefined,
   formData: FormData,
@@ -49,7 +54,7 @@ export async function phanCongGiangVienAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }
 
@@ -81,14 +86,14 @@ export async function themBuoiHocAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }
 
 export async function xoaBuoiHocAction(khoaId: string, buoiHocId: string): Promise<void> {
   await requirePermission("KH-03");
   await xoaBuoiHoc(buoiHocId);
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
 }
 
 export async function huyBuoiHocAction(
@@ -106,7 +111,7 @@ export async function huyBuoiHocAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }
 
@@ -136,14 +141,14 @@ export async function doiLichBuoiHocAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }
 
 export async function thuHoiLinkAction(khoaId: string, buoiHocId: string): Promise<void> {
   await requirePermission("GD-05");
   await thuHoiLinkTrucTuyen(buoiHocId);
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
 }
 
 export async function thietLapHinhThucAction(
@@ -160,14 +165,14 @@ export async function thietLapHinhThucAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }
 
 export async function tuDongTaoLinkAction(khoaId: string): Promise<void> {
   await requirePermission("KH-04");
   await tuDongTaoLinkTrucTuyen(khoaId);
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
 }
 
 export async function chuyenTrangThaiAction(
@@ -184,7 +189,7 @@ export async function chuyenTrangThaiAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   revalidatePath("/khoa-hoc");
   return undefined;
 }
@@ -215,7 +220,7 @@ export async function phatHanhThongBaoAction(
 export async function xacNhanNopGiayAction(khoaId: string, dangKyId: string): Promise<void> {
   await requirePermission("HV-02");
   await xacNhanNopGiay(dangKyId);
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
 }
 
 export type TrangThaiImport = { loi?: string; cacDongLoi?: { dong: number; loi: string }[]; soLuongDaTao?: number };
@@ -231,7 +236,7 @@ export async function importDanhSachAction(
 
   try {
     const ketQua = await importDanhSachHocVien(khoaId, await file.text());
-    revalidatePath(`/khoa-hoc/${khoaId}`);
+    lamMoiKhoa(khoaId);
     return { soLuongDaTao: ketQua.length };
   } catch (error) {
     if (error instanceof DuLieuImportLoiError) return { loi: error.message, cacDongLoi: error.cacDongLoi };
@@ -255,7 +260,7 @@ export async function xetDuyetDanhSachChinhThucAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }
 
@@ -278,7 +283,7 @@ export async function themHocVienVaoKhoaAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }
 
@@ -291,14 +296,14 @@ export async function xoaHocVienKhoiKhoaAction(khoaId: string, dangKyId: string)
     if (error instanceof Error) return error.message;
     throw error;
   }
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }
 
 export async function ghiNhanThoiHocAction(khoaId: string, dangKyId: string): Promise<void> {
   const phien = await requirePermission("HV-09");
   await ghiNhanThoiHoc(dangKyId, null, { nguoiThucHienId: phien.userId, nguoiThucHienTen: phien.hoTen });
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
 }
 
 export async function chuyenHocVienSangKhoaAction(
@@ -317,7 +322,7 @@ export async function chuyenHocVienSangKhoaAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }
 
@@ -338,6 +343,6 @@ export async function thamDinhHoSoAction(
     throw error;
   }
 
-  revalidatePath(`/khoa-hoc/${khoaId}`);
+  lamMoiKhoa(khoaId);
   return undefined;
 }

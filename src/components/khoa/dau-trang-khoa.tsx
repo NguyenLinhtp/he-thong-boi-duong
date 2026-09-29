@@ -14,6 +14,8 @@ const NHAN_TRANG_THAI_KHOA: Record<string, string> = {
 // Các phân hệ của 1 khóa; tab chỉ hiện khi có quyền mở trang tương ứng
 const TAB = [
   { ma: "tong-quan", nhan: "Tổng quan", duoi: "", quyen: ["KH-01"] },
+  { ma: "tuyen-sinh", nhan: "Tuyển sinh", duoi: "/tuyen-sinh", quyen: ["KH-01"] },
+  { ma: "giang-day", nhan: "Giảng dạy", duoi: "/giang-day", quyen: ["KH-01"] },
   { ma: "lop-hoc", nhan: "Lớp học", duoi: "/lop-hoc", quyen: ["KH-07"] },
   { ma: "ket-qua", nhan: "Kết quả học tập", duoi: "/ket-qua", quyen: ["KQ-02", "KQ-03"] },
   { ma: "chung-chi", nhan: "Văn bằng", duoi: "/chung-chi", quyen: ["CC-01"] },
@@ -26,18 +28,23 @@ type Props = {
   phu?: React.ReactNode;
 };
 
-/** Đầu trang dùng chung cho trang khóa và các trang con (lớp, kết quả, văn bằng, học phí). */
+/** Đầu trang dùng chung cho trang khóa và các trang con (tuyển sinh, giảng dạy, lớp, kết quả, văn bằng, học phí). */
 export async function DauTrangKhoa({ khoa, dangChon, phu }: Props) {
   const hienTab = [];
   for (const tab of TAB) {
     if ((await Promise.all(tab.quyen.map(coQuyen))).some(Boolean)) hienTab.push(tab);
   }
-  const coDanhSach = await coQuyen("KH-01");
+  // đường dẫn cha: danh sách khóa (KH-01), cán bộ tài chính không có KH-01 thì về danh sách học phí theo khóa
+  const cha = (await coQuyen("KH-01"))
+    ? { href: "/khoa-hoc", nhan: "Khóa bồi dưỡng" }
+    : (await coQuyen("HP-01"))
+      ? { href: "/hoc-phi", nhan: "Học phí theo khóa" }
+      : null;
 
   return (
     <div className="flex flex-col gap-3">
       <nav aria-label="Đường dẫn" className="text-sm text-muted-foreground">
-        {coDanhSach ? <Link href="/khoa-hoc">Khóa bồi dưỡng</Link> : "Khóa bồi dưỡng"}
+        {cha ? <Link href={cha.href}>{cha.nhan}</Link> : "Khóa bồi dưỡng"}
         <span className="mx-1.5">/</span>
         <span>{khoa.maKhoa}</span>
       </nav>
