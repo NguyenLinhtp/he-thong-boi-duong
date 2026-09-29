@@ -263,11 +263,27 @@ async function taoHocLieuMau() {
   }, nguoi);
 }
 
+// bài thu hoạch chuyên đề 1 - học phần do demo_giangvien phụ trách, để thử màn hình chấm sản phẩm (KQ-01)
+async function taoSanPhamChuyenDe1() {
+  const hp1 = await prisma.hocPhan.findFirst({
+    where: { chuongTrinh: { ten: "Bồi dưỡng theo tiêu chuẩn CDNN giáo viên THCS hạng II", loaiHinhBoiDuong: { ma: { startsWith: "DEMO_" } } } },
+    orderBy: { thuTu: "asc" },
+  });
+  if (!hp1 || (await prisma.yeuCauSanPham.count({ where: { hocPhanId: hp1.id } })) > 0) return;
+  await taoYeuCauSanPham(hp1.id, {
+    tieuDe: "Bài thu hoạch chuyên đề 1",
+    moTa: "Viết bài thu hoạch (2-3 trang) về vận dụng văn bản quản lý nhà nước về giáo dục tại đơn vị công tác (tệp Word hoặc PDF).",
+    tinhDiem: true,
+    heSo: 1,
+  }, { nguoiThucHienTen: "Cán bộ đào tạo (dữ liệu mẫu)" });
+}
+
 async function taoDuLieu() {
   await taoTaiKhoanTongHop();
   if (await prisma.loaiHinhBoiDuong.findUnique({ where: { ma: "DEMO_CDNN" } })) {
     await taoTaiKhoanHocVienDangHoc();
     await taoHocLieuMau();
+    await taoSanPhamChuyenDe1();
     console.log("Đã có dữ liệu mẫu (đã bổ sung tài khoản còn thiếu) - chạy với --xoa trước nếu muốn tạo lại.");
     return;
   }
@@ -443,6 +459,7 @@ async function taoDuLieu() {
 
   await taoTaiKhoanHocVienDangHoc();
   await taoHocLieuMau();
+  await taoSanPhamChuyenDe1();
   console.log(`Đã tạo dữ liệu mẫu. Tài khoản demo_tonghop / demo_daotao / demo_taichinh / demo_giangvien / demo_hocvien / demo_hocvien_danghoc / demo_dvlk / demo_admin, mật khẩu: ${MAT_KHAU_DEMO}`);
 }
 
