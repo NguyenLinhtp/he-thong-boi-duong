@@ -1,6 +1,8 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { layThamSoSo } from "@/server/services/qt/qt-05-tham-so";
+import type { DuLieuForm, KetQuaKiemTra } from "@/lib/form-dang-ky";
+import { kiemTraDangKyTheoKhoa } from "@/server/services/hv/form-dang-ky";
 
 async function taoHocVienVoiMaTuSinh<T>(taoVoiMa: (maHocVien: string) => Promise<T>): Promise<T> {
   const nam = new Date().getFullYear();
@@ -41,7 +43,50 @@ export type ThongTinHocVienInput = {
   soDienThoai?: string | null;
   email?: string | null;
   donViCongTac?: string | null;
+  chucDanhHocViId?: string | null;
+  // (bổ sung 30/09/2026) dữ liệu form đăng ký cấu hình (gồm trường tùy chỉnh, tệp minh chứng);
+  // không truyền thì kiểm tra các trường có sẵn ở trên theo cấu hình của khóa
+  duLieuForm?: DuLieuForm;
 };
+
+const chuoi = (v: Date | string | null | undefined) => (v instanceof Date ? v.toISOString().slice(0, 10) : (v ?? "").trim());
+
+/**
+ * (bổ sung 30/09/2026) Kiểm tra thông tin đăng ký theo form cấu hình của khóa
+ * (trường bắt buộc, danh sách chọn, giá trị cố định, tệp minh chứng) - dùng
+ * chung mọi kênh đăng ký. Trả về thông tin học viên đã chuẩn hóa + phần bổ
+ * sung để lưu sau khi tạo hồ sơ (luuHoSoBoSung).
+ */
+export async function chuanBiThongTinDangKy<T extends ThongTinHocVienInput>(
+  khoaId: string,
+  input: T,
+): Promise<{ input: T; boSung: KetQuaKiemTra }> {
+  const duLieu: DuLieuForm = input.duLieuForm ?? {
+    giaTri: {
+      ngaySinh: chuoi(input.ngaySinh),
+      soDienThoai: chuoi(input.soDienThoai),
+      email: chuoi(input.email),
+      donViCongTac: chuoi(input.donViCongTac),
+      chucDanhHocViId: chuoi(input.chucDanhHocViId),
+    },
+    tep: {},
+  };
+  const boSung = await kiemTraDangKyTheoKhoa(khoaId, duLieu);
+  const c = boSung.coSan;
+  return {
+    input: {
+      ...input,
+      hoTen: input.hoTen.trim(),
+      soCCCD: input.soCCCD?.trim() || null,
+      ngaySinh: c.ngaySinh ?? null,
+      soDienThoai: c.soDienThoai ?? null,
+      email: c.email ?? null,
+      donViCongTac: c.donViCongTac ?? null,
+      chucDanhHocViId: c.chucDanhHocViId ?? null,
+    },
+    boSung,
+  };
+}
 
 /**
  * HV-08: "Một học viên chỉ có 1 mã duy nhất dù tham gia nhiều khóa qua các
@@ -51,7 +96,18 @@ export type ThongTinHocVienInput = {
 export async function timHoacTaoHocVien(input: ThongTinHocVienInput) {
   if (input.soCCCD) {
     const daTonTai = await prisma.hocVien.findUnique({ where: { soCCCD: input.soCCCD } });
-    if (daTonTai) return daTonTai;
+    if (daTonTai) {
+      // (bổ sung 30/09/2026) chỉ điền vào chỗ còn trống của hồ sơ cũ, không ghi đè dữ liệu đã có
+      const dien = {
+        ngaySinh: daTonTai.ngaySinh ? undefined : input.ngaySinh ? new Date(input.ngaySinh) : undefined,
+        soDienThoai: daTonTai.soDienThoai ? undefined : input.soDienThoai || undefined,
+        email: daTonTai.email ? undefined : input.email || undefined,
+        donViCongTac: daTonTai.donViCongTac ? undefined : input.donViCongTac || undefined,
+        chucDanhHocViId: daTonTai.chucDanhHocViId ? undefined : input.chucDanhHocViId || undefined,
+      };
+      if (Object.values(dien).some((v) => v !== undefined)) return prisma.hocVien.update({ where: { id: daTonTai.id }, data: dien });
+      return daTonTai;
+    }
   }
 
   return taoHocVienVoiMaTuSinh((maHocVien) =>
@@ -64,6 +120,7 @@ export async function timHoacTaoHocVien(input: ThongTinHocVienInput) {
         soDienThoai: input.soDienThoai ?? null,
         email: input.email ?? null,
         donViCongTac: input.donViCongTac ?? null,
+        chucDanhHocViId: input.chucDanhHocViId ?? null,
       },
     }),
   );

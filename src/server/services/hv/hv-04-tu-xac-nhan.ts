@@ -6,6 +6,8 @@ import {
   KhoaChuaMoXacNhanThamGiaError,
 } from "@/server/services/hv/loi-hoc-vien";
 import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
+import type { DuLieuForm } from "@/lib/form-dang-ky";
+import { kiemTraDangKyTheoKhoa, luuHoSoBoSung } from "@/server/services/hv/form-dang-ky";
 
 export type XacNhanThamGiaInput = {
   khoaId: string;
@@ -15,6 +17,8 @@ export type XacNhanThamGiaInput = {
   soDienThoai?: string | null;
   email?: string | null;
   ngaySinh?: string | null;
+  // (bổ sung 30/09/2026) dữ liệu form đăng ký cấu hình của khóa (bổ sung thông tin + minh chứng)
+  duLieuForm?: DuLieuForm;
 };
 
 const INCLUDE_DANG_KY = { hocVien: true, khoa: { include: { chuongTrinh: true } } } as const;
@@ -47,16 +51,37 @@ export async function xacNhanThamGia(input: XacNhanThamGiaInput, nguoiDungTaiKho
   if (dangKy.trangThai === "DA_XAC_NHAN_THAM_GIA") throw new DaXacNhanThamGiaError();
   if (dangKy.trangThai !== "CHO_TU_XAC_NHAN") throw new KhongKhopDuLieuImportError();
 
+  // (bổ sung 30/09/2026) kiểm tra theo form cấu hình của khóa; trường bắt buộc
+  // đã có trong hồ sơ từ lúc import thì không bắt nhập lại
+  const boSung = await kiemTraDangKyTheoKhoa(
+    khoa.id,
+    input.duLieuForm ?? {
+      giaTri: { soDienThoai: input.soDienThoai ?? "", email: input.email ?? "", ngaySinh: input.ngaySinh ?? "" },
+      tep: {},
+    },
+    {
+      ngaySinh: hocVien.ngaySinh?.toISOString() ?? null,
+      soDienThoai: hocVien.soDienThoai,
+      email: hocVien.email,
+      donViCongTac: hocVien.donViCongTac,
+      chucDanhHocViId: hocVien.chucDanhHocViId,
+    },
+  );
+  const c = boSung.coSan;
+
   // "bổ sung thông tin còn thiếu" - chỉ điền vào chỗ trống, không ghi đè dữ
   // liệu đã có sẵn từ lúc import.
   await prisma.hocVien.update({
     where: { id: hocVien.id },
     data: {
-      soDienThoai: hocVien.soDienThoai ?? input.soDienThoai ?? undefined,
-      email: hocVien.email ?? input.email ?? undefined,
-      ngaySinh: hocVien.ngaySinh ?? (input.ngaySinh ? new Date(input.ngaySinh) : undefined),
+      soDienThoai: hocVien.soDienThoai ?? c.soDienThoai ?? undefined,
+      email: hocVien.email ?? c.email ?? undefined,
+      ngaySinh: hocVien.ngaySinh ?? (c.ngaySinh ? new Date(c.ngaySinh) : undefined),
+      donViCongTac: hocVien.donViCongTac ?? c.donViCongTac ?? undefined,
+      chucDanhHocViId: hocVien.chucDanhHocViId ?? c.chucDanhHocViId ?? undefined,
     },
   });
+  await luuHoSoBoSung(dangKy.id, boSung);
 
   return prisma.dangKyHoc.update({
     where: { id: dangKy.id },

@@ -177,3 +177,28 @@ export class DonViLienKetKhongHopLeChoKhoaError extends Error {
     super("Đơn vị liên kết được chọn không có hợp đồng còn hiệu lực với khóa này");
   }
 }
+
+// (bổ sung 30/09/2026) form đăng ký cấu hình theo chương trình/khóa
+export class CauHinhFormKhongHopLeError extends Error {
+  constructor(chiTiet: string) {
+    super(`Cấu hình form đăng ký không hợp lệ: ${chiTiet}`);
+  }
+}
+
+export class ThongTinDangKyKhongHopLeError extends Error {
+  constructor(chiTiet: string) {
+    super(chiTiet);
+  }
+}
+
+export class ThieuMinhChungBatBuocError extends Error {
+  constructor(dsNhan: string[]) {
+    super(`Hồ sơ thiếu minh chứng bắt buộc: ${dsNhan.join(", ")} - không thể đánh giá Hợp lệ`);
+  }
+}
+
+export class KhongDuocXemTepHoSoError extends Error {
+  constructor() {
+    super("Không có quyền xem tệp minh chứng của hồ sơ này");
+  }
+}

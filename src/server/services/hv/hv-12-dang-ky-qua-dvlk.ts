@@ -1,10 +1,12 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { luuHoSoBoSung } from "@/server/services/hv/form-dang-ky";
 import { coTheNhanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   timHoacTaoHocVien,
   soNgayHanNopGiay,
   type ThongTinHocVienInput,
+  chuanBiThongTinDangKy,
 } from "@/server/services/hv/dung-chung";
 import { hopDongConHieuLucTheoKhoa } from "@/server/services/dvlk/dvlk-03-hop-dong";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
@@ -46,7 +48,9 @@ export async function dangKyQuaDonViLienKet(input: DangKyQuaDonViLienKetInput) {
   const conMo = await coTheNhanDangKy(khoa.id);
   if (!conMo) throw new KhoaKhongMoDangKyError();
 
-  const hocVien = await timHoacTaoHocVien(input);
+  // (bổ sung 30/09/2026) kiểm tra theo form đăng ký cấu hình của khóa trước khi tạo hồ sơ
+  const { input: thongTin, boSung } = await chuanBiThongTinDangKy(khoa.id, input);
+  const hocVien = await timHoacTaoHocVien(thongTin);
 
   const hanNopGiay = new Date();
   hanNopGiay.setDate(hanNopGiay.getDate() + (await soNgayHanNopGiay()));
@@ -73,6 +77,7 @@ export async function dangKyQuaDonViLienKet(input: DangKyQuaDonViLienKetInput) {
     if (laLoiTrungDangKy) throw new DaDangKyKhoaNayError();
     throw error;
   }
+  await luuHoSoBoSung(dangKy.id, boSung);
 
   await guiThongBao(
     hocVien.id,

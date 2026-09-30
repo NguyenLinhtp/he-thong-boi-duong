@@ -3,17 +3,23 @@
 import { useActionState } from "react";
 import { xacNhanThamGiaAction } from "./actions";
 import { Button } from "@/components/ui/button";
+import { guiGiuDuLieu } from "@/components/dang-ky/gui-giu-du-lieu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CacTruongDangKy } from "@/components/dang-ky/cac-truong-dang-ky";
+import type { DuLieuDungForm } from "./kieu-form";
 
 // hocVienDangNhap: học viên liên kết với tài khoản đang đăng nhập (nếu có) -
 // cho xác nhận bằng tài khoản thay vì nhập CCCD/mã số
 export function FormXacNhanThamGia({
   khoaId,
   hocVienDangNhap,
+  form,
 }: {
   khoaId: string;
   hocVienDangNhap?: { hoTen: string; maHocVien: string } | null;
+  // (bổ sung 30/09/2026) thông tin bổ sung theo form cấu hình của khóa
+  form: DuLieuDungForm;
 }) {
   const [ketQua, formAction, dangXuLy] = useActionState(xacNhanThamGiaAction, undefined);
 
@@ -27,7 +33,7 @@ export function FormXacNhanThamGia({
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form onSubmit={guiGiuDuLieu(formAction)} className="flex flex-col gap-3">
       <input type="hidden" name="khoaId" value={khoaId} />
       {hocVienDangNhap && <input type="hidden" name="cachXacNhan" value="TAI_KHOAN" />}
       <p className="text-sm text-muted-foreground">
@@ -44,17 +50,8 @@ export function FormXacNhanThamGia({
           <Input id="soCCCD" name="soCCCD" required />
         </div>
       )}
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="soDienThoai">Số điện thoại (nếu chưa có)</Label>
-        <Input id="soDienThoai" name="soDienThoai" />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="email">Email (nếu chưa có)</Label>
-        <Input id="email" name="email" type="email" />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="ngaySinh">Ngày sinh (nếu chưa có)</Label>
-        <Input id="ngaySinh" name="ngaySinh" type="date" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <CacTruongDangKy truong={form.truong} dsChucDanh={form.dsChucDanh} giaTri={form.giaTri ?? undefined} chiThieu />
       </div>
       <Button type="submit" disabled={dangXuLy} className="self-start">
         {dangXuLy ? "Đang xác nhận..." : "Xác nhận tham gia"}

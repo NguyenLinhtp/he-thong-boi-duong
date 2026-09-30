@@ -3,10 +3,12 @@
 import { useActionState } from "react";
 import { dangKyDuThiAction } from "./actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { guiGiuDuLieu } from "@/components/dang-ky/gui-giu-du-lieu";
+import { CacTruongDangKy, TruongDinhDanh } from "@/components/dang-ky/cac-truong-dang-ky";
+import type { DuLieuDungForm } from "./kieu-form";
 
-export function FormDangKyDuThi({ khoaId }: { khoaId: string }) {
+// HV-05 (PT3): form theo cấu hình chương trình/khóa (bổ sung 30/09/2026)
+export function FormDangKyDuThi({ khoaId, form }: { khoaId: string; form: DuLieuDungForm }) {
   const [ketQua, formAction, dangXuLy] = useActionState(dangKyDuThiAction, undefined);
 
   if (ketQua === "THANH_CONG") {
@@ -18,32 +20,16 @@ export function FormDangKyDuThi({ khoaId }: { khoaId: string }) {
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form onSubmit={guiGiuDuLieu(formAction)} className="grid gap-4 sm:grid-cols-2">
       <input type="hidden" name="khoaId" value={khoaId} />
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="hoTen">Họ tên</Label>
-        <Input id="hoTen" name="hoTen" required />
+      <TruongDinhDanh giaTri={form.giaTri ?? undefined} khoa={!!form.giaTri} />
+      <CacTruongDangKy truong={form.truong} dsChucDanh={form.dsChucDanh} giaTri={form.giaTri ?? undefined} />
+      <div className="flex flex-col gap-2 sm:col-span-2">
+        <Button type="submit" disabled={dangXuLy}>
+          {dangXuLy ? "Đang đăng ký..." : "Đăng ký dự thi"}
+        </Button>
+        {ketQua && <p className="text-sm text-destructive">{ketQua}</p>}
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="soCCCD">Số CCCD</Label>
-        <Input id="soCCCD" name="soCCCD" required />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="ngaySinh">Ngày sinh</Label>
-        <Input id="ngaySinh" name="ngaySinh" type="date" />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="soDienThoai">Số điện thoại</Label>
-        <Input id="soDienThoai" name="soDienThoai" />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" />
-      </div>
-      <Button type="submit" disabled={dangXuLy} className="self-start">
-        {dangXuLy ? "Đang đăng ký..." : "Đăng ký dự thi"}
-      </Button>
-      {ketQua && ketQua !== "THANH_CONG" && <p className="text-sm text-destructive">{ketQua}</p>}
     </form>
   );
 }

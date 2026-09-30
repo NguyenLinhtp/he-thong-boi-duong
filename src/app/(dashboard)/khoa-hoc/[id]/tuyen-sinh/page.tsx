@@ -5,7 +5,12 @@ import { layKhoa, danhSachKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa"
 import { danhSachChoNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { danhSachChoTuXacNhan } from "@/server/services/hv/hv-03-import-danh-sach";
 import { danhSachThiSinh } from "@/server/services/hv/hv-05-dang-ky-du-thi";
-import { danhSachChoThamDinh, danhSachDaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
+import { danhSachChoThamDinh, danhSachDaThamDinh, minhChungThieuTheoKhoa } from "@/server/services/hv/hv-06-tham-dinh";
+import { cauHinhHieuLuc, hoSoBoSungTheoDs } from "@/server/services/hv/form-dang-ky";
+import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
+import { coQuyen } from "@/lib/auth/guard";
+import { KhoiFormDangKy } from "../khoi-form-dang-ky";
+import { ChiTietHoSo } from "@/components/dang-ky/chi-tiet-ho-so";
 import { danhSachHopLeChoXetDuyet, danhSachChinhThuc } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
 import { danhSachHocVienTheoKhoa, lichSuThayDoiDanhSach, NHAN_HANH_DONG_HV09 } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -19,7 +24,7 @@ import { FormXetDuyet } from "../form-xet-duyet";
 import { FormThemHocVien } from "../form-them-hoc-vien";
 import { FormChuyenKhoa } from "../form-chuyen-khoa";
 import { FormXoaHocVien } from "../form-xoa-hoc-vien";
-import { xacNhanNopGiayAction, ghiNhanThoiHocAction } from "../actions";
+import { xacNhanNopGiayAction, ghiNhanThoiHocAction, tuChoiThieuMinhChungAction } from "../actions";
 
 const NHAN_KET_QUA_THAM_DINH: Record<string, string> = {
   HOP_LE: "Hợp lệ",
@@ -79,6 +84,14 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
     danhSachKhoa(),
     lichSuThayDoiDanhSach(id),
   ]);
+  // (bổ sung 30/09/2026) thông tin bổ sung + minh chứng theo form đăng ký cấu hình
+  const [hoSo, thieuMinhChung, formDangKy, dsChucDanh, suaForm] = await Promise.all([
+    hoSoBoSungTheoDs([...dsChoNopGiay, ...dsChoThamDinh, ...dsDaThamDinh].map((d) => d.id)),
+    minhChungThieuTheoKhoa(id),
+    cauHinhHieuLuc(id),
+    danhSachChucDanhHocVi(),
+    coQuyen("KH-06"),
+  ]);
   const dsKhoaKhacRutGon = dsKhoaKhac
     .filter((k) => k.id !== khoa.id)
     .map((k) => ({ id: k.id, maKhoa: k.maKhoa }));
@@ -86,6 +99,14 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <DauTrangKhoa khoa={khoa} dangChon="tuyen-sinh" />
+      <KhoiFormDangKy
+        khoaId={khoa.id}
+        chuongTrinhId={khoa.chuongTrinh.id}
+        nguon={formDangKy.nguon}
+        cauHinh={formDangKy.cauHinh}
+        dsChucDanh={dsChucDanh.map((c) => ({ id: c.id, ten: c.ten }))}
+        duocSua={suaForm && khoa.trangThai !== "DA_KET_THUC" && khoa.trangThai !== "HUY"}
+      />
       {khoa.chuongTrinh.phuongThucDangKy === "TRUC_TUYEN_NOP_GIAY" && (
         <section className="flex flex-col gap-3">
           <h2 className="text-base font-bold text-ued-blue-dam">HV-02 · Xác nhận đã nhận hồ sơ giấy</h2>
@@ -97,6 +118,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
                 <TableHead>CCCD</TableHead>
                 <TableHead>Ngày đăng ký</TableHead>
                 <TableHead>Hạn nộp giấy</TableHead>
+                <TableHead>Thông tin bổ sung · minh chứng</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -110,6 +132,9 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
                     {dk.hanNopGiay ? new Date(dk.hanNopGiay).toLocaleDateString("vi-VN") : "—"}
                   </TableCell>
                   <TableCell>
+                    <ChiTietHoSo hoSo={hoSo.get(dk.id)} />
+                  </TableCell>
+                  <TableCell>
                     <form action={xacNhanNopGiayAction.bind(null, khoa.id, dk.id)}>
                       <Button type="submit" variant="secondary" className="h-7 px-2 text-xs">
                         Xác nhận đã nhận
@@ -120,7 +145,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
               ))}
               {dsChoNopGiay.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                     Không có hồ sơ nào đang chờ nộp bản giấy
                   </TableCell>
                 </TableRow>
@@ -199,7 +224,17 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-bold text-ued-blue-dam">HV-06 · Kiểm tra, thẩm định hồ sơ đăng ký</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-bold text-ued-blue-dam">HV-06 · Kiểm tra, thẩm định hồ sơ đăng ký</h2>
+          {thieuMinhChung.size > 0 && (
+            <form action={tuChoiThieuMinhChungAction.bind(null, khoa.id)} className="flex items-center gap-2">
+              <span className="text-sm text-destructive">{thieuMinhChung.size} hồ sơ thiếu minh chứng bắt buộc</span>
+              <Button type="submit" variant="destructive" size="sm">
+                Từ chối tự động
+              </Button>
+            </form>
+          )}
+        </div>
 
         <Table>
           <TableHeader>
@@ -207,6 +242,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
               <TableHead>Học viên</TableHead>
               <TableHead>CCCD/mã số</TableHead>
               <TableHead>Ngày đăng ký</TableHead>
+              <TableHead>Thông tin bổ sung · minh chứng</TableHead>
               <TableHead>Thẩm định</TableHead>
             </TableRow>
           </TableHeader>
@@ -217,13 +253,16 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
                 <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
                 <TableCell>{new Date(dk.ngayDangKy).toLocaleDateString("vi-VN")}</TableCell>
                 <TableCell>
+                  <ChiTietHoSo hoSo={hoSo.get(dk.id)} thieu={thieuMinhChung.get(dk.id)} />
+                </TableCell>
+                <TableCell>
                   <FormThamDinh khoaId={khoa.id} dangKyId={dk.id} />
                 </TableCell>
               </TableRow>
             ))}
             {dsChoThamDinh.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                   Không có hồ sơ nào đang chờ thẩm định
                 </TableCell>
               </TableRow>
@@ -236,6 +275,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
             <TableHeader>
               <TableRow>
                 <TableHead>Học viên</TableHead>
+                <TableHead>Thông tin bổ sung · minh chứng</TableHead>
                 <TableHead>Kết quả</TableHead>
                 <TableHead>Ghi chú</TableHead>
               </TableRow>
@@ -244,6 +284,9 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
               {dsDaThamDinh.map((dk) => (
                 <TableRow key={dk.id}>
                   <TableCell>{dk.hocVien.hoTen}</TableCell>
+                  <TableCell>
+                    <ChiTietHoSo hoSo={hoSo.get(dk.id)} />
+                  </TableCell>
                   <TableCell>{NHAN_KET_QUA_THAM_DINH[dk.trangThai] ?? dk.trangThai}</TableCell>
                   <TableCell>{dk.ghiChuThamDinh ?? "—"}</TableCell>
                 </TableRow>

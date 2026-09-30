@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db/prisma";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import type { TrangThaiDangKy } from "@/generated/prisma/client";
-import { KhongTimThayDangKyError, SaiTrangThaiThamDinhError } from "@/server/services/hv/loi-hoc-vien";
+import { KhongTimThayDangKyError, SaiTrangThaiThamDinhError, ThieuMinhChungBatBuocError } from "@/server/services/hv/loi-hoc-vien";
+import { minhChungConThieu } from "@/server/services/hv/form-dang-ky";
 
 const INCLUDE_DANG_KY = { hocVien: true, khoa: { include: { chuongTrinh: true } } } as const;
 
@@ -23,6 +24,9 @@ export type KetQuaThamDinh = "HOP_LE" | "KHONG_HOP_LE";
  * chứng bắt buộc chưa có hạ tầng lưu trữ minh chứng trong hệ thống - cán bộ
  * tự đánh giá thủ công và ghi lý do (đặc biệt khi từ chối), theo quyết định
  * đã chốt với người dùng khi xây CN này.
+ * (bổ sung 30/09/2026) minh chứng = trường Tệp bắt buộc của form đăng ký cấu
+ * hình: hồ sơ còn thiếu không được đánh giá Hợp lệ (tuChoiHoSoThieuMinhChung
+ * từ chối tự động các hồ sơ này).
  */
 export async function thamDinhHoSo(
   dangKyId: string,
@@ -34,6 +38,10 @@ export async function thamDinhHoSo(
   if (!dangKy) throw new KhongTimThayDangKyError();
   if (!TRANG_THAI_SAN_SANG_THAM_DINH.includes(dangKy.trangThai)) {
     throw new SaiTrangThaiThamDinhError();
+  }
+  if (ketQua === "HOP_LE") {
+    const thieu = await minhChungConThieu(dangKyId);
+    if (thieu.length > 0) throw new ThieuMinhChungBatBuocError(thieu);
   }
 
   return prisma.$transaction(async (tx) => {
@@ -68,4 +76,27 @@ export async function danhSachDaThamDinh(khoaId: string) {
     include: { hocVien: true },
     orderBy: { ngayDangKy: "asc" },
   });
+}
+
+/** HV-06: "Hồ sơ thiếu minh chứng bắt buộc bị từ chối tự động" - áp cho hồ sơ đang chờ thẩm định của khóa. */
+export async function tuChoiHoSoThieuMinhChung(khoaId: string, nguoi: NguoiThucHien = HE_THONG) {
+  const dsCho = await danhSachChoThamDinh(khoaId);
+  const daTuChoi: string[] = [];
+  for (const dk of dsCho) {
+    const thieu = await minhChungConThieu(dk.id);
+    if (thieu.length === 0) continue;
+    await thamDinhHoSo(dk.id, "KHONG_HOP_LE", `Tự động từ chối: thiếu minh chứng bắt buộc (${thieu.join(", ")})`, nguoi);
+    daTuChoi.push(dk.hocVien.hoTen);
+  }
+  return daTuChoi;
+}
+
+/** Mã hồ sơ chờ thẩm định còn thiếu minh chứng bắt buộc -> danh sách tên minh chứng thiếu. */
+export async function minhChungThieuTheoKhoa(khoaId: string) {
+  const ketQua = new Map<string, string[]>();
+  for (const dk of await danhSachChoThamDinh(khoaId)) {
+    const thieu = await minhChungConThieu(dk.id);
+    if (thieu.length > 0) ketQua.set(dk.id, thieu);
+  }
+  return ketQua;
 }

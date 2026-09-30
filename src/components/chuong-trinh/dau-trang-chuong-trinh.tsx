@@ -12,9 +12,10 @@ const NHAN_TRANG_THAI: Record<string, string> = {
 const TAB = [
   { ma: "thong-tin", nhan: "Khung chương trình", duoi: "" },
   { ma: "hoc-lieu", nhan: "Học liệu & đánh giá", duoi: "/hoc-lieu" },
+  { ma: "form-dang-ky", nhan: "Form đăng ký", duoi: "/form-dang-ky" },
 ] as const;
 
-/** Đầu trang chương trình: đường dẫn, tiêu đề + trạng thái, tab khung chương trình / học liệu. */
+/** Đầu trang chương trình: đường dẫn, tiêu đề + trạng thái, tab khung chương trình / học liệu / form đăng ký. */
 export function DauTrangChuongTrinh({
   chuongTrinh,
   dangChon,

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { layDangKy } from "@/server/services/hv/hv-01-dang-ky-truc-tuyen";
+import { hoSoBoSung } from "@/server/services/hv/form-dang-ky";
 import { NutIn } from "./nut-in";
+import { prisma } from "@/lib/db/prisma";
 
 export default async function TrangDonDangKy({
   params,
@@ -16,6 +18,11 @@ export default async function TrangDonDangKy({
     notFound();
   }
   if (dangKy.khoa.maKhoa !== maKhoa) notFound();
+  // (bổ sung 30/09/2026) trường tùy chỉnh + tệp minh chứng theo form cấu hình
+  const boSung = await hoSoBoSung(dangKy.id);
+  const chucDanh = dangKy.hocVien.chucDanhHocViId
+    ? await prisma.chucDanhHocVi.findUnique({ where: { id: dangKy.hocVien.chucDanhHocViId } })
+    : null;
 
   return (
     <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
@@ -41,6 +48,24 @@ export default async function TrangDonDangKy({
         <p>Số điện thoại: {dangKy.hocVien.soDienThoai ?? "—"}</p>
         <p>Email: {dangKy.hocVien.email ?? "—"}</p>
         <p>Đơn vị công tác: {dangKy.hocVien.donViCongTac ?? "—"}</p>
+        {chucDanh && <p>Chức danh, học hàm/học vị: {chucDanh.ten}</p>}
+        {boSung.thongTin.map((m) => (
+          <p key={m.ma}>
+            {m.nhan}: {m.kieu === "NGAY" ? new Date(m.giaTri).toLocaleDateString("vi-VN") : m.giaTri}
+          </p>
+        ))}
+        {boSung.tep.length > 0 && (
+          <div className="mt-2">
+            <p>Minh chứng đã nộp kèm:</p>
+            <ul className="list-disc pl-5">
+              {boSung.tep.map((t) => (
+                <li key={t.id}>
+                  {t.nhan}: {t.tenFile}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <p className="mt-4">
           Đăng ký tham gia khóa bồi dưỡng: <strong>{dangKy.khoa.chuongTrinh.ten}</strong>
         </p>

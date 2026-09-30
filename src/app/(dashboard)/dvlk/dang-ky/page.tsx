@@ -4,6 +4,8 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { khoaDuocPhanCong } from "@/server/services/dvlk/dvlk-02-tai-khoan";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { FormDangKyThayMat } from "./form-dang-ky-thay-mat";
+import { cauHinhHieuLuc } from "@/server/services/hv/form-dang-ky";
+import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
 
 export default async function DangKyThayMatDVLKPage() {
   let phien;
@@ -30,11 +32,15 @@ export default async function DangKyThayMatDVLKPage() {
         </p>
       ) : (
         <FormDangKyThayMat
-          dsKhoa={dsHopDong.map((hd) => ({
-            id: hd.khoa.id,
-            maKhoa: hd.khoa.maKhoa,
-            ten: hd.khoa.chuongTrinh.ten,
-          }))}
+          dsKhoa={await Promise.all(
+            dsHopDong.map(async (hd) => ({
+              id: hd.khoa.id,
+              maKhoa: hd.khoa.maKhoa,
+              ten: hd.khoa.chuongTrinh.ten,
+              truong: (await cauHinhHieuLuc(hd.khoa.id)).cauHinh.truong,
+            })),
+          )}
+          dsChucDanh={(await danhSachChucDanhHocVi()).map((c) => ({ id: c.id, ten: c.ten }))}
         />
       )}
     </main>

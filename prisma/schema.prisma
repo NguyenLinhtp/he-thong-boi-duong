@@ -298,6 +298,9 @@ model ChuongTrinh {
   // CT-07: mỗi chương trình gắn đúng 1 trong 4 phương thức đăng ký;
   // mọi khóa mở theo chương trình kế thừa phương thức này.
   phuongThucDangKy   PhuongThucDangKy?
+  // HV-01/04/05/11/12 (bổ sung 30/09/2026): cấu hình form đăng ký của chương trình
+  // (trường có sẵn bật/tắt/bắt buộc + trường tùy chỉnh) - null = form mặc định
+  cauHinhFormDangKy  Json?
   // CT-01 (bổ sung): chương trình cấp CHỨNG CHỈ hay GIẤY CHỨNG NHẬN khi học
   // viên hoàn thành - quyết định tiêu đề in, dãy số hiệu và sổ cấp (CC-02/04).
   loaiVanBang        LoaiVanBang          @default(CHUNG_CHI)
@@ -375,6 +378,8 @@ model Khoa {
   thoiGianBeGiang     DateTime?
   siSoToiDa           Int
   hinhThucGiangDay    HinhThucGiangDay @default(TRUC_TIEP)
+  // (bổ sung 30/09/2026) form đăng ký riêng của khóa - null = dùng form của chương trình
+  cauHinhFormDangKy   Json?
   mucHocPhi           Decimal?         @db.Decimal(12, 2)
   // HP-01: chính sách miễn giảm áp dụng chung cho khóa (dạng mô tả tự do,
   // việc miễn giảm cho từng học viên cụ thể được xác nhận riêng ở HP-02).
@@ -542,11 +547,32 @@ model DangKyHoc {
   // DVLK-05: lô đơn vị liên kết tổng hợp gửi về trường khi xác nhận đã thu hồ sơ giấy
   loNopHoSoId      String?
   loNopHoSo        LoNopHoSo?      @relation(fields: [loNopHoSoId], references: [id])
+  // (bổ sung 30/09/2026) câu trả lời các trường tùy chỉnh của form đăng ký,
+  // chụp kèm nhãn lúc đăng ký: [{ ma, nhan, kieu, giaTri }]
+  thongTinBoSung   Json?
 
   lichSuChuyenLops LichSuChuyenLop[]
+  tepHoSos         TepHoSoDangKy[]
 
   @@unique([hocVienId, khoaId])
   @@map("dang_ky_hoc")
+}
+
+// (bổ sung 30/09/2026) tệp minh chứng học viên nộp kèm form đăng ký (trường kiểu Tệp)
+model TepHoSoDangKy {
+  id         String    @id @default(cuid())
+  dangKyId   String
+  dangKy     DangKyHoc @relation(fields: [dangKyId], references: [id], onDelete: Cascade)
+  maTruong   String
+  nhanTruong String
+  tenFile    String
+  loaiFile   String
+  kichThuoc  Int
+  khoaLuuTru String    @unique
+  taiLenLuc  DateTime  @default(now())
+
+  @@unique([dangKyId, maTruong])
+  @@map("tep_ho_so_dang_ky")
 }
 
 // KH-07: 1 khóa chia thành nhiều lớp, mỗi lớp có thời khóa biểu/giảng viên riêng.

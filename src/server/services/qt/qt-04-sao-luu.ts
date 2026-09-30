@@ -52,6 +52,7 @@ export const THU_TU_BANG = [
   "hopDongLienKet",
   "loNopHoSo",
   "dangKyHoc",
+  "tepHoSoDangKy",
   "lichSuChuyenLop",
   "diemDanh",
   "lanLamTracNghiem",

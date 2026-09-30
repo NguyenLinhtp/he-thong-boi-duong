@@ -18,7 +18,9 @@ import { huyBuoiHoc, doiLichBuoiHoc } from "@/server/services/gd/gd-03-doi-lich"
 import { thuHoiLinkTrucTuyen } from "@/server/services/gd/gd-05-link-truc-tuyen";
 import { xacNhanNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { importDanhSachHocVien } from "@/server/services/hv/hv-03-import-danh-sach";
-import { thamDinhHoSo, type KetQuaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
+import { thamDinhHoSo, tuChoiHoSoThieuMinhChung, type KetQuaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
+import { luuCauHinhKhoa } from "@/server/services/hv/form-dang-ky";
+import { CauHinhFormKhongHopLeError } from "@/server/services/hv/loi-hoc-vien";
 import { xetDuyetDanhSachChinhThuc } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
 import {
   themHocVienVaoKhoa,
@@ -343,6 +345,26 @@ export async function thamDinhHoSoAction(
     throw error;
   }
 
+  lamMoiKhoa(khoaId);
+  return undefined;
+}
+
+// HV-06 (bổ sung 30/09/2026): "Hồ sơ thiếu minh chứng bắt buộc bị từ chối tự động"
+export async function tuChoiThieuMinhChungAction(khoaId: string): Promise<void> {
+  const phien = await requirePermission("HV-06");
+  await tuChoiHoSoThieuMinhChung(khoaId, nguoiTuPhien(phien));
+  lamMoiKhoa(khoaId);
+}
+
+// (bổ sung 30/09/2026) form đăng ký riêng của khóa; cauHinhJson rỗng = quay về form của chương trình
+export async function luuFormDangKyKhoaAction(khoaId: string, cauHinhJson: string | null): Promise<string | undefined> {
+  const phien = await requirePermission("KH-06");
+  try {
+    await luuCauHinhKhoa(khoaId, cauHinhJson === null ? null : JSON.parse(cauHinhJson), nguoiTuPhien(phien));
+  } catch (error) {
+    if (error instanceof CauHinhFormKhongHopLeError || error instanceof SyntaxError) return error.message;
+    throw error;
+  }
   lamMoiKhoa(khoaId);
   return undefined;
 }

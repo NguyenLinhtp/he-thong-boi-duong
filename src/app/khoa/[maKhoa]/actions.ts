@@ -6,27 +6,25 @@ import { dangKyTrucTuyen } from "@/server/services/hv/hv-01-dang-ky-truc-tuyen";
 import { xacNhanThamGia } from "@/server/services/hv/hv-04-tu-xac-nhan";
 import { dangKyDuThi } from "@/server/services/hv/hv-05-dang-ky-du-thi";
 import { dangKyQuaDonViLienKet } from "@/server/services/hv/hv-12-dang-ky-qua-dvlk";
+import { cauHinhHieuLuc, docDuLieuForm } from "@/server/services/hv/form-dang-ky";
+
+// (bổ sung 30/09/2026) đọc dữ liệu form theo cấu hình hiệu lực của khóa (gồm trường tùy chỉnh, tệp minh chứng)
+async function duLieuForm(formData: FormData) {
+  const { cauHinh } = await cauHinhHieuLuc(String(formData.get("khoaId")));
+  return docDuLieuForm(cauHinh, formData);
+}
 
 export async function dangKyTrucTuyenAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  const khoaId = String(formData.get("khoaId"));
-  const soDienThoai = String(formData.get("soDienThoai") || "");
-  const email = String(formData.get("email") || "");
-  const ngaySinh = String(formData.get("ngaySinh") || "");
-  const donViCongTac = String(formData.get("donViCongTac") || "");
-
   let dangKy;
   try {
     dangKy = await dangKyTrucTuyen({
-      khoaId,
-      hoTen: String(formData.get("hoTen")),
-      soCCCD: String(formData.get("soCCCD")),
-      soDienThoai: soDienThoai || null,
-      email: email || null,
-      ngaySinh: ngaySinh || null,
-      donViCongTac: donViCongTac || null,
+      khoaId: String(formData.get("khoaId")),
+      hoTen: String(formData.get("hoTen") ?? ""),
+      soCCCD: String(formData.get("soCCCD") ?? ""),
+      duLieuForm: await duLieuForm(formData),
     });
   } catch (error) {
     if (error instanceof Error) return error.message;
@@ -50,9 +48,7 @@ export async function xacNhanThamGiaAction(
       {
         khoaId: String(formData.get("khoaId")),
         soCCCD: bangTaiKhoan ? null : String(formData.get("soCCCD") || ""),
-        soDienThoai: String(formData.get("soDienThoai") || "") || null,
-        email: String(formData.get("email") || "") || null,
-        ngaySinh: String(formData.get("ngaySinh") || "") || null,
+        duLieuForm: await duLieuForm(formData),
       },
       nguoiDungId,
     );
@@ -68,23 +64,14 @@ export async function dangKyQuaDonViLienKetAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  const khoaId = String(formData.get("khoaId"));
-  const soDienThoai = String(formData.get("soDienThoai") || "");
-  const email = String(formData.get("email") || "");
-  const ngaySinh = String(formData.get("ngaySinh") || "");
-  const donViCongTac = String(formData.get("donViCongTac") || "");
-
   let dangKy;
   try {
     dangKy = await dangKyQuaDonViLienKet({
-      khoaId,
+      khoaId: String(formData.get("khoaId")),
       donViLienKetId: String(formData.get("donViLienKetId")),
-      hoTen: String(formData.get("hoTen")),
-      soCCCD: String(formData.get("soCCCD")),
-      soDienThoai: soDienThoai || null,
-      email: email || null,
-      ngaySinh: ngaySinh || null,
-      donViCongTac: donViCongTac || null,
+      hoTen: String(formData.get("hoTen") ?? ""),
+      soCCCD: String(formData.get("soCCCD") ?? ""),
+      duLieuForm: await duLieuForm(formData),
     });
   } catch (error) {
     if (error instanceof Error) return error.message;
@@ -98,18 +85,12 @@ export async function dangKyDuThiAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  const soDienThoai = String(formData.get("soDienThoai") || "");
-  const email = String(formData.get("email") || "");
-  const ngaySinh = String(formData.get("ngaySinh") || "");
-
   try {
     await dangKyDuThi({
       khoaId: String(formData.get("khoaId")),
-      hoTen: String(formData.get("hoTen")),
-      soCCCD: String(formData.get("soCCCD")),
-      soDienThoai: soDienThoai || null,
-      email: email || null,
-      ngaySinh: ngaySinh || null,
+      hoTen: String(formData.get("hoTen") ?? ""),
+      soCCCD: String(formData.get("soCCCD") ?? ""),
+      duLieuForm: await duLieuForm(formData),
     });
   } catch (error) {
     if (error instanceof Error) return error.message;
