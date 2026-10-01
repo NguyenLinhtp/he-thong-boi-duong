@@ -23,7 +23,8 @@ export class KhoaKhongMoDangKyError extends Error {
 }
 
 export class DaDangKyKhoaNayError extends Error {
-  constructor() {
+  // (bổ sung 01/10/2026) hồ sơ đã có - chỉ gửi kèm khi danh tính đã được xác minh (mã SV + 4 số cuối CCCD)
+  constructor(public readonly dangKyId?: string) {
     super("Học viên đã đăng ký khóa này rồi, không thể đăng ký trùng lần 2");
   }
 }
@@ -200,5 +201,30 @@ export class ThieuMinhChungBatBuocError extends Error {
 export class KhongDuocXemTepHoSoError extends Error {
   constructor() {
     super("Không có quyền xem tệp minh chứng của hồ sơ này");
+  }
+}
+
+// (bổ sung 01/10/2026) đăng ký dự thi bằng mã sinh viên (HV-05) + lệ phí thi
+export class SinhVienKhongCoTrongDanhSachError extends Error {
+  constructor() {
+    super("Mã sinh viên không có trong danh sách sinh viên của nhà trường - vui lòng kiểm tra lại hoặc liên hệ phòng đào tạo");
+  }
+}
+
+export class XacMinhSinhVienKhongKhopError extends Error {
+  constructor() {
+    super("4 số cuối CCCD không khớp với mã sinh viên trong danh sách của nhà trường");
+  }
+}
+
+export class NopMinhChungLePhiError extends Error {
+  constructor(lyDo: string) {
+    super(`Không nộp được minh chứng chuyển khoản: ${lyDo}`);
+  }
+}
+
+export class ChotDanhSachDuThiError extends Error {
+  constructor(lyDo: string) {
+    super(`Chưa chốt được danh sách chính thức: ${lyDo}`);
   }
 }

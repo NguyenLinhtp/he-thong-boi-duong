@@ -106,6 +106,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
         cauHinh={formDangKy.cauHinh}
         dsChucDanh={dsChucDanh.map((c) => ({ id: c.id, ten: c.ten }))}
         duocSua={suaForm && khoa.trangThai !== "DA_KET_THUC" && khoa.trangThai !== "HUY"}
+        choPhepMaSinhVien={khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI"}
       />
       {khoa.chuongTrinh.phuongThucDangKy === "TRUC_TUYEN_NOP_GIAY" && (
         <section className="flex flex-col gap-3">

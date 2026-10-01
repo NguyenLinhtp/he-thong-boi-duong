@@ -8,7 +8,7 @@ import {
   thietLapHinhThucGiangDay,
   tuDongTaoLinkTrucTuyen,
 } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
-import { chuyenTrangThaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { chuyenTrangThaiKhoa, datHanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   phatHanhThongBao,
   type KenhGui,
@@ -194,6 +194,20 @@ export async function chuyenTrangThaiAction(
   lamMoiKhoa(khoaId);
   revalidatePath("/khoa-hoc");
   return undefined;
+}
+
+// (bổ sung 01/10/2026) hạn đăng ký của khóa - đóng đăng ký tự động khi quá hạn
+export async function datHanDangKyAction(_prev: string | undefined, formData: FormData): Promise<string | undefined> {
+  const phien = await requirePermission("KH-05");
+  const khoaId = String(formData.get("khoaId"));
+  try {
+    await datHanDangKy(khoaId, String(formData.get("hanDangKy") ?? "") || null, nguoiTuPhien(phien));
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+  lamMoiKhoa(khoaId);
+  return "OK";
 }
 
 export type TrangThaiPhatHanhThongBao = { loi?: string; ketQua?: ThongBaoDaPhatHanh };

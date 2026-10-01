@@ -51,6 +51,7 @@ export default async function FormDangKyChuongTrinhPage({ params }: { params: Pr
         dsChucDanh={dsChucDanh.map((c) => ({ id: c.id, ten: c.ten }))}
         onLuu={duocSua ? luuFormDangKyChuongTrinhAction.bind(null, id) : undefined}
         chiXem={!duocSua}
+        choPhepMaSinhVien={chuongTrinh.phuongThucDangKy === "CHI_DU_THI"}
       />
     </main>
   );

@@ -21,6 +21,7 @@ export function KhoiFormDangKy({
   cauHinh,
   dsChucDanh,
   duocSua,
+  choPhepMaSinhVien = false,
 }: {
   khoaId: string;
   chuongTrinhId: string;
@@ -28,6 +29,7 @@ export function KhoiFormDangKy({
   cauHinh: CauHinhForm;
   dsChucDanh: { id: string; ten: string }[];
   duocSua: boolean;
+  choPhepMaSinhVien?: boolean;
 }) {
   const [loi, setLoi] = useState<string>();
   const [dangXuLy, batDau] = useTransition();
@@ -90,6 +92,7 @@ export function KhoiFormDangKy({
           dsChucDanh={dsChucDanh}
           onLuu={nguon === "KHOA" && duocSua ? (json) => luuFormDangKyKhoaAction(khoaId, json) : undefined}
           chiXem={nguon !== "KHOA" || !duocSua}
+          choPhepMaSinhVien={choPhepMaSinhVien}
         />
       </div>
     </details>

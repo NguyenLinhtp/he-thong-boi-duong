@@ -100,7 +100,31 @@ export async function coTheNhanDangKy(khoaId: string): Promise<boolean> {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId } });
   if (!khoa) throw new KhongTimThayKhoaError();
   if (khoa.trangThai !== "DANG_TUYEN_SINH") return false;
+  // (bổ sung 01/10/2026) quá hạn đăng ký = đã đóng đăng ký
+  if (daQuaHanDangKy(khoa)) return false;
 
   const hienTai = await siSoHienTai(khoaId);
   return hienTai < khoa.siSoToiDa;
+}
+
+/** (bổ sung 01/10/2026) hạn đăng ký tính hết ngày (giờ Việt Nam) của ngày được chọn. */
+export function cuoiNgayVN(ngay: string): Date {
+  return new Date(`${ngay}T23:59:59.999+07:00`);
+}
+
+export function daQuaHanDangKy(khoa: { hanDangKy: Date | null }, bayGio = new Date()) {
+  return khoa.hanDangKy !== null && bayGio > khoa.hanDangKy;
+}
+
+/** (bổ sung 01/10/2026) đặt/xóa hạn đăng ký của khóa; ngay = "yyyy-mm-dd" hoặc null. */
+export async function datHanDangKy(khoaId: string, ngay: string | null, nguoi: NguoiThucHien = HE_THONG) {
+  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId } });
+  if (!khoa) throw new KhongTimThayKhoaError();
+  if (ngay !== null && !/^\d{4}-\d{2}-\d{2}$/.test(ngay)) throw new Error("Hạn đăng ký không hợp lệ");
+  const han = ngay ? cuoiNgayVN(ngay) : null;
+  return prisma.$transaction(async (tx) => {
+    const sau = await tx.khoa.update({ where: { id: khoaId }, data: { hanDangKy: han } });
+    await ghiThaoTac(nguoi, "DAT_HAN_DANG_KY", "Khoa", khoaId, `${khoa.maKhoa}: hạn đăng ký -> ${ngay ?? "không giới hạn"}`, tx);
+    return sau;
+  });
 }

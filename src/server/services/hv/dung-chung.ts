@@ -44,6 +44,9 @@ export type ThongTinHocVienInput = {
   email?: string | null;
   donViCongTac?: string | null;
   chucDanhHocViId?: string | null;
+  // (bổ sung 01/10/2026) thí sinh là sinh viên của trường (lấy từ danh sách sinh viên HV-03)
+  maSinhVien?: string | null;
+  lopSinhHoat?: string | null;
   // (bổ sung 30/09/2026) dữ liệu form đăng ký cấu hình (gồm trường tùy chỉnh, tệp minh chứng);
   // không truyền thì kiểm tra các trường có sẵn ở trên theo cấu hình của khóa
   duLieuForm?: DuLieuForm;
@@ -94,8 +97,10 @@ export async function chuanBiThongTinDangKy<T extends ThongTinHocVienInput>(
  * thì dùng lại (không tạo mã học viên mới), chỉ tạo mới khi chưa từng có.
  */
 export async function timHoacTaoHocVien(input: ThongTinHocVienInput) {
-  if (input.soCCCD) {
-    const daTonTai = await prisma.hocVien.findUnique({ where: { soCCCD: input.soCCCD } });
+  // (bổ sung 01/10/2026) sinh viên đã có hồ sơ theo mã sinh viên thì dùng lại hồ sơ đó
+  const theoMaSinhVien = input.maSinhVien ? await prisma.hocVien.findUnique({ where: { maSinhVien: input.maSinhVien } }) : null;
+  if (input.soCCCD || theoMaSinhVien) {
+    const daTonTai = theoMaSinhVien ?? (await prisma.hocVien.findUnique({ where: { soCCCD: input.soCCCD! } }));
     if (daTonTai) {
       // (bổ sung 30/09/2026) chỉ điền vào chỗ còn trống của hồ sơ cũ, không ghi đè dữ liệu đã có
       const dien = {
@@ -104,6 +109,8 @@ export async function timHoacTaoHocVien(input: ThongTinHocVienInput) {
         email: daTonTai.email ? undefined : input.email || undefined,
         donViCongTac: daTonTai.donViCongTac ? undefined : input.donViCongTac || undefined,
         chucDanhHocViId: daTonTai.chucDanhHocViId ? undefined : input.chucDanhHocViId || undefined,
+        maSinhVien: daTonTai.maSinhVien ? undefined : input.maSinhVien || undefined,
+        lopSinhHoat: daTonTai.lopSinhHoat ? undefined : input.lopSinhHoat || undefined,
       };
       if (Object.values(dien).some((v) => v !== undefined)) return prisma.hocVien.update({ where: { id: daTonTai.id }, data: dien });
       return daTonTai;
@@ -121,6 +128,8 @@ export async function timHoacTaoHocVien(input: ThongTinHocVienInput) {
         email: input.email ?? null,
         donViCongTac: input.donViCongTac ?? null,
         chucDanhHocViId: input.chucDanhHocViId ?? null,
+        maSinhVien: input.maSinhVien ?? null,
+        lopSinhHoat: input.lopSinhHoat ?? null,
       },
     }),
   );

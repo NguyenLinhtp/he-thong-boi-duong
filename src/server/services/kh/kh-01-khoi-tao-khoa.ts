@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
+import { cuoiNgayVN } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { taoKhoaVoiMaTuSinh } from "@/server/services/kh/dung-chung";
 import {
   SaiTrangThaiChuongTrinhError,
@@ -13,6 +14,8 @@ export type KhoiTaoKhoaInput = {
   siSoToiDa: number;
   mucHocPhi?: number | string | null;
   dotTuyenSinhId?: string | null;
+  // (bổ sung 01/10/2026) "yyyy-mm-dd" - nhận đăng ký đến hết ngày này
+  hanDangKy?: string | null;
 };
 
 /**
@@ -43,6 +46,7 @@ export async function khoiTaoKhoa(input: KhoiTaoKhoaInput, nguoi: NguoiThucHien 
         siSoToiDa: input.siSoToiDa,
         mucHocPhi: input.mucHocPhi ?? null,
         dotTuyenSinhId: input.dotTuyenSinhId ?? null,
+        hanDangKy: input.hanDangKy ? cuoiNgayVN(input.hanDangKy) : null,
       },
       include: { chuongTrinh: true },
     }),

@@ -1,15 +1,18 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Lock, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CacTruongDangKy, TruongDinhDanh } from "@/components/dang-ky/cac-truong-dang-ky";
+import { TruongMaSinhVien } from "@/components/dang-ky/truong-ma-sinh-vien";
 import {
   NHAN_KIEU_TRUONG,
   chuanHoaCauHinh,
   sinhMaTruong,
   type CauHinhForm,
+  type DinhDanh,
   type KieuTruong,
   type TruongForm,
 } from "@/lib/form-dang-ky";
@@ -27,13 +30,17 @@ export function BienTapFormDangKy({
   dsChucDanh,
   onLuu,
   chiXem = false,
+  choPhepMaSinhVien = false,
 }: {
   cauHinh: CauHinhForm;
   dsChucDanh: { id: string; ten: string }[];
   onLuu?: (json: string) => Promise<string | undefined>;
   chiXem?: boolean;
+  // (bổ sung 01/10/2026) chương trình Phương thức 3: cho chọn định danh bằng mã sinh viên
+  choPhepMaSinhVien?: boolean;
 }) {
   const [ds, setDs] = useState<TruongForm[]>(cauHinh.truong);
+  const [dinhDanh, setDinhDanh] = useState<DinhDanh>(cauHinh.dinhDanh ?? "CCCD");
   const [daSua, setDaSua] = useState(false);
   const [thongBao, setThongBao] = useState<{ loi?: string; ok?: string }>({});
   const [dangLuu, batDau] = useTransition();
@@ -78,7 +85,7 @@ export function BienTapFormDangKy({
   );
 
   const luu = () => {
-    const kq = chuanHoaCauHinh({ truong: ds });
+    const kq = chuanHoaCauHinh({ dinhDanh, truong: ds });
     if ("loi" in kq) return setThongBao({ loi: kq.loi });
     batDau(async () => {
       const loi = await onLuu?.(JSON.stringify(kq.cauHinh));
@@ -94,9 +101,55 @@ export function BienTapFormDangKy({
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
       <div className="flex flex-col gap-3">
+        {(choPhepMaSinhVien || dinhDanh === "MA_SINH_VIEN") && (
+          <fieldset disabled={chiXem} className="flex flex-col gap-2 rounded-lg border bg-card p-3 text-sm shadow-sm">
+            <legend className="px-1 font-medium">Thí sinh định danh bằng</legend>
+            <label className="flex items-start gap-2">
+              <input
+                type="radio"
+                name="dinhDanh"
+                checked={dinhDanh === "CCCD"}
+                onChange={() => {
+                  setDinhDanh("CCCD");
+                  setDaSua(true);
+                }}
+                className="mt-1"
+              />
+              <span>Họ tên + số CCCD (thí sinh tự nhập)</span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="radio"
+                name="dinhDanh"
+                checked={dinhDanh === "MA_SINH_VIEN"}
+                onChange={() => {
+                  setDinhDanh("MA_SINH_VIEN");
+                  setDaSua(true);
+                }}
+                className="mt-1"
+              />
+              <span>
+                Mã sinh viên - hệ thống tự điền họ tên, CCCD, lớp sinh hoạt từ{" "}
+                <Link href="/hoc-vien/sinh-vien" className="underline">
+                  danh sách sinh viên đã import
+                </Link>
+                ; thí sinh xác minh bằng 4 số cuối CCCD
+              </span>
+            </label>
+          </fieldset>
+        )}
         <div className="rounded-lg border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
-          <b className="text-foreground">Họ tên</b> và <b className="text-foreground">Số CCCD</b> luôn có và bắt buộc (dùng để định danh
-          học viên, tránh trùng hồ sơ).
+          {dinhDanh === "MA_SINH_VIEN" ? (
+            <>
+              <b className="text-foreground">Mã sinh viên</b> và <b className="text-foreground">4 số cuối CCCD</b> luôn có và bắt buộc;
+              họ tên, CCCD, lớp lấy theo danh sách sinh viên.
+            </>
+          ) : (
+            <>
+              <b className="text-foreground">Họ tên</b> và <b className="text-foreground">Số CCCD</b> luôn có và bắt buộc (dùng để định danh
+              học viên, tránh trùng hồ sơ).
+            </>
+          )}
         </div>
         {ds.map((t, i) => (
           <fieldset
@@ -255,7 +308,7 @@ export function BienTapFormDangKy({
       <aside className="flex flex-col gap-2 lg:sticky lg:top-4 lg:self-start">
         <h3 className="text-sm font-bold text-ued-blue-dam">Xem trước form học viên sẽ thấy</h3>
         <fieldset disabled className="grid gap-3 rounded-lg border bg-card p-4 shadow-sm">
-          <TruongDinhDanh />
+          {dinhDanh === "MA_SINH_VIEN" ? <TruongMaSinhVien /> : <TruongDinhDanh />}
           <CacTruongDangKy truong={xemTruoc} dsChucDanh={dsChucDanh} />
         </fieldset>
       </aside>

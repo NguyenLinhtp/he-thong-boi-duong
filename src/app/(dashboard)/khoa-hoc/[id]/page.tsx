@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { requirePermission } from "@/lib/auth/guard";
+import { coQuyen, requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { tinhTrangLinkTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
-import { tinhTrangSiSo } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { tinhTrangSiSo, daQuaHanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { linkDangKyCongKhai } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import { Button } from "@/components/ui/button";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
@@ -13,6 +13,7 @@ import { dinhDangNgay, dinhDangTien } from "@/lib/dinh-dang";
 import { FormHinhThuc } from "./form-hinh-thuc";
 import { FormTrangThai } from "./form-trang-thai";
 import { FormThongBao } from "./form-thong-bao";
+import { FormHanDangKy } from "./form-han-dang-ky";
 import { tuDongTaoLinkAction } from "./actions";
 
 const NHAN_PHUONG_THUC: Record<string, string> = {
@@ -38,11 +39,14 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  const [tinhTrangLink, siSo, linkCongKhai] = await Promise.all([
+  const [tinhTrangLink, siSo, linkCongKhai, suaHan] = await Promise.all([
     tinhTrangLinkTrucTuyen(id),
     tinhTrangSiSo(id),
     linkDangKyCongKhai(id),
+    coQuyen("KH-05"),
   ]);
+  // hạn đăng ký lưu cuối ngày giờ Việt Nam -> hiển thị/nhập theo ngày Việt Nam
+  const hanDangKy = khoa.hanDangKy ? new Date(khoa.hanDangKy.getTime() + 7 * 3600_000).toISOString().slice(0, 10) : null;
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
@@ -79,6 +83,16 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
         <div>
           <dt className="text-muted-foreground">Mức học phí</dt>
           <dd className="font-medium">{dinhDangTien(khoa.mucHocPhi)}</dd>
+        </div>
+        <div className="sm:col-span-2">
+          <dt className="text-muted-foreground">Hạn đăng ký</dt>
+          <dd className="font-medium">
+            {suaHan && !["DA_KET_THUC", "HUY"].includes(khoa.trangThai) ? (
+              <FormHanDangKy khoaId={khoa.id} hanDangKy={hanDangKy} daQuaHan={daQuaHanDangKy(khoa)} />
+            ) : (
+              dinhDangNgay(khoa.hanDangKy)
+            )}
+          </dd>
         </div>
         <div>
           <dt className="text-muted-foreground">Đợt tuyển sinh</dt>

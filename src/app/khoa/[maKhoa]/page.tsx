@@ -10,6 +10,7 @@ import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
 import { dinhDangNgay, dinhDangTien } from "@/lib/dinh-dang";
 import { FormDangKyDuThi } from "./form-dang-ky-du-thi";
 import { FormDangKyQuaDVLK } from "./form-dang-ky-qua-dvlk";
+import { FormTimLaiDon } from "./form-tim-lai-don";
 import { cauHinhHieuLuc, giaTriTuHoSo } from "@/server/services/hv/form-dang-ky";
 import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
 import type { DuLieuDungForm } from "./kieu-form";
@@ -33,6 +34,7 @@ export default async function TrangDangKyCongKhaiKhoa({
   if (!khoa) notFound();
 
   const conMo = await coTheNhanDangKy(khoa.id);
+  const laDuThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
   // PT2: học viên đã import sẵn giữ chỗ từ trước, không cần kiểm tra lại sĩ
   // số khi xác nhận (khác với PT1 là đăng ký mới, phải qua coTheNhanDangKy).
   const conMoXacNhanThamGia = khoa.trangThai === "DANG_TUYEN_SINH";
@@ -41,6 +43,7 @@ export default async function TrangDangKyCongKhaiKhoa({
   const userId = (await auth())?.phienDangNhap?.userId;
   const tuHoSo = await giaTriTuHoSo(userId, cauHinh);
   const form: DuLieuDungForm = {
+    dinhDanh: cauHinh.dinhDanh,
     truong: cauHinh.truong,
     dsChucDanh: cauHinh.truong.some((t) => t.ma === "chucDanhHocViId" && t.hien)
       ? (await danhSachChucDanhHocVi()).map((c) => ({ id: c.id, ten: c.ten }))
@@ -48,7 +51,7 @@ export default async function TrangDangKyCongKhaiKhoa({
     giaTri: tuHoSo?.giaTri ?? null,
   };
   const goiYDangNhap =
-    conMo && khoa.chuongTrinh.phuongThucDangKy !== "IMPORT_TU_XAC_NHAN" ? (
+    conMo && khoa.chuongTrinh.phuongThucDangKy !== "IMPORT_TU_XAC_NHAN" && cauHinh.dinhDanh !== "MA_SINH_VIEN" ? (
       tuHoSo ? (
         <p className="mb-4 rounded-lg bg-success/10 p-3 text-sm text-success">
           Thông tin đã được điền sẵn từ hồ sơ của bạn ({tuHoSo.maHocVien}) - vui lòng kiểm tra lại trước khi đăng ký.
@@ -72,20 +75,37 @@ export default async function TrangDangKyCongKhaiKhoa({
     <main>
       <section className="bg-ued-blue-dam text-white">
         <div className="mx-auto max-w-3xl px-4 py-10">
-          <p className="text-sm font-medium tracking-wide text-ued-vang uppercase">Đăng ký khóa bồi dưỡng</p>
+          <p className="text-sm font-medium tracking-wide text-ued-vang uppercase">
+            {laDuThi ? "Đăng ký dự thi" : "Đăng ký khóa bồi dưỡng"}
+          </p>
           <h1 className="mt-2 text-2xl leading-tight font-bold text-balance md:text-3xl">{khoa.chuongTrinh.ten}</h1>
           <p className="mt-1 text-sm text-white/80">Mã khóa: {khoa.maKhoa}</p>
           <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-3">
+            {laDuThi ? (
+              <div>
+                <dt className="text-white/70">Ngày thi</dt>
+                <dd className="text-base font-bold">{dinhDangNgay(khoa.thoiGianKhaiGiang, "Thông báo sau")}</dd>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <dt className="text-white/70">Khai giảng</dt>
+                  <dd className="text-base font-bold">{dinhDangNgay(khoa.thoiGianKhaiGiang)}</dd>
+                </div>
+                <div>
+                  <dt className="text-white/70">Bế giảng</dt>
+                  <dd className="text-base font-bold">{dinhDangNgay(khoa.thoiGianBeGiang)}</dd>
+                </div>
+              </>
+            )}
+            {khoa.hanDangKy && (
+              <div>
+                <dt className="text-white/70">Hạn đăng ký</dt>
+                <dd className="text-base font-bold">{dinhDangNgay(khoa.hanDangKy)}</dd>
+              </div>
+            )}
             <div>
-              <dt className="text-white/70">Khai giảng</dt>
-              <dd className="text-base font-bold">{dinhDangNgay(khoa.thoiGianKhaiGiang)}</dd>
-            </div>
-            <div>
-              <dt className="text-white/70">Bế giảng</dt>
-              <dd className="text-base font-bold">{dinhDangNgay(khoa.thoiGianBeGiang)}</dd>
-            </div>
-            <div>
-              <dt className="text-white/70">Mức học phí</dt>
+              <dt className="text-white/70">{laDuThi ? "Lệ phí thi" : "Mức học phí"}</dt>
               <dd className="text-base font-bold">{dinhDangTien(khoa.mucHocPhi, "Liên hệ trực tiếp")}</dd>
             </div>
           </dl>
@@ -118,14 +138,18 @@ export default async function TrangDangKyCongKhaiKhoa({
               </p>
             ))}
 
-          {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" &&
-            (conMo ? (
-              <FormDangKyDuThi khoaId={khoa.id} form={form} />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Đợt thi hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).
-              </p>
-            ))}
+          {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && (
+            <div className="flex flex-col gap-4">
+              {conMo ? (
+                <FormDangKyDuThi khoaId={khoa.id} maKhoa={khoa.maKhoa} form={form} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Đợt thi hiện không còn mở đăng ký (đã hết hạn, đã đóng đăng ký hoặc đã đủ sĩ số).
+                </p>
+              )}
+              {form.dinhDanh === "MA_SINH_VIEN" && <FormTimLaiDon khoaId={khoa.id} maKhoa={khoa.maKhoa} moSan={!conMo} />}
+            </div>
+          )}
 
           {khoa.chuongTrinh.phuongThucDangKy === "QUA_DON_VI_LIEN_KET" &&
             (!conMo ? (

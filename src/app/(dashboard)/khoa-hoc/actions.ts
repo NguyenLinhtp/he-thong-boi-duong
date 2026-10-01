@@ -21,6 +21,7 @@ export async function khoiTaoKhoaAction(
       thoiGianKhaiGiang: thoiGianKhaiGiangRaw || null,
       thoiGianBeGiang: thoiGianBeGiangRaw || null,
       mucHocPhi: mucHocPhiRaw || null,
+      hanDangKy: String(formData.get("hanDangKy") ?? "") || null,
     }, nguoiTuPhien(phien));
   } catch (error) {
     if (error instanceof Error) return error.message;

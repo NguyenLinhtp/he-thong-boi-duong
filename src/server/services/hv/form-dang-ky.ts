@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import {
   CAU_HINH_MAC_DINH,
+  MA_TEP_NOP_PHI,
   chuanHoaCauHinh,
   docCauHinh,
   kiemTraDuLieu,
@@ -31,11 +32,20 @@ export type NguonCauHinh = "KHOA" | "CHUONG_TRINH" | "MAC_DINH";
 export async function cauHinhHieuLuc(khoaId: string): Promise<{ cauHinh: CauHinhForm; nguon: NguonCauHinh }> {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
+  // mã sinh viên chỉ dùng cho Phương thức 3 - chương trình đổi phương thức sau đó thì quay về CCCD
+  const hopLe = (c: CauHinhForm): CauHinhForm =>
+    c.dinhDanh === "MA_SINH_VIEN" && khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI" ? { ...c, dinhDanh: "CCCD" } : c;
   const cuaKhoa = docCauHinh(khoa.cauHinhFormDangKy);
-  if (cuaKhoa) return { cauHinh: cuaKhoa, nguon: "KHOA" };
+  if (cuaKhoa) return { cauHinh: hopLe(cuaKhoa), nguon: "KHOA" };
   const cuaCt = docCauHinh(khoa.chuongTrinh.cauHinhFormDangKy);
-  if (cuaCt) return { cauHinh: cuaCt, nguon: "CHUONG_TRINH" };
+  if (cuaCt) return { cauHinh: hopLe(cuaCt), nguon: "CHUONG_TRINH" };
   return { cauHinh: CAU_HINH_MAC_DINH, nguon: "MAC_DINH" };
+}
+
+function chanMaSinhVienNgoaiPT3(cauHinh: CauHinhForm | null, phuongThuc: string | null) {
+  if (cauHinh?.dinhDanh === "MA_SINH_VIEN" && phuongThuc !== "CHI_DU_THI") {
+    throw new CauHinhFormKhongHopLeError("định danh bằng mã sinh viên chỉ áp dụng cho chương trình Phương thức 3 (đăng ký dự thi)");
+  }
 }
 
 export async function cauHinhChuongTrinh(chuongTrinhId: string): Promise<CauHinhForm> {
@@ -55,6 +65,7 @@ export async function luuCauHinhChuongTrinh(chuongTrinhId: string, tho: unknown,
   if (!ct) throw new CauHinhFormKhongHopLeError("không tìm thấy chương trình");
   if (ct.trangThai === "NGUNG_HIEU_LUC") throw new CauHinhFormKhongHopLeError("chương trình đã ngừng hiệu lực");
   const cauHinh = chuanHoaHoacLoi(tho);
+  chanMaSinhVienNgoaiPT3(cauHinh, ct.phuongThucDangKy);
   await prisma.$transaction(async (tx) => {
     await tx.chuongTrinh.update({ where: { id: ct.id }, data: { cauHinhFormDangKy: cauHinh } });
     await ghiThaoTac(nguoi, "CAU_HINH_FORM_DANG_KY", "ChuongTrinh", ct.id, `${ct.maCT}: ${moTaCauHinh(cauHinh)}`, tx);
@@ -64,10 +75,11 @@ export async function luuCauHinhChuongTrinh(chuongTrinhId: string, tho: unknown,
 
 /** tho = null: bỏ form riêng, khóa quay về dùng form của chương trình. */
 export async function luuCauHinhKhoa(khoaId: string, tho: unknown | null, nguoi: NguoiThucHien) {
-  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId } });
+  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
   if (khoa.trangThai === "DA_KET_THUC" || khoa.trangThai === "HUY") throw new CauHinhFormKhongHopLeError("khóa đã kết thúc/hủy");
   const cauHinh = tho === null ? null : chuanHoaHoacLoi(tho);
+  chanMaSinhVienNgoaiPT3(cauHinh, khoa.chuongTrinh.phuongThucDangKy);
   await prisma.$transaction(async (tx) => {
     await tx.khoa.update({ where: { id: khoa.id }, data: { cauHinhFormDangKy: cauHinh ?? Prisma.DbNull } });
     await ghiThaoTac(
@@ -84,7 +96,7 @@ export async function luuCauHinhKhoa(khoaId: string, tho: unknown | null, nguoi:
 
 function moTaCauHinh(c: CauHinhForm) {
   const hien = c.truong.filter((t) => t.hien);
-  return `${hien.length} trường (${hien.filter((t) => t.batBuoc).length} bắt buộc, ${c.truong.filter((t) => !t.coSan).length} tùy chỉnh)`;
+  return `${c.dinhDanh === "MA_SINH_VIEN" ? "định danh bằng mã sinh viên, " : ""}${hien.length} trường (${hien.filter((t) => t.batBuoc).length} bắt buộc, ${c.truong.filter((t) => !t.coSan).length} tùy chỉnh)`;
 }
 
 /** Đọc dữ liệu form HTML theo cấu hình: chữ theo tên input, tệp ở input cùng tên. */
@@ -215,6 +227,8 @@ export async function kiemTraQuyenXemTepHoSo(phien: { userId: string; maCNDuocPh
   const tep = await prisma.tepHoSoDangKy.findUnique({ where: { id: tepId }, include: { dangKy: { include: { hopDongLienKet: true } } } });
   if (!tep) throw new KhongDuocXemTepHoSoError();
   if (QUYEN_XEM_MOI_HO_SO.some((ma) => phien.maCNDuocPhep.includes(ma))) return tep;
+  // (bổ sung 01/10/2026) cán bộ tài chính đối soát lệ phí: chỉ xem minh chứng chuyển khoản
+  if (tep.maTruong === MA_TEP_NOP_PHI && phien.maCNDuocPhep.includes("HP-02")) return tep;
   const hv = await hocVienCuaTaiKhoan(phien.userId);
   if (hv && hv.id === tep.dangKy.hocVienId) return tep;
   const dv = await donViLienKetCuaTaiKhoan(phien.userId);

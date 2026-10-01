@@ -37,7 +37,14 @@ export type TruongForm = {
   goiY: string | null;
 };
 
-export type CauHinhForm = { truong: TruongForm[] };
+/**
+ * (bổ sung 01/10/2026) cách định danh thí sinh: CCCD = họ tên + CCCD tự nhập (mặc định);
+ * MA_SINH_VIEN = nhập mã sinh viên, hệ thống tra danh sách sinh viên đã import (HV-03)
+ * để lấy họ tên/CCCD/lớp - chỉ cho chương trình Phương thức 3 (đăng ký dự thi).
+ */
+export type DinhDanh = "CCCD" | "MA_SINH_VIEN";
+
+export type CauHinhForm = { dinhDanh?: DinhDanh; truong: TruongForm[] };
 
 const KIEU_CO_SAN: Record<MaTruongCoSan, { nhan: string; kieu: KieuTruong }> = {
   ngaySinh: { nhan: "Ngày sinh", kieu: "NGAY" },
@@ -66,9 +73,12 @@ function truongCoSanMacDinh(ma: MaTruongCoSan): TruongForm {
 }
 
 /** Form mặc định khi chương trình/khóa chưa cấu hình - giữ đúng form trước khi có tính năng. */
-export const CAU_HINH_MAC_DINH: CauHinhForm = { truong: MA_TRUONG_CO_SAN.map(truongCoSanMacDinh) };
+export const CAU_HINH_MAC_DINH: CauHinhForm = { dinhDanh: "CCCD", truong: MA_TRUONG_CO_SAN.map(truongCoSanMacDinh) };
 
 export const SO_TRUONG_TOI_DA = 30;
+// (bổ sung 01/10/2026) mã "trường" của tệp minh chứng chuyển khoản lệ phí thi (HV-05) -
+// bắt đầu bằng "_" nên không trùng mã trường cấu hình (luôn bắt đầu bằng chữ cái)
+export const MA_TEP_NOP_PHI = "_nop_phi";
 export const DUOI_MINH_CHUNG = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"];
 
 /**
@@ -127,7 +137,8 @@ export function chuanHoaCauHinh(tho: unknown): { cauHinh: CauHinhForm } | { loi:
     });
   }
   for (const ma of MA_TRUONG_CO_SAN) if (!daCo.has(ma)) ketQua.push(truongCoSanMacDinh(ma));
-  return { cauHinh: { truong: ketQua } };
+  const dinhDanh: DinhDanh = (tho as { dinhDanh?: unknown }).dinhDanh === "MA_SINH_VIEN" ? "MA_SINH_VIEN" : "CCCD";
+  return { cauHinh: { dinhDanh, truong: ketQua } };
 }
 
 /** Đọc cấu hình đã lưu (JSON trong CSDL); hỏng/không có thì null. */

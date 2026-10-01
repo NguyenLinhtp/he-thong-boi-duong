@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { dieuKienChiemCho } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { KhongTimThayKhoaError, ThieuLyDoDieuChinhHocPhiError } from "@/server/services/hp/loi-hoc-phi";
 
@@ -58,8 +59,11 @@ export async function thietLapHocPhi(khoaId: string, input: ThietLapHocPhiInput,
 }
 
 async function dongBoHocPhiTheoKhoa(db: Prisma.TransactionClient, khoaId: string, mucHocPhi: number) {
+  // (bổ sung 01/10/2026) khóa Phương thức 3 thu lệ phí ngay khi đăng ký: đồng bộ cho mọi hồ sơ còn chiếm chỗ
+  const khoa = await db.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   const dsChinhThuc = await db.dangKyHoc.findMany({
-    where: { khoaId, trangThai: "CHINH_THUC" },
+    where:
+      khoa?.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" ? dieuKienChiemCho(khoaId) : { khoaId, trangThai: "CHINH_THUC" },
   });
 
   for (const dk of dsChinhThuc) {
@@ -120,6 +124,15 @@ export async function taoHocPhiSauKhiChinhThuc(dangKyId: string) {
     dangKy.hopDongLienKetId !== null,
     Number(dangKy.khoa.mucHocPhi),
   );
+}
+
+/**
+ * (bổ sung 01/10/2026) khóa Phương thức 3 (dự thi): lệ phí phát sinh ngay khi
+ * thí sinh đăng ký (thí sinh chuyển khoản trước, tài chính đối soát rồi mới
+ * chốt danh sách chính thức) - không chờ HV-07 như các phương thức khác.
+ */
+export async function taoLePhiKhiDangKyDuThi(dangKyId: string) {
+  return taoHocPhiSauKhiChinhThuc(dangKyId);
 }
 
 export async function hocPhiCuaKhoa(khoaId: string) {

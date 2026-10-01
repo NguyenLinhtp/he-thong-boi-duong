@@ -43,7 +43,11 @@ export function FormTaoKhoa({
         <Input id="thoiGianBeGiang" name="thoiGianBeGiang" type="date" className="w-40" />
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="mucHocPhi">Mức học phí</Label>
+        <Label htmlFor="hanDangKy">Hạn đăng ký</Label>
+        <Input id="hanDangKy" name="hanDangKy" type="date" className="w-40" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="mucHocPhi">Mức học phí/lệ phí</Label>
         <Input id="mucHocPhi" name="mucHocPhi" type="number" min={0} className="w-32" />
       </div>
       <Button type="submit" disabled={dangXuLy}>
