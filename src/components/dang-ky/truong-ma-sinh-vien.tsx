@@ -99,10 +99,13 @@ export function ChonDoiTuongDuThi({
   giaTri,
   onChon,
   className,
+  lePhi,
 }: {
   giaTri: DoiTuongDuThi;
   onChon?: (d: DoiTuongDuThi) => void;
   className?: string;
+  // (bổ sung 01/10/2026) lệ phí theo đối tượng (đã định dạng), hiện trên nút
+  lePhi?: { sinhVien: string; tuDo: string } | null;
 }) {
   const nut = (d: DoiTuongDuThi, nhan: string, moTa: string) => (
     <button
@@ -120,11 +123,14 @@ export function ChonDoiTuongDuThi({
         {nhan}
       </span>
       <span className="mt-0.5 pl-5.5 text-xs text-muted-foreground">{moTa}</span>
+      {lePhi && (
+        <span className="mt-1 pl-5.5 text-sm font-semibold text-ued-blue-dam">Lệ phí: {d === "SINH_VIEN" ? lePhi.sinhVien : lePhi.tuDo}</span>
+      )}
     </button>
   );
   return (
     <div role="radiogroup" aria-label="Đối tượng dự thi" className={"flex flex-col gap-2 sm:flex-row " + (className ?? "")}>
-      {nut("SINH_VIEN", "Sinh viên của trường", "Nhập mã sinh viên, hệ thống tự điền họ tên, lớp")}
+      {nut("SINH_VIEN", "Sinh viên Trường ĐHSP - ĐHĐN", "Nhập mã sinh viên, hệ thống tự điền họ tên, lớp")}
       {nut("TU_DO", "Thí sinh tự do", "Không phải sinh viên của trường - nhập họ tên, số CCCD")}
     </div>
   );

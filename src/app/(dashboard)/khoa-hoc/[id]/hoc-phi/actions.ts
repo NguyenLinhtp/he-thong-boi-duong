@@ -16,6 +16,7 @@ import {
   SoTienKhongHopLeError,
   HocPhiQuaDonViLienKetError,
   ThieuLyDoBoQuaError,
+  LePhiTuDoKhongApDungError,
 } from "@/server/services/hp/loi-hoc-phi";
 import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
@@ -30,11 +31,13 @@ export async function thietLapHocPhiAction(_prevState: string | undefined, formD
   try {
     await thietLapHocPhi(khoaId, {
       mucHocPhi: Number(formData.get("mucHocPhi")),
+      // (bổ sung 01/10/2026) ô chỉ có ở khóa dự thi; để trống = như sinh viên
+      mucHocPhiTuDo: formData.has("mucHocPhiTuDo") ? (String(formData.get("mucHocPhiTuDo")).trim() === "" ? null : Number(formData.get("mucHocPhiTuDo"))) : undefined,
       chinhSachMienGiam: String(formData.get("chinhSachMienGiam") ?? "") || null,
       lyDoDieuChinh: String(formData.get("lyDoDieuChinh") ?? "") || null,
     }, nguoiTuPhien(phien));
   } catch (error) {
-    if (error instanceof KhongTimThayKhoaError || error instanceof ThieuLyDoDieuChinhHocPhiError) {
+    if (error instanceof KhongTimThayKhoaError || error instanceof ThieuLyDoDieuChinhHocPhiError || error instanceof LePhiTuDoKhongApDungError) {
       return error.message;
     }
     throw error;

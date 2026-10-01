@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
-import { hocPhiCuaKhoa } from "@/server/services/hp/hp-01-thiet-lap";
+import { apDungLePhiTuDo, hocPhiCuaKhoa } from "@/server/services/hp/hp-01-thiet-lap";
 import { danhSachPhieuThu } from "@/server/services/hp/hp-04-phieu-thu";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
@@ -54,6 +54,7 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
   if (!khoa) notFound();
 
   const laDuThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  const theoDoiTuong = await apDungLePhiTuDo(khoa.id);
   const [dsHocPhi, dsPhieuThu, choPhepThanhToan, choPhepCongNo, choPhepXetDuyet, bangLePhi] = await Promise.all([
     hocPhiCuaKhoa(id),
     danhSachPhieuThu(id),
@@ -79,6 +80,8 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
           mucHocPhi={khoa.mucHocPhi ? Number(khoa.mucHocPhi) : null}
           chinhSachMienGiam={khoa.chinhSachMienGiam}
           daCoDangKy={dsHocPhi.length > 0}
+          theoDoiTuong={theoDoiTuong}
+          mucHocPhiTuDo={khoa.mucHocPhiTuDo === null ? null : Number(khoa.mucHocPhiTuDo)}
         />
       </section>
 

@@ -333,7 +333,7 @@ async function taoChuongTrinhThiSinhVien() {
         { ma: "donViCongTac", hien: false },
         { ma: "noiSinh", nhan: "Nơi sinh (tỉnh/thành phố)", kieu: "VAN_BAN", batBuoc: true, goiY: "Ghi theo giấy khai sinh - in trên chứng chỉ" },
       ],
-      khoa: { ngayThi: "2026-11-15", han: "2026-10-31", siSo: 200, lePhi: 450_000 },
+      khoa: { ngayThi: "2026-11-15", han: "2026-10-31", siSo: 200, lePhi: 450_000, lePhiTuDo: 700_000 },
     },
     {
       ten: "Thi chuẩn đầu ra tiếng Anh",
@@ -347,7 +347,7 @@ async function taoChuongTrinhThiSinhVien() {
         { ma: "donViCongTac", hien: false },
         { ma: "lanThi", nhan: "Lần dự thi", kieu: "LUA_CHON", luaChon: ["Lần đầu", "Thi lại"], macDinh: "Lần đầu", batBuoc: true },
       ],
-      khoa: { ngayThi: "2026-11-22", han: "2026-10-31", siSo: 300, lePhi: 600_000 },
+      khoa: { ngayThi: "2026-11-22", han: "2026-10-31", siSo: 300, lePhi: 600_000, lePhiTuDo: 1_000_000 },
     },
   ];
   for (const [n, mau] of dsChuongTrinh.entries()) {
@@ -370,7 +370,8 @@ async function taoChuongTrinhThiSinhVien() {
       dotTuyenSinhId: dot?.id ?? null,
       hanDangKy: mau.khoa.han,
     });
-    await thietLapHocPhi(khoa.id, { mucHocPhi: mau.khoa.lePhi });
+    // lệ phí theo đối tượng: sinh viên ĐHSP-ĐHĐN / thí sinh tự do (mức mẫu)
+    await thietLapHocPhi(khoa.id, { mucHocPhi: mau.khoa.lePhi, mucHocPhiTuDo: mau.khoa.lePhiTuDo });
     await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
     // 4 thí sinh đã đăng ký: 2 đã nộp minh chứng chuyển khoản, 1 trong đó đã được tài chính xác nhận
     for (let i = 0; i < 4; i++) {

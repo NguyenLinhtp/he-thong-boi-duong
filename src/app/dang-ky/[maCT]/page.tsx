@@ -79,7 +79,9 @@ export default async function TrangChuongTrinhCongKhai({ params }: { params: Pro
                 <div>
                   <p className="text-xs text-muted-foreground">{laDuThi ? "Lệ phí" : "Học phí"} · còn chỗ</p>
                   <p className="font-semibold">
-                    {dinhDangTien(k.mucHocPhi, "Liên hệ")} · {k.conCho}
+                    {dinhDangTien(k.mucHocPhi, "Liên hệ")}
+                    {k.mucHocPhiTuDo !== null && <span className="font-normal text-muted-foreground"> (tự do {dinhDangTien(k.mucHocPhiTuDo)})</span>} ·{" "}
+                    {k.conCho}
                   </p>
                 </div>
               </div>

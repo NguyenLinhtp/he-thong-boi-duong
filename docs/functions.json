@@ -507,11 +507,11 @@
     "ma_cn": "HP-01",
     "nhom_chuc_nang": "7. Quản lý học phí",
     "ten_chuc_nang": "Thiết lập mức học phí theo khóa",
-    "mo_ta_chi_tiet": "Khai báo mức học phí, chính sách miễn giảm (nếu có) khi mở khóa",
+    "mo_ta_chi_tiet": "Khai báo mức học phí, chính sách miễn giảm (nếu có) khi mở khóa; (bổ sung 01/10/2026) khóa dự thi (Phương thức 3) có form đăng ký bằng mã sinh viên cấu hình lệ phí theo đối tượng: sinh viên Trường ĐHSP-ĐHĐN và thí sinh tự do",
     "actor": "Cán bộ quản lý đào tạo/Cán bộ tài chính",
     "input": "Mức học phí, đối tượng miễn giảm",
     "output": "Mức học phí áp dụng cho khóa",
-    "quy_tac_nghiep_vu": "Mức học phí không đổi sau khi khóa đã có học viên đăng ký, trừ khi có quyết định điều chỉnh",
+    "quy_tac_nghiep_vu": "Mức học phí không đổi sau khi khóa đã có học viên đăng ký, trừ khi có quyết định điều chỉnh; (bổ sung 01/10/2026) lệ phí thí sinh tự do chỉ áp dụng khóa dự thi định danh bằng mã sinh viên (để trống = như sinh viên); thí sinh có mã sinh viên nộp mức sinh viên, không có mã sinh viên nộp mức tự do; đổi mức sau khi đã có đăng ký phải có lý do, đồng bộ các khoản chưa nộp/còn nợ",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 2"
   },

@@ -44,3 +44,10 @@ export class TepDoiSoatKhongHopLeError extends Error {
     super(`Tệp đối soát không hợp lệ: ${lyDo}`);
   }
 }
+
+// (bổ sung 01/10/2026 - HP-01) lệ phí thí sinh tự do chỉ cho khóa dự thi định danh bằng mã sinh viên
+export class LePhiTuDoKhongApDungError extends Error {
+  constructor(lyDo = "lệ phí thí sinh tự do chỉ áp dụng cho khóa dự thi (Phương thức 3) có form đăng ký bằng mã sinh viên") {
+    super(`Không lưu được: ${lyDo}`);
+  }
+}

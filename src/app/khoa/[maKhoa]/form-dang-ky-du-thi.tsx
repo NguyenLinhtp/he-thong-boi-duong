@@ -23,7 +23,7 @@ export function FormDangKyDuThi({ khoaId, maKhoa, form }: { khoaId: string; maKh
       {coMaSinhVien && (
         <>
           <input type="hidden" name="doiTuong" value={doiTuong} />
-          <ChonDoiTuongDuThi giaTri={doiTuong} onChon={setDoiTuong} className="sm:col-span-2" />
+          <ChonDoiTuongDuThi giaTri={doiTuong} onChon={setDoiTuong} lePhi={form.lePhi} className="sm:col-span-2" />
         </>
       )}
       {theoMaSinhVien ? (

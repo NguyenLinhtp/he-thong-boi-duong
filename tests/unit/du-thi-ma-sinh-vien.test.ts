@@ -14,6 +14,8 @@ import {
 import { luuCauHinhChuongTrinh } from "@/server/services/hv/form-dang-ky";
 import { nhapExcelDoiSoat, xuatExcelDoiSoat } from "@/server/services/hp/hp-02-doi-soat-excel";
 import { chotDanhSachDuThi, xuatDanhSachChinhThucDuThi } from "@/server/services/hv/hv-07-chot-danh-sach-du-thi";
+import { thietLapHocPhi } from "@/server/services/hp/hp-01-thiet-lap";
+import { LePhiTuDoKhongApDungError, ThieuLyDoDieuChinhHocPhiError } from "@/server/services/hp/loi-hoc-phi";
 import { xoaTep } from "@/server/services/gd/luu-tru-hoc-lieu";
 import { chuoiVietQR, crc16 } from "@/lib/viet-qr";
 import {
@@ -226,6 +228,42 @@ describe("HV-05 bổ sung - đăng ký dự thi bằng mã sinh viên + lệ ph�
     await expect(timLaiDonDuThi(khoa.id, { soCCCD: cccdTuDo, hoTen: "Người Khác" })).rejects.toThrow();
     // không chọn "thí sinh tự do" thì vẫn bắt buộc mã sinh viên
     await expect(dangKyDuThi({ khoaId: khoa.id, hoTen: "X", soCCCD: cccdTuDo })).rejects.toThrow(SinhVienKhongCoTrongDanhSachError);
+  });
+
+  it("lệ phí theo đối tượng: sinh viên ĐHSP-ĐHĐN theo mức chung, thí sinh tự do theo mức riêng; đổi mức sau khi có đăng ký phải có lý do", async () => {
+    const { khoa } = await taoKhoaDuThi();
+    await thietLapHocPhi(khoa.id, { mucHocPhi: 500000, mucHocPhiTuDo: 800000 });
+    const sv = taoSv();
+    await napSv(sv);
+    const dkSv = await dangKy(khoa.id, sv);
+    const cccdTuDo = `0${1 + Math.floor(Math.random() * 9)}${so(10)}`;
+    const dkTuDo = await dangKyDuThi({
+      khoaId: khoa.id,
+      hoTen: "Thí Sinh Lệ Phí",
+      soCCCD: cccdTuDo,
+      laThiSinhTuDo: true,
+      duLieuForm: { giaTri: { soDienThoai: "0905000333" }, tep: {} },
+    });
+    const phi = async (hocVienId: string) =>
+      Number((await prisma.hocPhi.findUnique({ where: { hocVienId_khoaId: { hocVienId, khoaId: khoa.id } } }))!.soTienPhaiNop);
+    expect(await phi(dkSv.hocVienId)).toBe(500000);
+    expect(await phi(dkTuDo.hocVienId)).toBe(800000);
+    expect((await thongTinLePhiDuThi(dkTuDo.id))?.soTienPhaiNop).toBe(800000);
+
+    // đã có đăng ký -> đổi lệ phí tự do phải có lý do; có lý do thì đồng bộ khoản chưa nộp
+    await expect(thietLapHocPhi(khoa.id, { mucHocPhi: 500000, mucHocPhiTuDo: 900000 })).rejects.toThrow(ThieuLyDoDieuChinhHocPhiError);
+    await thietLapHocPhi(khoa.id, { mucHocPhi: 500000, mucHocPhiTuDo: 900000, lyDoDieuChinh: "QĐ điều chỉnh lệ phí" });
+    expect(await phi(dkTuDo.hocVienId)).toBe(900000);
+    expect(await phi(dkSv.hocVienId)).toBe(500000);
+    // bỏ mức riêng -> thí sinh tự do về như sinh viên
+    await thietLapHocPhi(khoa.id, { mucHocPhi: 500000, mucHocPhiTuDo: null, lyDoDieuChinh: "Thống nhất 1 mức" });
+    expect(await phi(dkTuDo.hocVienId)).toBe(500000);
+  });
+
+  it("chặn đặt lệ phí thí sinh tự do cho khóa không định danh bằng mã sinh viên", async () => {
+    const { khoa } = await taoKhoaDuThi("TRUC_TUYEN_NOP_GIAY");
+    await expect(thietLapHocPhi(khoa.id, { mucHocPhi: 500000, mucHocPhiTuDo: 800000 })).rejects.toThrow(LePhiTuDoKhongApDungError);
+    await expect(thietLapHocPhi(khoa.id, { mucHocPhi: 500000 })).resolves.toBeTruthy();
   });
 
   it("hạn đăng ký: quá hạn thì đóng đăng ký", async () => {

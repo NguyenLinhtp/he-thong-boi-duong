@@ -383,6 +383,9 @@ model Khoa {
   // (bổ sung 30/09/2026) form đăng ký riêng của khóa - null = dùng form của chương trình
   cauHinhFormDangKy   Json?
   mucHocPhi           Decimal?         @db.Decimal(12, 2)
+  // (bổ sung 01/10/2026) khóa dự thi (PT3) định danh bằng mã sinh viên: lệ phí riêng cho thí sinh
+  // tự do (không phải sinh viên ĐHSP-ĐHĐN); mucHocPhi áp cho sinh viên. null = như sinh viên
+  mucHocPhiTuDo       Decimal?         @db.Decimal(12, 2)
   // HP-01: chính sách miễn giảm áp dụng chung cho khóa (dạng mô tả tự do,
   // việc miễn giảm cho từng học viên cụ thể được xác nhận riêng ở HP-02).
   chinhSachMienGiam   String?

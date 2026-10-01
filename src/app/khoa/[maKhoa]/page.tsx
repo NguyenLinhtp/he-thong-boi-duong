@@ -34,6 +34,11 @@ export default async function TrangDangKyCongKhaiKhoa({
   const conMoXacNhanThamGia = khoa.trangThai === "DANG_TUYEN_SINH";
   // (bổ sung 30/09/2026) form theo cấu hình chương trình/khóa; học viên đã đăng nhập được điền sẵn từ hồ sơ
   const { cauHinh } = await cauHinhHieuLuc(khoa.id);
+  // (bổ sung 01/10/2026) khóa dự thi theo mã SV có lệ phí thí sinh tự do riêng
+  const lePhiTheoDoiTuong =
+    laDuThi && cauHinh.dinhDanh === "MA_SINH_VIEN" && khoa.mucHocPhiTuDo !== null
+      ? { sinhVien: dinhDangTien(khoa.mucHocPhi, "Liên hệ"), tuDo: dinhDangTien(khoa.mucHocPhiTuDo) }
+      : null;
   const userId = (await auth())?.phienDangNhap?.userId;
   const tuHoSo = await giaTriTuHoSo(userId, cauHinh);
   // (bổ sung 01/10/2026) khóa bồi dưỡng cần tài khoản học viên; khóa chỉ thi thì không
@@ -75,6 +80,7 @@ export default async function TrangDangKyCongKhaiKhoa({
       ? (await danhSachChucDanhHocVi()).map((c) => ({ id: c.id, ten: c.ten }))
       : [],
     giaTri: tuHoSo?.giaTri ?? null,
+    lePhi: lePhiTheoDoiTuong,
   };
   const goiYDangNhap =
     conMo && !chanTaiKhoan && khoa.chuongTrinh.phuongThucDangKy !== "IMPORT_TU_XAC_NHAN" && cauHinh.dinhDanh !== "MA_SINH_VIEN" ? (
@@ -137,7 +143,15 @@ export default async function TrangDangKyCongKhaiKhoa({
             )}
             <div>
               <dt className="text-white/70">{laDuThi ? "Lệ phí thi" : "Mức học phí"}</dt>
-              <dd className="text-base font-bold">{dinhDangTien(khoa.mucHocPhi, "Liên hệ trực tiếp")}</dd>
+              {lePhiTheoDoiTuong ? (
+                <dd className="text-sm font-bold">
+                  Sinh viên ĐHSP-ĐHĐN: {lePhiTheoDoiTuong.sinhVien}
+                  <br />
+                  Thí sinh tự do: {lePhiTheoDoiTuong.tuDo}
+                </dd>
+              ) : (
+                <dd className="text-base font-bold">{dinhDangTien(khoa.mucHocPhi, "Liên hệ trực tiếp")}</dd>
+              )}
             </div>
           </dl>
         </div>

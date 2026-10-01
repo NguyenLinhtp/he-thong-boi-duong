@@ -59,6 +59,8 @@ export async function chuongTrinhCongKhai(maCT: string) {
       beGiang: k.thoiGianBeGiang,
       hanDangKy: k.hanDangKy,
       mucHocPhi: k.mucHocPhi === null ? null : Number(k.mucHocPhi),
+      // (bổ sung 01/10/2026) lệ phí thí sinh tự do (khóa dự thi); null = như sinh viên
+      mucHocPhiTuDo: k.mucHocPhiTuDo === null ? null : Number(k.mucHocPhiTuDo),
       hinhThuc: k.hinhThucGiangDay,
       conCho: Math.max(k.siSoToiDa - siSo[i], 0),
     })),
