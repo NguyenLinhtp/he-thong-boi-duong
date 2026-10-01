@@ -8,6 +8,8 @@ import { FormXacNhanThamGia } from "./form-xac-nhan-tham-gia";
 import { auth } from "@/lib/auth";
 import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
 import { dinhDangNgay, dinhDangTien } from "@/lib/dinh-dang";
+import { canTaiKhoanKhiDangKy } from "@/lib/form-dang-ky";
+import { UserRoundCheck } from "lucide-react";
 import { FormDangKyDuThi } from "./form-dang-ky-du-thi";
 import { FormDangKyQuaDVLK } from "./form-dang-ky-qua-dvlk";
 import { FormTimLaiDon } from "./form-tim-lai-don";
@@ -15,14 +17,6 @@ import { cauHinhHieuLuc, giaTriTuHoSo } from "@/server/services/hv/form-dang-ky"
 import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
 import type { DuLieuDungForm } from "./kieu-form";
 
-// HV-04: học viên đã đăng nhập (tài khoản liên kết hồ sơ học viên) xác nhận
-// tham gia bằng tài khoản, không cần gõ CCCD/mã số
-async function hocVienDangNhap() {
-  const userId = (await auth())?.phienDangNhap?.userId;
-  if (!userId) return null;
-  const hocVien = await hocVienCuaTaiKhoan(userId);
-  return hocVien ? { hoTen: hocVien.hoTen, maHocVien: hocVien.maHocVien } : null;
-}
 
 export default async function TrangDangKyCongKhaiKhoa({
   params,
@@ -42,6 +36,38 @@ export default async function TrangDangKyCongKhaiKhoa({
   const { cauHinh } = await cauHinhHieuLuc(khoa.id);
   const userId = (await auth())?.phienDangNhap?.userId;
   const tuHoSo = await giaTriTuHoSo(userId, cauHinh);
+  // (bổ sung 01/10/2026) khóa bồi dưỡng cần tài khoản học viên; khóa chỉ thi thì không
+  const canTaiKhoan = canTaiKhoanKhiDangKy(khoa.chuongTrinh.phuongThucDangKy);
+  const hocVien = userId ? await hocVienCuaTaiKhoan(userId) : null;
+  const quayLai = `/khoa/${khoa.maKhoa}`;
+  const chanTaiKhoan =
+    canTaiKhoan && (conMo || conMoXacNhanThamGia) && !hocVien ? (
+      <div className="flex flex-col items-center gap-3 py-4 text-center">
+        <UserRoundCheck className="size-10 text-primary" />
+        <p className="font-bold text-ued-blue-dam">Khóa bồi dưỡng cần tài khoản học viên</p>
+        <p className="max-w-md text-sm text-muted-foreground">
+          {userId
+            ? "Tài khoản đang đăng nhập không phải tài khoản học viên. Vui lòng đăng xuất và đăng nhập bằng tài khoản học viên."
+            : "Tài khoản dùng để đăng ký, học trực tuyến, xem điểm và nhận thông báo. Tên đăng nhập là số CCCD của bạn."}
+        </p>
+        {!userId && (
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              href={`/dang-nhap?callbackUrl=${encodeURIComponent(quayLai)}`}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Đăng nhập để đăng ký
+            </Link>
+            <Link
+              href={`/dang-ky-tai-khoan?callbackUrl=${encodeURIComponent(quayLai)}`}
+              className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              Chưa có tài khoản? Đăng ký
+            </Link>
+          </div>
+        )}
+      </div>
+    ) : null;
   const form: DuLieuDungForm = {
     dinhDanh: cauHinh.dinhDanh,
     truong: cauHinh.truong,
@@ -51,12 +77,12 @@ export default async function TrangDangKyCongKhaiKhoa({
     giaTri: tuHoSo?.giaTri ?? null,
   };
   const goiYDangNhap =
-    conMo && khoa.chuongTrinh.phuongThucDangKy !== "IMPORT_TU_XAC_NHAN" && cauHinh.dinhDanh !== "MA_SINH_VIEN" ? (
+    conMo && !chanTaiKhoan && khoa.chuongTrinh.phuongThucDangKy !== "IMPORT_TU_XAC_NHAN" && cauHinh.dinhDanh !== "MA_SINH_VIEN" ? (
       tuHoSo ? (
         <p className="mb-4 rounded-lg bg-success/10 p-3 text-sm text-success">
           Thông tin đã được điền sẵn từ hồ sơ của bạn ({tuHoSo.maHocVien}) - vui lòng kiểm tra lại trước khi đăng ký.
         </p>
-      ) : (
+      ) : canTaiKhoan ? null : (
         <p className="mb-4 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
           Đã từng học tại trung tâm?{" "}
           <Link href={`/dang-nhap?callbackUrl=${encodeURIComponent(`/khoa/${khoa.maKhoa}`)}`} className="font-medium underline">
@@ -79,7 +105,12 @@ export default async function TrangDangKyCongKhaiKhoa({
             {laDuThi ? "Đăng ký dự thi" : "Đăng ký khóa bồi dưỡng"}
           </p>
           <h1 className="mt-2 text-2xl leading-tight font-bold text-balance md:text-3xl">{khoa.chuongTrinh.ten}</h1>
-          <p className="mt-1 text-sm text-white/80">Mã khóa: {khoa.maKhoa}</p>
+          <p className="mt-1 text-sm text-white/80">
+            Mã khóa: {khoa.maKhoa} ·{" "}
+            <Link href={`/dang-ky/${khoa.chuongTrinh.maCT}`} className="text-white underline hover:text-ued-vang">
+              Các {laDuThi ? "đợt thi" : "khóa"} khác của chương trình
+            </Link>
+          </p>
           <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-3">
             {laDuThi ? (
               <div>
@@ -115,11 +146,14 @@ export default async function TrangDangKyCongKhaiKhoa({
       <div className="mx-auto -mt-4 flex max-w-3xl flex-col gap-4 px-4 pb-12">
         <div className="rounded-lg border bg-card p-6 shadow-md">
           {goiYDangNhap}
-          {(conMo || conMoXacNhanThamGia) && (
+          {chanTaiKhoan}
+          {!chanTaiKhoan && (conMo || conMoXacNhanThamGia) && (
             <p className="mb-4 text-xs text-muted-foreground">
               Các mục có dấu <span className="text-destructive">*</span> là bắt buộc.
             </p>
           )}
+          {!chanTaiKhoan && (
+            <>
           {khoa.chuongTrinh.phuongThucDangKy === "TRUC_TUYEN_NOP_GIAY" &&
             (conMo ? (
               <FormDangKy khoaId={khoa.id} maKhoa={khoa.maKhoa} form={form} />
@@ -131,7 +165,11 @@ export default async function TrangDangKyCongKhaiKhoa({
 
           {khoa.chuongTrinh.phuongThucDangKy === "IMPORT_TU_XAC_NHAN" &&
             (conMoXacNhanThamGia ? (
-              <FormXacNhanThamGia khoaId={khoa.id} hocVienDangNhap={await hocVienDangNhap()} form={form} />
+              <FormXacNhanThamGia
+                khoaId={khoa.id}
+                hocVienDangNhap={hocVien ? { hoTen: hocVien.hoTen, maHocVien: hocVien.maHocVien } : null}
+                form={form}
+              />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Khóa hiện chưa/không còn mở xác nhận tham gia.
@@ -147,7 +185,7 @@ export default async function TrangDangKyCongKhaiKhoa({
                   Đợt thi hiện không còn mở đăng ký (đã hết hạn, đã đóng đăng ký hoặc đã đủ sĩ số).
                 </p>
               )}
-              {form.dinhDanh === "MA_SINH_VIEN" && <FormTimLaiDon khoaId={khoa.id} maKhoa={khoa.maKhoa} moSan={!conMo} />}
+              <FormTimLaiDon khoaId={khoa.id} maKhoa={khoa.maKhoa} moSan={!conMo} theoMaSinhVien={form.dinhDanh === "MA_SINH_VIEN"} />
             </div>
           )}
 
@@ -182,6 +220,8 @@ export default async function TrangDangKyCongKhaiKhoa({
                 trung tâm/đơn vị liên kết để biết chi tiết.
               </p>
             )}
+            </>
+          )}
         </div>
       </div>
     </main>

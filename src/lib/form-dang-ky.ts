@@ -220,3 +220,12 @@ export function kiemTraDuLieu(
   }
   return { ketQua };
 }
+
+/**
+ * (bổ sung 01/10/2026) Khóa có giai đoạn học (Phương thức 1, 2, 4) cần tài khoản
+ * học viên để đăng ký (học trực tuyến, xem điểm, nhận thông báo); khóa chỉ đăng
+ * ký dự thi (Phương thức 3) không cần - thí sinh mở lại đơn bằng 4 số cuối CCCD.
+ */
+export function canTaiKhoanKhiDangKy(phuongThuc: string | null | undefined) {
+  return phuongThuc !== "CHI_DU_THI";
+}

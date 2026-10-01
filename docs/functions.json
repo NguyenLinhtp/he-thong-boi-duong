@@ -207,11 +207,11 @@
     "ma_cn": "KH-06",
     "nhom_chuc_nang": "3. Quản lý khóa bồi dưỡng",
     "ten_chuc_nang": "Thông báo tuyển sinh/mở khóa",
-    "mo_ta_chi_tiet": "Sinh và gửi thông báo mở khóa kèm mức học phí, thời hạn đăng ký qua website/email; đồng thời sinh đường link đăng ký công khai của khóa (dạng https://dangky.ued.udn.vn/khoa/{mã khóa}) để cán bộ dán vào bài đăng quảng bá trên website crdc.ued.udn.vn",
+    "mo_ta_chi_tiet": "Sinh và gửi thông báo mở khóa kèm mức học phí, thời hạn đăng ký qua website/email; đồng thời sinh đường link đăng ký công khai của khóa (dạng https://dangky.ued.udn.vn/khoa/{mã khóa}) để cán bộ dán vào bài đăng quảng bá trên website crdc.ued.udn.vn; (bổ sung 01/10/2026) trang chủ công khai hiển thị các chương trình đang có khóa mở đăng ký dạng khối (chia nhóm Đăng ký dự thi / Khóa bồi dưỡng, kèm lệ phí, hạn đăng ký, cần tài khoản hay không); chọn chương trình -> danh sách khóa/đợt thi đang mở -> trang đăng ký của khóa",
     "actor": "Phòng/Trung tâm bồi dưỡng",
     "input": "Nội dung thông báo, kênh gửi",
     "output": "Thông báo tuyển sinh đã phát hành; link đăng ký công khai của khóa",
-    "quy_tac_nghiep_vu": "Chỉ gửi/sinh link khi khóa ở trạng thái \"Đang tuyển sinh\"; link tự vô hiệu khi khóa đóng đăng ký hoặc đã đủ sĩ số; (bổ sung 29/09/2026) địa chỉ gốc của link lấy theo tham số QT-05 URL_GOC_HE_THONG, chưa cấu hình thì theo địa chỉ máy chủ đang chạy (chạy thử/UAT bấm được ngay) - dạng {gốc}/khoa/{mã khóa}; mã QR xác thực văn bằng (CC-05) dùng cùng gốc khi chưa cấu hình CC_URL_XAC_THUC",
+    "quy_tac_nghiep_vu": "Chỉ gửi/sinh link khi khóa ở trạng thái \"Đang tuyển sinh\"; link tự vô hiệu khi khóa đóng đăng ký hoặc đã đủ sĩ số; (bổ sung 29/09/2026) địa chỉ gốc của link lấy theo tham số QT-05 URL_GOC_HE_THONG, chưa cấu hình thì theo địa chỉ máy chủ đang chạy (chạy thử/UAT bấm được ngay) - dạng {gốc}/khoa/{mã khóa}; mã QR xác thực văn bằng (CC-05) dùng cùng gốc khi chưa cấu hình CC_URL_XAC_THUC; (bổ sung 01/10/2026) danh mục chỉ gồm chương trình Đã ban hành có khóa Đang tuyển sinh, chưa quá hạn đăng ký, còn chỗ",
     "do_uu_tien": "Trung bình",
     "giai_doan": "Đợt 1"
   },
@@ -235,7 +235,7 @@
     "actor": "Học viên",
     "input": "Thông tin cá nhân, khóa đăng ký",
     "output": "Đơn đăng ký (PDF); hồ sơ ở trạng thái \"Đã đăng ký online – chờ nộp bản giấy\"",
-    "quy_tac_nghiep_vu": "Chỉ áp dụng cho chương trình cấu hình Phương thức 1; không đăng ký trùng vào 1 khóa quá 1 lần; (bổ sung 30/09/2026) thiếu trường bắt buộc/tệp minh chứng bắt buộc hoặc giá trị ngoài danh sách chọn thì không nhận đăng ký; trường cố định luôn ghi giá trị cấu hình; tự điền từ hồ sơ cũ chỉ cho học viên đang đăng nhập (không tra cứu theo CCCD người khác nhập để tránh lộ thông tin); hồ sơ học viên đã có chỉ được bổ sung chỗ còn trống, không ghi đè; câu trả lời trường tùy chỉnh lưu kèm hồ sơ đăng ký cùng nhãn trường tại thời điểm đăng ký; tệp minh chứng chỉ cán bộ xử lý hồ sơ, chính học viên và đơn vị liên kết của hợp đồng tương ứng xem được",
+    "quy_tac_nghiep_vu": "Chỉ áp dụng cho chương trình cấu hình Phương thức 1; không đăng ký trùng vào 1 khóa quá 1 lần; (bổ sung 30/09/2026) thiếu trường bắt buộc/tệp minh chứng bắt buộc hoặc giá trị ngoài danh sách chọn thì không nhận đăng ký; trường cố định luôn ghi giá trị cấu hình; tự điền từ hồ sơ cũ chỉ cho học viên đang đăng nhập (không tra cứu theo CCCD người khác nhập để tránh lộ thông tin); hồ sơ học viên đã có chỉ được bổ sung chỗ còn trống, không ghi đè; câu trả lời trường tùy chỉnh lưu kèm hồ sơ đăng ký cùng nhãn trường tại thời điểm đăng ký; tệp minh chứng chỉ cán bộ xử lý hồ sơ, chính học viên và đơn vị liên kết của hợp đồng tương ứng xem được; (bổ sung 01/10/2026) khóa bồi dưỡng (Phương thức 1, 2, 4b) chỉ đăng ký/xác nhận bằng tài khoản học viên đang đăng nhập - họ tên, CCCD lấy từ hồ sơ của tài khoản, không đăng ký hộ người khác; chưa có tài khoản thì tự đăng ký (QT-01)",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 1"
   },
@@ -271,7 +271,7 @@
     "actor": "Học viên",
     "input": "CCCD/mã số/tài khoản, thông tin bổ sung",
     "output": "Trạng thái \"Đã xác nhận tham gia\"",
-    "quy_tac_nghiep_vu": "Chỉ xác nhận được khi CCCD/mã số khớp với dữ liệu đã import; không xác nhận trùng lần 2",
+    "quy_tac_nghiep_vu": "Chỉ xác nhận được khi CCCD/mã số khớp với dữ liệu đã import; không xác nhận trùng lần 2; (bổ sung 01/10/2026) khóa bồi dưỡng (Phương thức 1, 2, 4b) chỉ đăng ký/xác nhận bằng tài khoản học viên đang đăng nhập - họ tên, CCCD lấy từ hồ sơ của tài khoản, không đăng ký hộ người khác; chưa có tài khoản thì tự đăng ký (QT-01)",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 1"
   },
@@ -283,7 +283,7 @@
     "actor": "Học viên",
     "input": "Thông tin học viên, đợt thi đăng ký",
     "output": "Danh sách thí sinh dự thi",
-    "quy_tac_nghiep_vu": "Khóa thuộc Phương thức 3 không áp dụng điểm danh/giảng dạy (module Quản lý giảng dạy); (bổ sung 01/10/2026) định danh bằng mã sinh viên chỉ cho chương trình Phương thức 3; họ tên/CCCD/lớp lấy theo danh sách sinh viên, không theo dữ liệu thí sinh gõ; tra cứu mã sinh viên không trả về CCCD; lệ phí (mức học phí của khóa) phát sinh ngay khi đăng ký; tài khoản nhận lệ phí theo tham số QT-05 NH_MA_BIN/NH_SO_TAI_KHOAN/NH_CHU_TAI_KHOAN/NH_TEN_NGAN_HANG; minh chứng chuyển khoản nộp lại được đến khi lệ phí được xác nhận, chỉ cán bộ tài chính (HP-02), cán bộ xử lý hồ sơ và chính thí sinh xem được",
+    "quy_tac_nghiep_vu": "Khóa thuộc Phương thức 3 không áp dụng điểm danh/giảng dạy (module Quản lý giảng dạy); (bổ sung 01/10/2026) định danh bằng mã sinh viên chỉ cho chương trình Phương thức 3; họ tên/CCCD/lớp lấy theo danh sách sinh viên, không theo dữ liệu thí sinh gõ; tra cứu mã sinh viên không trả về CCCD; lệ phí (mức học phí của khóa) phát sinh ngay khi đăng ký; tài khoản nhận lệ phí theo tham số QT-05 NH_MA_BIN/NH_SO_TAI_KHOAN/NH_CHU_TAI_KHOAN/NH_TEN_NGAN_HANG; minh chứng chuyển khoản nộp lại được đến khi lệ phí được xác nhận, chỉ cán bộ tài chính (HP-02), cán bộ xử lý hồ sơ và chính thí sinh xem được; (bổ sung 01/10/2026) đăng ký dự thi không cần tài khoản; mở lại đơn (in lại, nộp minh chứng) bằng mã sinh viên + 4 số cuối CCCD, hoặc số CCCD + họ tên với form định danh CCCD",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 1"
   },
@@ -367,7 +367,7 @@
     "actor": "Học viên",
     "input": "Thông tin cá nhân, khóa đăng ký, đơn vị liên kết được chọn",
     "output": "Đơn đăng ký (PDF) có mục \"Đơn vị liên kết thu hồ sơ\"; hồ sơ gắn với hợp đồng liên kết tương ứng",
-    "quy_tac_nghiep_vu": "Danh sách đơn vị liên kết hiển thị để chọn chỉ gồm các đơn vị đang có hợp đồng liên kết còn hiệu lực với khóa đó",
+    "quy_tac_nghiep_vu": "Danh sách đơn vị liên kết hiển thị để chọn chỉ gồm các đơn vị đang có hợp đồng liên kết còn hiệu lực với khóa đó; (bổ sung 01/10/2026) khóa bồi dưỡng (Phương thức 1, 2, 4b) chỉ đăng ký/xác nhận bằng tài khoản học viên đang đăng nhập - họ tên, CCCD lấy từ hồ sơ của tài khoản, không đăng ký hộ người khác; chưa có tài khoản thì tự đăng ký (QT-01)",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 2"
   },
@@ -699,11 +699,11 @@
     "ma_cn": "QT-01",
     "nhom_chuc_nang": "10. Quản trị hệ thống",
     "ten_chuc_nang": "Quản lý tài khoản người dùng",
-    "mo_ta_chi_tiet": "Tạo/khóa/xóa tài khoản, đặt lại mật khẩu cho cán bộ, giảng viên, học viên",
+    "mo_ta_chi_tiet": "Tạo/khóa/xóa tài khoản, đặt lại mật khẩu cho cán bộ, giảng viên, học viên; (bổ sung 01/10/2026) học viên tự đăng ký tài khoản trên trang công khai (họ tên, CCCD, ngày sinh, số điện thoại, email, mật khẩu) để đăng ký khóa bồi dưỡng",
     "actor": "Quản trị hệ thống",
     "input": "Thông tin tài khoản, vai trò",
     "output": "Tài khoản người dùng",
-    "quy_tac_nghiep_vu": "Mật khẩu tuân thủ chính sách bảo mật tối thiểu",
+    "quy_tac_nghiep_vu": "Mật khẩu tuân thủ chính sách bảo mật tối thiểu; (bổ sung 01/10/2026) tài khoản tự đăng ký: tên đăng nhập = số CCCD, vai trò Học viên, gắn hồ sơ học viên theo CCCD; CCCD đã có tài khoản thì không đăng ký lại; hồ sơ học viên đã có chỉ được nhận khi họ tên và (nếu hồ sơ có) ngày sinh khớp, chỉ bổ sung chỗ trống; ghi nhật ký",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 1"
   },

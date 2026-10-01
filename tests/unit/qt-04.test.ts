@@ -185,6 +185,7 @@ describe("QT-04 sao lưu và phục hồi dữ liệu", () => {
         await phucHoiTuBanSaoLuu(banGoc.id);
       }
     },
-    30_000,
+    // sao lưu + phục hồi 2 lần toàn bộ CSDL dev - thời gian tăng theo dữ liệu tích lũy (~32s ngày 01/10/2026)
+    90_000,
   );
 });

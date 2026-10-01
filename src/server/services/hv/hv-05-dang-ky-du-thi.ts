@@ -70,17 +70,28 @@ async function xacMinhSinhVien(maSinhVien: string | null | undefined, cuoiCCCD: 
  * chuyển khoản) bằng mã sinh viên + 4 số cuối CCCD - dùng được cả khi đã hết
  * hạn đăng ký. Trả về mã hồ sơ (đường link đơn).
  */
-export async function timLaiDonDuThi(khoaId: string, maSinhVien: string, cuoiCCCD: string) {
+export type ThongTinTimLaiDon = { maSinhVien?: string | null; cuoiCCCD?: string | null; soCCCD?: string | null; hoTen?: string | null };
+
+export async function timLaiDonDuThi(khoaId: string, tt: ThongTinTimLaiDon) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
   if (khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") throw new SaiPhuongThucDangKyError("Phương thức 3 (đăng ký dự thi, không qua học)");
   const { cauHinh } = await cauHinhHieuLuc(khoa.id);
-  if (cauHinh.dinhDanh !== "MA_SINH_VIEN") throw new SinhVienKhongCoTrongDanhSachError();
-  const sv = await xacMinhSinhVien(maSinhVien, cuoiCCCD);
-  const dangKy = await prisma.dangKyHoc.findFirst({
-    where: { khoaId: khoa.id, hocVien: { OR: [{ maSinhVien: sv.maSinhVien }, { soCCCD: sv.soCCCD }] } },
-  });
-  if (!dangKy) throw new KhongTimThayDangKyError();
+  let dieuKien: Prisma.HocVienWhereInput;
+  if (cauHinh.dinhDanh === "MA_SINH_VIEN") {
+    const sv = await xacMinhSinhVien(tt.maSinhVien, tt.cuoiCCCD);
+    dieuKien = { OR: [{ maSinhVien: sv.maSinhVien }, { soCCCD: sv.soCCCD }] };
+  } else {
+    // (bổ sung 01/10/2026) form định danh CCCD: số CCCD + họ tên đã khai (không phân biệt hoa thường/dấu cách)
+    const soCCCD = (tt.soCCCD ?? "").trim();
+    if (!soCCCD || !(tt.hoTen ?? "").trim()) throw new KhongTimThayDangKyError();
+    dieuKien = { soCCCD };
+  }
+  const dangKy = await prisma.dangKyHoc.findFirst({ where: { khoaId: khoa.id, hocVien: dieuKien }, include: { hocVien: true } });
+  const chuan = (x: string) => x.trim().replace(/\s+/g, " ").toLocaleLowerCase("vi");
+  if (!dangKy || (cauHinh.dinhDanh !== "MA_SINH_VIEN" && chuan(dangKy.hocVien.hoTen) !== chuan(tt.hoTen ?? ""))) {
+    throw new KhongTimThayDangKyError();
+  }
   return dangKy.id;
 }
 

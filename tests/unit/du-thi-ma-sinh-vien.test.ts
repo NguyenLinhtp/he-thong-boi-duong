@@ -191,7 +191,7 @@ describe("HV-05 bổ sung - đăng ký dự thi bằng mã sinh viên + lệ ph�
     const loi = await dangKy(khoa.id, sv).catch((e) => e);
     expect(loi).toBeInstanceOf(DaDangKyKhoaNayError);
     expect((loi as DaDangKyKhoaNayError).dangKyId).toBe(dk.id);
-    expect(await timLaiDonDuThi(khoa.id, sv.ma, sv.cccd.slice(-4))).toBe(dk.id);
+    expect(await timLaiDonDuThi(khoa.id, { maSinhVien: sv.ma, cuoiCCCD: sv.cccd.slice(-4) })).toBe(dk.id);
     // chưa cấu hình tài khoản ngân hàng thì không có QR nhưng vẫn có nội dung chuyển khoản
     const lp = await thongTinLePhiDuThi(dk.id);
     expect(lp).toMatchObject({ soTienPhaiNop: 500000, noiDung: `${khoa.maKhoa} ${sv.ma}`, daXong: false });

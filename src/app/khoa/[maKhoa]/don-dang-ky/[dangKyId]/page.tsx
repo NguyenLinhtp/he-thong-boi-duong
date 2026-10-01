@@ -67,8 +67,8 @@ export default async function TrangDonDangKy({
             {daDangKy
               ? "Bạn đã đăng ký đợt thi này trước đó - dưới đây là đơn của bạn."
               : "Đăng ký dự thi thành công! Vui lòng in đơn, ký tên và hoàn tất lệ phí theo hướng dẫn bên dưới."}{" "}
-            Lưu lại đường dẫn trang này để quay lại nộp minh chứng (hoặc mở lại đơn bằng mã sinh viên + 4 số cuối CCCD trên
-            trang đăng ký).
+            Lưu lại đường dẫn trang này để quay lại nộp minh chứng (hoặc mở lại đơn bằng{" "}
+            {hv.maSinhVien ? "mã sinh viên + 4 số cuối CCCD" : "số CCCD + họ tên"} trên trang đăng ký) - không cần tài khoản.
           </p>
 
           {lePhi && (

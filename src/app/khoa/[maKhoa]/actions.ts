@@ -10,6 +10,21 @@ import { DaDangKyKhoaNayError } from "@/server/services/hv/loi-hoc-vien";
 import type { KetQuaTraCuuSinhVien } from "@/components/dang-ky/truong-ma-sinh-vien";
 import { dangKyQuaDonViLienKet } from "@/server/services/hv/hv-12-dang-ky-qua-dvlk";
 import { cauHinhHieuLuc, docDuLieuForm } from "@/server/services/hv/form-dang-ky";
+import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
+
+/**
+ * (bổ sung 01/10/2026) Khóa bồi dưỡng (PT1, PT2, PT4b) chỉ đăng ký bằng tài khoản
+ * học viên đang đăng nhập: danh tính (họ tên, CCCD) lấy từ hồ sơ của tài khoản,
+ * không theo dữ liệu gửi lên - không đăng ký hộ người khác được.
+ */
+async function hocVienDangNhapBatBuoc() {
+  const userId = (await auth())?.phienDangNhap?.userId;
+  if (!userId) return { loi: "Khóa học cần tài khoản học viên - vui lòng đăng nhập hoặc đăng ký tài khoản" } as const;
+  const hocVien = await hocVienCuaTaiKhoan(userId);
+  if (!hocVien) return { loi: "Tài khoản đang đăng nhập không phải tài khoản học viên" } as const;
+  if (!hocVien.soCCCD) return { loi: "Hồ sơ học viên chưa có số CCCD - vui lòng cập nhật hồ sơ cá nhân" } as const;
+  return { userId, hocVien } as const;
+}
 
 // (bổ sung 30/09/2026) đọc dữ liệu form theo cấu hình hiệu lực của khóa (gồm trường tùy chỉnh, tệp minh chứng)
 async function duLieuForm(formData: FormData) {
@@ -21,12 +36,14 @@ export async function dangKyTrucTuyenAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
+  const tk = await hocVienDangNhapBatBuoc();
+  if ("loi" in tk) return tk.loi;
   let dangKy;
   try {
     dangKy = await dangKyTrucTuyen({
       khoaId: String(formData.get("khoaId")),
-      hoTen: String(formData.get("hoTen") ?? ""),
-      soCCCD: String(formData.get("soCCCD") ?? ""),
+      hoTen: tk.hocVien.hoTen,
+      soCCCD: tk.hocVien.soCCCD,
       duLieuForm: await duLieuForm(formData),
     });
   } catch (error) {
@@ -42,15 +59,16 @@ export async function xacNhanThamGiaAction(
   formData: FormData,
 ): Promise<string | undefined> {
   // HV-04 "xác nhận bằng tài khoản": danh tính lấy từ phiên đăng nhập phía server
-  const bangTaiKhoan = formData.get("cachXacNhan") === "TAI_KHOAN";
-  const nguoiDungId = bangTaiKhoan ? (await auth())?.phienDangNhap?.userId : null;
-  if (bangTaiKhoan && !nguoiDungId) return "Phiên đăng nhập đã hết hạn - hãy đăng nhập lại hoặc xác nhận bằng CCCD/mã số";
+  // (bổ sung 01/10/2026) khóa bồi dưỡng chỉ xác nhận bằng tài khoản học viên
+  const tk = await hocVienDangNhapBatBuoc();
+  if ("loi" in tk) return tk.loi;
+  const nguoiDungId = tk.userId;
 
   try {
     await xacNhanThamGia(
       {
         khoaId: String(formData.get("khoaId")),
-        soCCCD: bangTaiKhoan ? null : String(formData.get("soCCCD") || ""),
+        soCCCD: null,
         duLieuForm: await duLieuForm(formData),
       },
       nguoiDungId,
@@ -67,13 +85,15 @@ export async function dangKyQuaDonViLienKetAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
+  const tk = await hocVienDangNhapBatBuoc();
+  if ("loi" in tk) return tk.loi;
   let dangKy;
   try {
     dangKy = await dangKyQuaDonViLienKet({
       khoaId: String(formData.get("khoaId")),
       donViLienKetId: String(formData.get("donViLienKetId")),
-      hoTen: String(formData.get("hoTen") ?? ""),
-      soCCCD: String(formData.get("soCCCD") ?? ""),
+      hoTen: tk.hocVien.hoTen,
+      soCCCD: tk.hocVien.soCCCD,
       duLieuForm: await duLieuForm(formData),
     });
   } catch (error) {
@@ -116,11 +136,12 @@ export async function dangKyDuThiAction(
 export async function timLaiDonDuThiAction(_prev: string | undefined, formData: FormData): Promise<string | undefined> {
   let dangKyId: string;
   try {
-    dangKyId = await timLaiDonDuThi(
-      String(formData.get("khoaId")),
-      String(formData.get("maSinhVien") ?? ""),
-      String(formData.get("cuoiCCCD") ?? ""),
-    );
+    dangKyId = await timLaiDonDuThi(String(formData.get("khoaId")), {
+      maSinhVien: String(formData.get("maSinhVien") ?? ""),
+      cuoiCCCD: String(formData.get("cuoiCCCD") ?? ""),
+      soCCCD: String(formData.get("soCCCD") ?? ""),
+      hoTen: String(formData.get("hoTen") ?? ""),
+    });
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;
