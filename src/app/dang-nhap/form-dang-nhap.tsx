@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { dangNhap } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,15 @@ export function FormDangNhap() {
       <Button type="submit" disabled={dangXuLy} className="mt-2 h-11 text-base">
         {dangXuLy ? "Đang đăng nhập..." : "Đăng nhập"}
       </Button>
+      <p className="text-center text-sm text-muted-foreground">
+        Học viên chưa có tài khoản?{" "}
+        <Link
+          href={`/dang-ky-tai-khoan${searchParams.get("callbackUrl") ? `?callbackUrl=${encodeURIComponent(searchParams.get("callbackUrl")!)}` : ""}`}
+          className="font-medium text-primary underline"
+        >
+          Đăng ký tài khoản
+        </Link>
+      </p>
     </form>
   );
 }

@@ -16,7 +16,7 @@ export class MatKhauYeuError extends Error {
 }
 
 // QT-01: "Mật khẩu tuân thủ chính sách bảo mật tối thiểu"
-function kiemTraChinhSachMatKhau(matKhau: string) {
+export function kiemTraChinhSachMatKhau(matKhau: string) {
   const duDai = matKhau.length >= 8;
   const coChu = /[a-zA-Z]/.test(matKhau);
   const coSo = /[0-9]/.test(matKhau);
