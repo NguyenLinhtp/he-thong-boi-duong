@@ -24,6 +24,8 @@ import {
   NopMinhChungLePhiError,
   SinhVienKhongCoTrongDanhSachError,
   XacMinhSinhVienKhongKhopError,
+  LaSinhVienCuaTruongError,
+  ThongTinDangKyKhongHopLeError,
 } from "@/server/services/hv/loi-hoc-vien";
 
 const NGUOI = { nguoiThucHienTen: "Test dự thi mã SV" };
@@ -195,6 +197,35 @@ describe("HV-05 bổ sung - đăng ký dự thi bằng mã sinh viên + lệ ph�
     // chưa cấu hình tài khoản ngân hàng thì không có QR nhưng vẫn có nội dung chuyển khoản
     const lp = await thongTinLePhiDuThi(dk.id);
     expect(lp).toMatchObject({ soTienPhaiNop: 500000, noiDung: `${khoa.maKhoa} ${sv.ma}`, daXong: false });
+  });
+
+  it("thí sinh tự do (không phải sinh viên): đăng ký bằng họ tên + CCCD, không cần mã SV; mở lại đơn bằng CCCD + họ tên", async () => {
+    const { khoa } = await taoKhoaDuThi();
+    const cccdTuDo = `0${1 + Math.floor(Math.random() * 9)}${so(10)}`;
+    const tuDo = (them: Record<string, unknown> = {}) =>
+      dangKyDuThi({
+        khoaId: khoa.id,
+        hoTen: "Thí Sinh Tự Do",
+        soCCCD: cccdTuDo,
+        laThiSinhTuDo: true,
+        duLieuForm: { giaTri: { soDienThoai: "0905000222" }, tep: {} },
+        ...them,
+      });
+    // chặn: thiếu họ tên, CCCD sai
+    await expect(tuDo({ hoTen: " " })).rejects.toThrow(ThongTinDangKyKhongHopLeError);
+    await expect(tuDo({ soCCCD: "12345" })).rejects.toThrow(/CCCD không hợp lệ/);
+    // chặn: CCCD thuộc sinh viên trong danh sách -> phải đăng ký theo diện sinh viên
+    const sv = taoSv();
+    await napSv(sv);
+    await expect(tuDo({ soCCCD: sv.cccd })).rejects.toThrow(LaSinhVienCuaTruongError);
+
+    const dk = await tuDo();
+    expect(dk.hocVien).toMatchObject({ hoTen: "Thí Sinh Tự Do", soCCCD: cccdTuDo, maSinhVien: null, lopSinhHoat: null });
+    expect(await prisma.hocPhi.count({ where: { khoaId: khoa.id, hocVienId: dk.hocVienId } })).toBe(1);
+    expect(await timLaiDonDuThi(khoa.id, { soCCCD: cccdTuDo, hoTen: "thí sinh tự do" })).toBe(dk.id);
+    await expect(timLaiDonDuThi(khoa.id, { soCCCD: cccdTuDo, hoTen: "Người Khác" })).rejects.toThrow();
+    // không chọn "thí sinh tự do" thì vẫn bắt buộc mã sinh viên
+    await expect(dangKyDuThi({ khoaId: khoa.id, hoTen: "X", soCCCD: cccdTuDo })).rejects.toThrow(SinhVienKhongCoTrongDanhSachError);
   });
 
   it("hạn đăng ký: quá hạn thì đóng đăng ký", async () => {

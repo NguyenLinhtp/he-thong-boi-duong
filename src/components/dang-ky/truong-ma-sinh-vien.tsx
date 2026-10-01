@@ -88,3 +88,44 @@ export function TruongMaSinhVien({ traCuu }: { traCuu?: (ma: string) => Promise<
     </>
   );
 }
+
+export type DoiTuongDuThi = "SINH_VIEN" | "TU_DO";
+
+/**
+ * (bổ sung 01/10/2026) 2 nút chọn đầu form dự thi định danh bằng mã sinh viên:
+ * sinh viên của trường (mã SV bắt buộc) hoặc thí sinh tự do (họ tên + CCCD, không cần mã SV).
+ */
+export function ChonDoiTuongDuThi({
+  giaTri,
+  onChon,
+  className,
+}: {
+  giaTri: DoiTuongDuThi;
+  onChon?: (d: DoiTuongDuThi) => void;
+  className?: string;
+}) {
+  const nut = (d: DoiTuongDuThi, nhan: string, moTa: string) => (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={giaTri === d}
+      onClick={() => onChon?.(d)}
+      className={
+        "flex flex-1 flex-col items-start rounded-lg border-2 px-4 py-3 text-left transition " +
+        (giaTri === d ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/40")
+      }
+    >
+      <span className="flex items-center gap-2 font-semibold">
+        <span className={"size-3.5 rounded-full border-2 " + (giaTri === d ? "border-primary bg-primary" : "border-muted-foreground")} />
+        {nhan}
+      </span>
+      <span className="mt-0.5 pl-5.5 text-xs text-muted-foreground">{moTa}</span>
+    </button>
+  );
+  return (
+    <div role="radiogroup" aria-label="Đối tượng dự thi" className={"flex flex-col gap-2 sm:flex-row " + (className ?? "")}>
+      {nut("SINH_VIEN", "Sinh viên của trường", "Nhập mã sinh viên, hệ thống tự điền họ tên, lớp")}
+      {nut("TU_DO", "Thí sinh tự do", "Không phải sinh viên của trường - nhập họ tên, số CCCD")}
+    </div>
+  );
+}

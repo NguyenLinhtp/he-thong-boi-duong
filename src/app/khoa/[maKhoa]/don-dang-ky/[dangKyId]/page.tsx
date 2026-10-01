@@ -139,9 +139,9 @@ export default async function TrangDonDangKy({
           <p className="mt-4">Kính gửi: {tenCoQuan ?? "Phòng/Trung tâm bồi dưỡng"}</p>
           <div className="mt-2 grid grid-cols-2 gap-x-4">
             <p>Họ và tên: <b>{hv.hoTen}</b></p>
-            <p>Mã sinh viên: {hv.maSinhVien ?? "—"}</p>
+            {hv.maSinhVien ? <p>Mã sinh viên: {hv.maSinhVien}</p> : <p>Đối tượng: Thí sinh tự do</p>}
             <p>Số CCCD: {hv.soCCCD ?? "—"}</p>
-            <p>Lớp sinh hoạt: {hv.lopSinhHoat ?? "—"}</p>
+            {hv.maSinhVien && <p>Lớp sinh hoạt: {hv.lopSinhHoat ?? "—"}</p>}
             {hv.ngaySinh && <p>Ngày sinh: {dinhDangNgay(hv.ngaySinh)}</p>}
             {hv.soDienThoai && <p>Điện thoại: {hv.soDienThoai}</p>}
             {hv.email && <p className="col-span-2">Email: {hv.email}</p>}

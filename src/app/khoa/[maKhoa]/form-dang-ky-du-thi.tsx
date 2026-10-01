@@ -1,26 +1,35 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { dangKyDuThiAction, traCuuSinhVienAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { guiGiuDuLieu } from "@/components/dang-ky/gui-giu-du-lieu";
 import { CacTruongDangKy, TruongDinhDanh } from "@/components/dang-ky/cac-truong-dang-ky";
-import { TruongMaSinhVien } from "@/components/dang-ky/truong-ma-sinh-vien";
+import { ChonDoiTuongDuThi, TruongMaSinhVien, type DoiTuongDuThi } from "@/components/dang-ky/truong-ma-sinh-vien";
 import type { DuLieuDungForm } from "./kieu-form";
 
-// HV-05 (PT3): form theo cấu hình chương trình/khóa (bổ sung 30/09/2026); định danh bằng mã sinh viên (bổ sung 01/10/2026)
+// HV-05 (PT3): form theo cấu hình chương trình/khóa (bổ sung 30/09/2026); định danh bằng mã sinh viên,
+// kèm lựa chọn thí sinh tự do không phải sinh viên của trường (bổ sung 01/10/2026)
 export function FormDangKyDuThi({ khoaId, maKhoa, form }: { khoaId: string; maKhoa: string; form: DuLieuDungForm }) {
   const [loi, formAction, dangXuLy] = useActionState(dangKyDuThiAction, undefined);
-  const theoMaSinhVien = form.dinhDanh === "MA_SINH_VIEN";
+  const coMaSinhVien = form.dinhDanh === "MA_SINH_VIEN";
+  const [doiTuong, setDoiTuong] = useState<DoiTuongDuThi>("SINH_VIEN");
+  const theoMaSinhVien = coMaSinhVien && doiTuong === "SINH_VIEN";
 
   return (
     <form onSubmit={guiGiuDuLieu(formAction)} className="grid gap-4 sm:grid-cols-2">
       <input type="hidden" name="khoaId" value={khoaId} />
       <input type="hidden" name="maKhoa" value={maKhoa} />
+      {coMaSinhVien && (
+        <>
+          <input type="hidden" name="doiTuong" value={doiTuong} />
+          <ChonDoiTuongDuThi giaTri={doiTuong} onChon={setDoiTuong} className="sm:col-span-2" />
+        </>
+      )}
       {theoMaSinhVien ? (
-        <TruongMaSinhVien traCuu={traCuuSinhVienAction.bind(null, khoaId)} />
+        <TruongMaSinhVien key="sv" traCuu={traCuuSinhVienAction.bind(null, khoaId)} />
       ) : (
-        <TruongDinhDanh giaTri={form.giaTri ?? undefined} khoa={!!form.giaTri} />
+        <TruongDinhDanh key="tu-do" giaTri={form.giaTri ?? undefined} khoa={!!form.giaTri} />
       )}
       <CacTruongDangKy truong={form.truong} dsChucDanh={form.dsChucDanh} giaTri={form.giaTri ?? undefined} />
       <div className="flex flex-col gap-2 sm:col-span-2">

@@ -16,7 +16,10 @@ import {
   SinhVienKhongCoTrongDanhSachError,
   XacMinhSinhVienKhongKhopError,
   NopMinhChungLePhiError,
+  LaSinhVienCuaTruongError,
+  ThongTinDangKyKhongHopLeError,
 } from "@/server/services/hv/loi-hoc-vien";
+import { chuanHoaCCCD } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 import { taoLePhiKhiDangKyDuThi } from "@/server/services/hp/hp-01-thiet-lap";
 import { layThamSo, layThamSoSo } from "@/server/services/qt/qt-05-tham-so";
@@ -26,6 +29,8 @@ export type DangKyDuThiInput = ThongTinHocVienInput & {
   khoaId: string;
   // (bổ sung 01/10/2026) form định danh bằng mã sinh viên: mã SV + 4 số cuối CCCD để xác minh
   cuoiCCCD?: string | null;
+  // (bổ sung 01/10/2026) form mã sinh viên nhưng thí sinh chọn "Thí sinh tự do" (không phải sinh viên của trường)
+  laThiSinhTuDo?: boolean;
 };
 
 async function khoaDuThiDangMo(khoaId: string) {
@@ -78,7 +83,8 @@ export async function timLaiDonDuThi(khoaId: string, tt: ThongTinTimLaiDon) {
   if (khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") throw new SaiPhuongThucDangKyError("Phương thức 3 (đăng ký dự thi, không qua học)");
   const { cauHinh } = await cauHinhHieuLuc(khoa.id);
   let dieuKien: Prisma.HocVienWhereInput;
-  if (cauHinh.dinhDanh === "MA_SINH_VIEN") {
+  const theoMaSinhVien = cauHinh.dinhDanh === "MA_SINH_VIEN" && !!tt.maSinhVien?.trim();
+  if (theoMaSinhVien) {
     const sv = await xacMinhSinhVien(tt.maSinhVien, tt.cuoiCCCD);
     dieuKien = { OR: [{ maSinhVien: sv.maSinhVien }, { soCCCD: sv.soCCCD }] };
   } else {
@@ -89,7 +95,7 @@ export async function timLaiDonDuThi(khoaId: string, tt: ThongTinTimLaiDon) {
   }
   const dangKy = await prisma.dangKyHoc.findFirst({ where: { khoaId: khoa.id, hocVien: dieuKien }, include: { hocVien: true } });
   const chuan = (x: string) => x.trim().replace(/\s+/g, " ").toLocaleLowerCase("vi");
-  if (!dangKy || (cauHinh.dinhDanh !== "MA_SINH_VIEN" && chuan(dangKy.hocVien.hoTen) !== chuan(tt.hoTen ?? ""))) {
+  if (!dangKy || (!theoMaSinhVien && chuan(dangKy.hocVien.hoTen) !== chuan(tt.hoTen ?? ""))) {
     throw new KhongTimThayDangKyError();
   }
   return dangKy.id;
@@ -112,7 +118,7 @@ export async function dangKyDuThi(input: DangKyDuThiInput) {
   const { cauHinh } = await cauHinhHieuLuc(khoa.id);
 
   let thongTinGoc: ThongTinHocVienInput = input;
-  if (cauHinh.dinhDanh === "MA_SINH_VIEN") {
+  if (cauHinh.dinhDanh === "MA_SINH_VIEN" && !input.laThiSinhTuDo) {
     const sv = await xacMinhSinhVien(input.maSinhVien, input.cuoiCCCD);
     // danh tính đã xác minh -> đăng ký lại thì trả về hồ sơ cũ để xem đơn/nộp minh chứng
     const daCo = await prisma.dangKyHoc.findFirst({
@@ -121,7 +127,17 @@ export async function dangKyDuThi(input: DangKyDuThiInput) {
     if (daCo) throw new DaDangKyKhoaNayError(daCo.id);
     thongTinGoc = { ...input, hoTen: sv.hoTen, soCCCD: sv.soCCCD, maSinhVien: sv.maSinhVien, lopSinhHoat: sv.lopSinhHoat };
   } else {
-    thongTinGoc = { ...input, maSinhVien: null, lopSinhHoat: null };
+    if (cauHinh.dinhDanh === "MA_SINH_VIEN") {
+      // (bổ sung 01/10/2026) thí sinh tự do: họ tên + CCCD tự nhập; CCCD có trong danh sách
+      // sinh viên thì phải đăng ký theo diện sinh viên (giữ đúng mã SV, lớp)
+      const soCCCD = chuanHoaCCCD((input.soCCCD ?? "").trim());
+      if (!input.hoTen.trim()) throw new ThongTinDangKyKhongHopLeError('Chưa nhập "Họ tên"');
+      if (!soCCCD) throw new ThongTinDangKyKhongHopLeError("Số CCCD không hợp lệ (12 chữ số)");
+      if (await prisma.sinhVien.findUnique({ where: { soCCCD } })) throw new LaSinhVienCuaTruongError();
+      thongTinGoc = { ...input, soCCCD, maSinhVien: null, lopSinhHoat: null };
+    } else {
+      thongTinGoc = { ...input, maSinhVien: null, lopSinhHoat: null };
+    }
   }
 
   // (bổ sung 30/09/2026) kiểm tra theo form đăng ký cấu hình của khóa trước khi tạo hồ sơ

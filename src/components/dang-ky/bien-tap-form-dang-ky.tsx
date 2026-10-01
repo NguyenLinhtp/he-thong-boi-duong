@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp, Eye, EyeOff, Lock, Plus, Trash2 } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CacTruongDangKy, TruongDinhDanh } from "@/components/dang-ky/cac-truong-dang-ky";
-import { TruongMaSinhVien } from "@/components/dang-ky/truong-ma-sinh-vien";
+import { ChonDoiTuongDuThi, TruongMaSinhVien } from "@/components/dang-ky/truong-ma-sinh-vien";
 import {
   NHAN_KIEU_TRUONG,
   chuanHoaCauHinh,
@@ -133,7 +133,8 @@ export function BienTapFormDangKy({
                 <Link href="/hoc-vien/sinh-vien" className="underline">
                   danh sách sinh viên đã import
                 </Link>
-                ; thí sinh xác minh bằng 4 số cuối CCCD
+                ; thí sinh xác minh bằng 4 số cuối CCCD. Đầu form có lựa chọn <i>Thí sinh tự do</i> cho người không phải
+                sinh viên của trường (nhập họ tên + CCCD, không cần mã sinh viên)
               </span>
             </label>
           </fieldset>
@@ -308,7 +309,14 @@ export function BienTapFormDangKy({
       <aside className="flex flex-col gap-2 lg:sticky lg:top-4 lg:self-start">
         <h3 className="text-sm font-bold text-ued-blue-dam">Xem trước form học viên sẽ thấy</h3>
         <fieldset disabled className="grid gap-3 rounded-lg border bg-card p-4 shadow-sm">
-          {dinhDanh === "MA_SINH_VIEN" ? <TruongMaSinhVien /> : <TruongDinhDanh />}
+          {dinhDanh === "MA_SINH_VIEN" ? (
+            <>
+              <ChonDoiTuongDuThi giaTri="SINH_VIEN" className="sm:col-span-2" />
+              <TruongMaSinhVien />
+            </>
+          ) : (
+            <TruongDinhDanh />
+          )}
           <CacTruongDangKy truong={xemTruoc} dsChucDanh={dsChucDanh} />
         </fieldset>
       </aside>

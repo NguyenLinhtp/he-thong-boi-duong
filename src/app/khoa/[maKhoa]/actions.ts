@@ -117,6 +117,7 @@ export async function dangKyDuThiAction(
       soCCCD: String(formData.get("soCCCD") ?? ""),
       maSinhVien: String(formData.get("maSinhVien") ?? ""),
       cuoiCCCD: String(formData.get("cuoiCCCD") ?? ""),
+      laThiSinhTuDo: formData.get("doiTuong") === "TU_DO",
       duLieuForm: await duLieuForm(formData),
     });
     dangKyId = dangKy.id;

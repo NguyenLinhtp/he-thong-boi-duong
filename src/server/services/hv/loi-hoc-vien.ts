@@ -228,3 +228,9 @@ export class ChotDanhSachDuThiError extends Error {
     super(`Chưa chốt được danh sách chính thức: ${lyDo}`);
   }
 }
+
+export class LaSinhVienCuaTruongError extends Error {
+  constructor() {
+    super('Số CCCD này có trong danh sách sinh viên của trường - vui lòng chọn "Sinh viên của trường" và đăng ký bằng mã sinh viên');
+  }
+}

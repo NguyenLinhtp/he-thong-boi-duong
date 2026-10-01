@@ -46,7 +46,7 @@ export default async function TrangChuongTrinhCongKhai({ params }: { params: Pro
           ) : (
             <span>
               Đăng ký dự thi <b>không cần tài khoản</b>. Sau khi đăng ký, bạn in đơn, chuyển khoản lệ phí và nộp minh chứng; muốn
-              xem lại đơn chỉ cần xác nhận 4 số cuối CCCD.
+              xem lại đơn chỉ cần xác nhận 4 số cuối CCCD (sinh viên của trường) hoặc số CCCD + họ tên (thí sinh tự do).
             </span>
           )}
         </p>
