@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requirePermission } from "@/lib/auth/guard";
+import { requireMotTrongCacQuyen, requirePermission } from "@/lib/auth/guard";
+import { nhapExcelDoiSoat, type KetQuaDoiSoat } from "@/server/services/hp/hp-02-doi-soat-excel";
+import { chotDanhSachDuThi } from "@/server/services/hv/hv-07-chot-danh-sach-du-thi";
+import { DuLieuImportLoiError, type DongLoiImport } from "@/server/services/hv/loi-hoc-vien";
 import { thietLapHocPhi } from "@/server/services/hp/hp-01-thiet-lap";
 import { xacNhanThanhToan, xacNhanMienGiam } from "@/server/services/hp/hp-02-thanh-toan";
 import { datHanNop, guiNhacNoHocPhi } from "@/server/services/hp/hp-03-cong-no";
@@ -125,4 +128,45 @@ export async function boQuaDieuKienAction(_prevState: string | undefined, formDa
 
   revalidatePath(duongDan(khoaId));
   return undefined;
+}
+
+// (bổ sung 01/10/2026 - HP-02) tải lên Excel đối soát lệ phí đã đánh dấu "Đã đóng"
+export type TrangThaiDoiSoat = { ketQua?: KetQuaDoiSoat; loi?: string; cacDongLoi?: DongLoiImport[] };
+
+export async function nhapDoiSoatAction(
+  khoaId: string,
+  _prev: TrangThaiDoiSoat | undefined,
+  formData: FormData,
+): Promise<TrangThaiDoiSoat> {
+  const phien = await requirePermission("HP-02");
+  const tep = formData.get("file");
+  if (!(tep instanceof File) || tep.size === 0) return { loi: "Vui lòng chọn tệp Excel đối soát" };
+  try {
+    const ketQua = await nhapExcelDoiSoat(khoaId, Buffer.from(await tep.arrayBuffer()), tep.name, nguoiTuPhien(phien));
+    revalidatePath(duongDan(khoaId));
+    return { ketQua };
+  } catch (error) {
+    if (error instanceof DuLieuImportLoiError) return { loi: error.message, cacDongLoi: error.cacDongLoi };
+    if (error instanceof Error) return { loi: error.message };
+    throw error;
+  }
+}
+
+// (bổ sung 01/10/2026 - HV-07) chốt danh sách chính thức khóa dự thi theo lệ phí đã xác nhận
+export type TrangThaiChot = { ok?: string; loi?: string; nopThieu?: string[] };
+
+export async function chotDanhSachDuThiAction(khoaId: string): Promise<TrangThaiChot> {
+  const phien = await requireMotTrongCacQuyen(["HP-02", "HV-07"]);
+  try {
+    const kq = await chotDanhSachDuThi(khoaId, nguoiTuPhien(phien));
+    revalidatePath(duongDan(khoaId));
+    revalidatePath(`/khoa-hoc/${khoaId}/tuyen-sinh`);
+    return {
+      ok: `Đã chốt: thêm ${kq.chinhThuc} thí sinh chính thức, ${kq.khongHopLe} thí sinh không nộp lệ phí chuyển Không hợp lệ.`,
+      nopThieu: kq.nopThieu,
+    };
+  } catch (error) {
+    if (error instanceof Error) return { loi: error.message };
+    throw error;
+  }
 }

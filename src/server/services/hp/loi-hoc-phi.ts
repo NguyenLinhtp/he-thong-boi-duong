@@ -37,3 +37,10 @@ export class ThieuLyDoBoQuaError extends Error {
     super("Cần nhập lý do khi bỏ qua điều kiện học phí");
   }
 }
+
+// (bổ sung 01/10/2026 - HP-02) tệp Excel đối soát lệ phí không đúng mẫu/không đúng khóa
+export class TepDoiSoatKhongHopLeError extends Error {
+  constructor(lyDo: string) {
+    super(`Tệp đối soát không hợp lệ: ${lyDo}`);
+  }
+}

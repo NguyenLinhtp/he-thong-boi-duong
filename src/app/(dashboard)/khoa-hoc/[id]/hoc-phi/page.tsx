@@ -8,6 +8,24 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { FormThietLap } from "./form-thiet-lap";
+import { FormDoiSoat, KhoiChotDanhSach } from "./khoi-le-phi-thi";
+import { bangDoiSoatLePhi } from "@/server/services/hp/hp-02-doi-soat-excel";
+import { duocChotDanhSach } from "@/server/services/hv/hv-07-chot-danh-sach-du-thi";
+import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
+import { dinhDangNgay } from "@/lib/dinh-dang";
+
+const NHAN_LE_PHI: Record<string, string> = {
+  CHUA_NOP: "Chưa đóng",
+  CON_NO: "Nộp thiếu",
+  DA_NOP_DU: "Đã đóng",
+  MIEN_GIAM: "Miễn giảm",
+};
+const NHAN_HO_SO: Record<string, string> = {
+  CHO_DUYET: "Đã đăng ký",
+  HOP_LE: "Hợp lệ",
+  CHINH_THUC: "Chính thức",
+  HOAN_THANH: "Hoàn thành",
+};
 import { HangHocPhi } from "./hang-hoc-phi";
 
 async function coQuyen(maCN: string): Promise<boolean> {
@@ -35,12 +53,17 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  const [dsHocPhi, dsPhieuThu, choPhepThanhToan, choPhepCongNo] = await Promise.all([
+  const laDuThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  const [dsHocPhi, dsPhieuThu, choPhepThanhToan, choPhepCongNo, choPhepXetDuyet, bangLePhi] = await Promise.all([
     hocPhiCuaKhoa(id),
     danhSachPhieuThu(id),
     coQuyen("HP-02"),
     coQuyen("HP-03"),
+    coQuyen("HV-07"),
+    laDuThi ? bangDoiSoatLePhi(id) : Promise.resolve([]),
   ]);
+  const duocChot = laDuThi && duocChotDanhSach(khoa);
+  const soChinhThuc = bangLePhi.filter((d) => ["CHINH_THUC", "HOAN_THANH"].includes(d.dangKy.trangThai)).length;
   // HP-06 (Đưa vào theo HP-01): trang này đã yêu cầu HP-01 ở trên nên luôn
   // được phép - xem ghi chú trong actions.ts.
   const choPhepBoQua = true;
@@ -58,6 +81,79 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
           daCoDangKy={dsHocPhi.length > 0}
         />
       </section>
+
+      {laDuThi && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-bold text-ued-blue-dam">
+            Lệ phí thi · đối soát chuyển khoản ({bangLePhi.length} thí sinh đăng ký
+            {khoa.hanDangKy && `, hạn đăng ký ${dinhDangNgay(khoa.hanDangKy)}`})
+          </h2>
+          {bangLePhi.length > 0 && (
+            <div className="max-h-[28rem] overflow-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mã sinh viên</TableHead>
+                    <TableHead>Họ tên</TableHead>
+                    <TableHead>Lớp</TableHead>
+                    <TableHead>Minh chứng CK</TableHead>
+                    <TableHead>Lệ phí</TableHead>
+                    <TableHead>Hồ sơ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bangLePhi.map((d) => (
+                    <TableRow key={d.dangKy.id}>
+                      <TableCell className="font-mono">{d.hocVien.maSinhVien ?? d.hocVien.maHocVien}</TableCell>
+                      <TableCell>{d.hocVien.hoTen}</TableCell>
+                      <TableCell>{d.hocVien.lopSinhHoat ?? "—"}</TableCell>
+                      <TableCell>
+                        {d.minhChung ? (
+                          <a href={`/api/hv/tep-ho-so/${d.minhChung.id}?xem=1`} target="_blank" className="underline">
+                            Xem ({d.minhChung.taiLenLuc.toLocaleDateString("vi-VN")})
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">Chưa nộp</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {d.hocPhi ? (
+                          <NhanTrangThai ma={d.hocPhi.trangThai}>{NHAN_LE_PHI[d.hocPhi.trangThai] ?? d.hocPhi.trangThai}</NhanTrangThai>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <NhanTrangThai ma={d.dangKy.trangThai}>{NHAN_HO_SO[d.dangKy.trangThai] ?? d.dangKy.trangThai}</NhanTrangThai>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {choPhepThanhToan && <FormDoiSoat khoaId={khoa.id} />}
+          {(choPhepThanhToan || choPhepXetDuyet) && (
+            <>
+              <h2 className="mt-2 text-sm font-bold text-ued-blue-dam">Danh sách chính thức dự thi</h2>
+              <KhoiChotDanhSach
+                khoaId={khoa.id}
+                duocChot={duocChot}
+                lyDoChuaChot={
+                  duocChot
+                    ? null
+                    : khoa.trangThai === "DANG_TUYEN_SINH"
+                      ? khoa.hanDangKy
+                        ? `Chốt được sau hạn đăng ký ${dinhDangNgay(khoa.hanDangKy)}.`
+                        : "Khóa chưa đặt hạn đăng ký (tab Tổng quan) - chốt được khi hết hạn hoặc khi khóa chuyển sang Đang diễn ra."
+                      : "Khóa chưa mở tuyển sinh hoặc đã hủy."
+                }
+                soChinhThuc={soChinhThuc}
+              />
+            </>
+          )}
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
@@ -100,8 +196,9 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
         </Table>
         {dsHocPhi.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Chưa có dòng công nợ nào - chỉ phát sinh sau khi thiết lập mức học phí (HP-01) và có
-            học viên Chính thức (HV-07).
+            {laDuThi
+              ? "Chưa có dòng lệ phí nào - phát sinh khi thí sinh đăng ký sau khi khóa đã có mức lệ phí (HP-01)."
+              : "Chưa có dòng công nợ nào - chỉ phát sinh sau khi thiết lập mức học phí (HP-01) và có học viên Chính thức (HV-07)."}
           </p>
         )}
       </section>
