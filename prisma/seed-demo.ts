@@ -42,6 +42,8 @@ import { taoDonViLienKet } from "../src/server/services/dvlk/dvlk-01-danh-muc";
 import { capTaiKhoanDonViLienKet } from "../src/server/services/dvlk/dvlk-02-tai-khoan";
 import { taoHopDong } from "../src/server/services/dvlk/dvlk-03-hop-dong";
 import { xacNhanThuHoSo } from "../src/server/services/dvlk/dvlk-05-xac-nhan-thu-ho-so";
+import { luuCauHinhChuongTrinh } from "../src/server/services/hv/form-dang-ky";
+import { nopMinhChungLePhi } from "../src/server/services/hv/hv-05-dang-ky-du-thi";
 import { themHocLieu, taoBaiTracNghiem, themCauHoi, taoYeuCauSanPham } from "../src/server/services/ct/ct-02-hoc-lieu";
 
 const MAT_KHAU_DEMO = process.env.DEMO_MAT_KHAU ?? "DemoBoiDuong2026";
@@ -278,12 +280,133 @@ async function taoSanPhamChuyenDe1() {
   }, { nguoiThucHienTen: "Cán bộ đào tạo (dữ liệu mẫu)" });
 }
 
+// (bổ sung 01/10/2026) danh sách sinh viên mẫu (HV-03) - mã SV 3122000001..30 để xóa được
+const MA_SV_MAU = Array.from({ length: 30 }, (_, i) => `3122${String(i + 1).padStart(6, "0")}`);
+const HO_TEN_SV = [
+  "Nguyễn Văn An", "Trần Thị Bích", "Lê Hoàng Cường", "Phạm Thị Dung", "Hoàng Minh Đức", "Võ Thị Giang",
+  "Đặng Quốc Huy", "Bùi Thị Khánh Linh", "Đỗ Văn Mạnh", "Huỳnh Thị Ngân", "Ngô Thanh Phong", "Dương Thị Quỳnh",
+  "Lý Văn Sang", "Phan Thị Thảo", "Trương Công Uy", "Mai Thị Vân", "Đinh Văn Xuân", "Tô Thị Yến",
+  "Hồ Văn Bảo", "Châu Thị Diễm", "Lương Văn Hải", "Tạ Thị Hồng", "Kiều Văn Kiên", "Văn Thị Lệ",
+  "Nguyễn Hữu Lộc", "Trần Thị Minh Thư", "Lê Văn Tài", "Phạm Thị Uyên", "Hoàng Văn Vũ", "Võ Thị Xuân Mai",
+];
+const LOP_SV = ["22SGT", "22CNTT1", "23SNA", "23SPT"];
+// ảnh PNG 1x1 làm minh chứng chuyển khoản mẫu
+const PNG_MAU = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
+
+/**
+ * (bổ sung 01/10/2026) 2 chương trình chỉ đăng ký dự thi (PT3) cho sinh viên:
+ * định danh bằng mã sinh viên, thu lệ phí khi đăng ký; mỗi chương trình 1 khóa
+ * thi mẫu kèm vài thí sinh đã đăng ký. Bỏ qua nếu đã có.
+ */
+async function taoChuongTrinhThiSinhVien() {
+  for (const [i, ma] of MA_SV_MAU.entries()) {
+    const sv = { maSinhVien: ma, soCCCD: `0482050${String(i + 1).padStart(5, "0")}`, hoTen: HO_TEN_SV[i], lopSinhHoat: LOP_SV[i % LOP_SV.length] };
+    await prisma.sinhVien.upsert({ where: { maSinhVien: ma }, create: sv, update: {} });
+  }
+  // tài khoản nhận lệ phí MẪU - thay bằng tài khoản thật ở Quản trị > Tham số (QT-05)
+  const nganHang: [string, string, string][] = [
+    ["NH_TEN_NGAN_HANG", "VietinBank (TÀI KHOẢN MẪU - thay bằng tài khoản thật)", "Tên ngân hàng nhận lệ phí thi"],
+    ["NH_MA_BIN", "970415", "Mã BIN ngân hàng theo NAPAS (VietinBank 970415, Vietcombank 970436, BIDV 970418, Agribank 970405)"],
+    ["NH_SO_TAI_KHOAN", "0000000000", "Số tài khoản nhận lệ phí thi (sinh mã VietQR trên đơn đăng ký dự thi)"],
+    ["NH_CHU_TAI_KHOAN", "TRUONG DAI HOC SU PHAM - TK MAU", "Tên chủ tài khoản nhận lệ phí"],
+  ];
+  for (const [ma, giaTri, moTa] of nganHang) {
+    if (!(await prisma.thamSoHeThong.findUnique({ where: { ma } }))) await prisma.thamSoHeThong.create({ data: { ma, giaTri, moTa } });
+  }
+
+  if (await prisma.chuongTrinh.findFirst({ where: { ten: "Thi chuẩn đầu ra tiếng Anh", loaiHinhBoiDuong: { ma: { startsWith: "DEMO_" } } } })) return;
+  const lh =
+    (await prisma.loaiHinhBoiDuong.findUnique({ where: { ma: "DEMO_THI" } })) ??
+    (await prisma.loaiHinhBoiDuong.create({ data: { ma: "DEMO_THI", ten: "Thi đánh giá năng lực, chuẩn đầu ra" } }));
+  const dot = await prisma.dotTuyenSinh.findFirst({ where: { ma: { startsWith: "DEMO_" } }, orderBy: { ngayBatDau: "desc" } });
+
+  const dsChuongTrinh = [
+    {
+      ten: "Đăng ký thi tin học ứng dụng CNTT cơ bản",
+      mucTieu: "Đánh giá, cấp chứng chỉ ứng dụng công nghệ thông tin cơ bản theo Thông tư 03/2014/TT-BTTTT cho sinh viên.",
+      hocPhan: [["Phần thi lý thuyết (trắc nghiệm trên máy)", 1], ["Phần thi thực hành (văn bản, bảng tính, trình chiếu)", 1]] as [string, number][],
+      loaiVanBang: "CHUNG_CHI" as const,
+      truong: [
+        { ma: "ngaySinh", hien: true, batBuoc: true },
+        { ma: "soDienThoai", hien: true, batBuoc: true },
+        { ma: "email", hien: true },
+        { ma: "donViCongTac", hien: false },
+        { ma: "noiSinh", nhan: "Nơi sinh (tỉnh/thành phố)", kieu: "VAN_BAN", batBuoc: true, goiY: "Ghi theo giấy khai sinh - in trên chứng chỉ" },
+      ],
+      khoa: { ngayThi: "2026-11-15", han: "2026-10-31", siSo: 200, lePhi: 450_000 },
+    },
+    {
+      ten: "Thi chuẩn đầu ra tiếng Anh",
+      mucTieu: "Đánh giá năng lực tiếng Anh đạt chuẩn đầu ra (bậc 3/6 khung năng lực ngoại ngữ Việt Nam) cho sinh viên.",
+      hocPhan: [["Kỹ năng Nghe - Đọc", 1], ["Kỹ năng Viết", 1], ["Kỹ năng Nói", 1]] as [string, number][],
+      loaiVanBang: "CHUNG_NHAN" as const,
+      truong: [
+        { ma: "ngaySinh", hien: true, batBuoc: true },
+        { ma: "soDienThoai", hien: true, batBuoc: true },
+        { ma: "email", hien: true, batBuoc: true },
+        { ma: "donViCongTac", hien: false },
+        { ma: "lanThi", nhan: "Lần dự thi", kieu: "LUA_CHON", luaChon: ["Lần đầu", "Thi lại"], macDinh: "Lần đầu", batBuoc: true },
+      ],
+      khoa: { ngayThi: "2026-11-22", han: "2026-10-31", siSo: 300, lePhi: 600_000 },
+    },
+  ];
+  for (const [n, mau] of dsChuongTrinh.entries()) {
+    const { ct } = await moChuongTrinh({
+      ten: mau.ten,
+      loaiHinhId: lh.id,
+      phuongThuc: "CHI_DU_THI",
+      hocPhan: mau.hocPhan,
+      mucTieu: mau.mucTieu,
+      doiTuong: "Sinh viên của trường",
+      loaiVanBang: mau.loaiVanBang,
+    });
+    await luuCauHinhChuongTrinh(ct.id, { dinhDanh: "MA_SINH_VIEN", truong: mau.truong }, CB);
+    const khoa = await khoiTaoKhoa({
+      chuongTrinhId: ct.id,
+      thoiGianKhaiGiang: ngay(mau.khoa.ngayThi),
+      thoiGianBeGiang: ngay(mau.khoa.ngayThi),
+      siSoToiDa: mau.khoa.siSo,
+      mucHocPhi: mau.khoa.lePhi,
+      dotTuyenSinhId: dot?.id ?? null,
+      hanDangKy: mau.khoa.han,
+    });
+    await thietLapHocPhi(khoa.id, { mucHocPhi: mau.khoa.lePhi });
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
+    // 4 thí sinh đã đăng ký: 2 đã nộp minh chứng chuyển khoản, 1 trong đó đã được tài chính xác nhận
+    for (let i = 0; i < 4; i++) {
+      const sv = await prisma.sinhVien.findUniqueOrThrow({ where: { maSinhVien: MA_SV_MAU[n * 10 + i] } });
+      const dk = await dangKyDuThi({
+        khoaId: khoa.id,
+        hoTen: sv.hoTen,
+        maSinhVien: sv.maSinhVien,
+        cuoiCCCD: sv.soCCCD.slice(-4),
+        duLieuForm: {
+          giaTri: {
+            ngaySinh: `200${3 + (i % 2)}-0${1 + i}-1${i}`,
+            soDienThoai: `0935${String(200000 + n * 100 + i)}`,
+            email: `${sv.maSinhVien}@sv.ued.udn.vn`,
+            bs_noiSinh: "Đà Nẵng",
+            bs_lanThi: "Lần đầu",
+          },
+          tep: {},
+        },
+      });
+      if (i < 2) await nopMinhChungLePhi(dk.id, { ten: `chuyen-khoan-${sv.maSinhVien}.png`, loai: "image/png", noiDung: PNG_MAU });
+      if (i === 0) {
+        const hp = (await hocPhiCuaKhoa(khoa.id)).find((h) => h.hocVienId === dk.hocVienId)!;
+        await xacNhanThanhToan(hp.id, { soTien: mau.khoa.lePhi, hinhThucNop: "Chuyển khoản", ...TC });
+      }
+    }
+  }
+}
+
 async function taoDuLieu() {
   await taoTaiKhoanTongHop();
   if (await prisma.loaiHinhBoiDuong.findUnique({ where: { ma: "DEMO_CDNN" } })) {
     await taoTaiKhoanHocVienDangHoc();
     await taoHocLieuMau();
     await taoSanPhamChuyenDe1();
+    await taoChuongTrinhThiSinhVien();
     console.log("Đã có dữ liệu mẫu (đã bổ sung tài khoản còn thiếu) - chạy với --xoa trước nếu muốn tạo lại.");
     return;
   }
@@ -460,6 +583,7 @@ async function taoDuLieu() {
   await taoTaiKhoanHocVienDangHoc();
   await taoHocLieuMau();
   await taoSanPhamChuyenDe1();
+  await taoChuongTrinhThiSinhVien();
   console.log(`Đã tạo dữ liệu mẫu. Tài khoản demo_tonghop / demo_daotao / demo_taichinh / demo_giangvien / demo_hocvien / demo_hocvien_danghoc / demo_dvlk / demo_admin, mật khẩu: ${MAT_KHAU_DEMO}`);
 }
 
@@ -506,6 +630,7 @@ async function xoaDuLieu() {
   await prisma.dotTuyenSinh.deleteMany({ where: { ma: { startsWith: "DEMO_" } } });
   await prisma.nguoiDungVaiTro.deleteMany({ where: { nguoiDungId } });
   await prisma.nguoiDung.deleteMany({ where: { id: nguoiDungId } });
+  await prisma.sinhVien.deleteMany({ where: { maSinhVien: { in: MA_SV_MAU } } });
   console.log("Đã xóa dữ liệu mẫu.");
 }
 
