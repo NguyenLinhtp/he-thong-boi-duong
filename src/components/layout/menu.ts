@@ -75,6 +75,8 @@ export const MENU: NhomMenu[] = [
       { href: "/hoc-tap", nhan: "Quá trình học tập", maCN: "GD-04", vaiTro: ["HOC_VIEN"] },
       { href: "/ket-qua/ca-nhan", nhan: "Kết quả học tập", maCN: "KQ-05" },
       { href: "/hoc-vien", nhan: "Hồ sơ cá nhân", maCN: "HV-08", vaiTro: ["HOC_VIEN"] },
+      // (bổ sung 01/10/2026) danh mục chương trình công khai để học viên đăng ký thêm khóa
+      { href: "/dang-ky", nhan: "Đăng ký khóa học", maCN: "HV-08", vaiTro: ["HOC_VIEN"] },
     ],
   },
   {
