@@ -52,7 +52,10 @@ export const MENU: NhomMenu[] = [
     ma: "hoc-vien",
     nhan: "Học viên",
     // học viên cũng có HV-08 (tự cập nhật hồ sơ) nhưng xem ở nhóm Học tập
-    muc: [{ href: "/hoc-vien", nhan: "Hồ sơ học viên", maCN: "HV-08", vaiTro: VAI_TRO_CAN_BO }],
+    muc: [
+      { href: "/hoc-vien", nhan: "Hồ sơ học viên", maCN: "HV-08", vaiTro: VAI_TRO_CAN_BO },
+      { href: "/hoc-vien/sinh-vien", nhan: "Danh sách sinh viên", maCN: "HV-03" },
+    ],
   },
   {
     ma: "giang-day",

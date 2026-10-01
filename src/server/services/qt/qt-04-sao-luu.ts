@@ -35,6 +35,7 @@ export const THU_TU_BANG = [
   "thamSoHeThong",
   "giangVien",
   "hocVien",
+  "sinhVien",
   "thongBao",
   "chuongTrinh",
   "donViLienKet",

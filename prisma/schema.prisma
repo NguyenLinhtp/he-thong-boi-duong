@@ -377,6 +377,8 @@ model Khoa {
   thoiGianKhaiGiang   DateTime?
   thoiGianBeGiang     DateTime?
   siSoToiDa           Int
+  // (bổ sung 01/10/2026) hạn chót đăng ký - sau thời điểm này không nhận đăng ký mới (KH-05)
+  hanDangKy           DateTime?
   hinhThucGiangDay    HinhThucGiangDay @default(TRUC_TIEP)
   // (bổ sung 30/09/2026) form đăng ký riêng của khóa - null = dùng form của chương trình
   cauHinhFormDangKy   Json?
@@ -467,6 +469,9 @@ model HocVien {
   soCCCD          String?        @unique
   soDienThoai     String?
   email           String?
+  // (bổ sung 01/10/2026) thí sinh là sinh viên của trường - đăng ký dự thi bằng mã sinh viên
+  maSinhVien      String?        @unique
+  lopSinhHoat     String?
 
   dangKys           DangKyHoc[]
   diemDanhs         DiemDanh[]
@@ -573,6 +578,20 @@ model TepHoSoDangKy {
 
   @@unique([dangKyId, maTruong])
   @@map("tep_ho_so_dang_ky")
+}
+
+// (bổ sung 01/10/2026) danh sách sinh viên của trường do cán bộ đào tạo import -
+// nguồn tra cứu khi thí sinh đăng ký dự thi bằng mã sinh viên (HV-03/HV-05)
+model SinhVien {
+  id          String   @id @default(cuid())
+  maSinhVien  String   @unique
+  soCCCD      String   @unique
+  hoTen       String
+  lopSinhHoat String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("sinh_vien")
 }
 
 // KH-07: 1 khóa chia thành nhiều lớp, mỗi lớp có thời khóa biểu/giảng viên riêng.
