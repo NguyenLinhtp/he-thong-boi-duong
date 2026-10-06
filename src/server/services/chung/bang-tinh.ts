@@ -108,3 +108,52 @@ export function timDongTieuDe<K extends string>(
   }
   return null;
 }
+
+/**
+ * (bổ sung 05/10/2026) Mã khóa ghi ở dòng mô tả "Mã khóa: ..." phía trên bảng của
+ * tệp tải từ hệ thống - dùng để chặn tải lên tệp của khóa khác (HP-02, HV-06, HV-07).
+ */
+export function maKhoaTrongTep(dsDong: DongBangTinh[], viTriTieuDe: number): string | undefined {
+  return dsDong
+    .slice(0, viTriTieuDe)
+    .map((d) => d.o.join(" ").match(/Mã khóa:\s*([A-Za-z0-9_-]+)/)?.[1])
+    .find(Boolean);
+}
+
+export type CotXuat = { tieuDe: string; rong: number; luaChon?: string[]; so?: boolean };
+
+/**
+ * (bổ sung 05/10/2026) Bảng danh sách tải về để cán bộ sửa rồi tải lên lại: các
+ * dòng tiêu đề gộp ô (dòng có "Mã khóa: ..." để nhận diện khóa), bảng có viền,
+ * cột có luaChon gắn danh sách chọn (Excel data validation).
+ */
+export async function taoBangExcel(tenSheet: string, dsTieuDe: string[], cot: CotXuat[], dong: (string | number | null)[][]) {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(tenSheet, { pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+  ws.columns = cot.map((c) => ({ width: c.rong }));
+  dsTieuDe.forEach((s, i) => {
+    const r = ws.addRow([s]);
+    ws.mergeCells(r.number, 1, r.number, cot.length);
+    r.getCell(1).font = { bold: i < 2, size: i === 1 ? 14 : 11 };
+    r.getCell(1).alignment = { horizontal: "center", wrapText: true };
+  });
+  ws.addRow([]);
+  const header = ws.addRow(cot.map((c) => c.tieuDe));
+  header.font = { bold: true };
+  header.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  for (const d of dong) {
+    const r = ws.addRow(d);
+    cot.forEach((c, i) => {
+      if (c.luaChon) r.getCell(i + 1).dataValidation = { type: "list", allowBlank: true, formulae: [`"${c.luaChon.join(",")}"`] };
+    });
+  }
+  for (let r = header.number; r <= ws.rowCount; r++) {
+    cot.forEach((c, i) => {
+      const o = ws.getCell(r, i + 1);
+      o.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+      if (c.so && r > header.number) o.numFmt = "#,##0";
+      else if (r > header.number) o.numFmt = "@";
+    });
+  }
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}

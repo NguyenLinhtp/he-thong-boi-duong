@@ -179,22 +179,22 @@ describe("Form đăng ký cấu hình - theo chương trình/khóa và các kên
     const cccd = `CCCD_FDK_${crypto.randomUUID()}`;
     const cu = await prisma.hocVien.create({ data: { maHocVien: `HVFDK${Date.now()}`, hoTen: "Hồ Sơ Cũ", soCCCD: cccd, email: "cu@x.vn" } });
     await expect(dangKyDuThi({ khoaId: khoa.id, hoTen: "Hồ Sơ Cũ", soCCCD: cccd })).rejects.toThrow(/Số điện thoại/);
-    const dk = await dangKyDuThi({ khoaId: khoa.id, hoTen: "Hồ Sơ Cũ", soCCCD: cccd, soDienThoai: "0912", email: "moi@x.vn" });
+    const dk = await dangKyDuThi({ khoaId: khoa.id, hoTen: "Hồ Sơ Cũ", soCCCD: cccd, soDienThoai: "0912000000", email: "moi@x.vn" });
     expect(dk.hocVienId).toBe(cu.id);
     const sau = await prisma.hocVien.findUniqueOrThrow({ where: { id: cu.id } });
-    expect(sau).toMatchObject({ soDienThoai: "0912", email: "cu@x.vn" });
+    expect(sau).toMatchObject({ soDienThoai: "0912000000", email: "cu@x.vn" });
   });
 
   it("HV-06: hồ sơ thiếu minh chứng bắt buộc không được đánh giá Hợp lệ, bị từ chối tự động; đủ minh chứng thì bình thường", async () => {
     const { ct, khoa } = await taoKhoa("CHI_DU_THI");
     // đăng ký khi chưa yêu cầu minh chứng, sau đó chương trình bổ sung yêu cầu
-    const thieu = await dangKyDuThi({ khoaId: khoa.id, hoTen: "Thiếu MC", soCCCD: `CCCD_FDK_${crypto.randomUUID()}` });
+    const thieu = await dangKyDuThi({ khoaId: khoa.id, soDienThoai: "0905000001", hoTen: "Thiếu MC", soCCCD: `CCCD_FDK_${crypto.randomUUID()}` });
     await luuCauHinhChuongTrinh(ct.id, { truong: [{ ma: "bangCap", nhan: "Bằng tốt nghiệp", kieu: "TEP", batBuoc: true }] }, NGUOI);
     const du = await dangKyDuThi({
       khoaId: khoa.id,
       hoTen: "Đủ MC",
       soCCCD: `CCCD_FDK_${crypto.randomUUID()}`,
-      duLieuForm: { giaTri: {}, tep: { bs_bangCap: pdf() } },
+      duLieuForm: { giaTri: { soDienThoai: "0905000002" }, tep: { bs_bangCap: pdf() } },
     });
 
     await expect(thamDinhHoSo(thieu.id, "HOP_LE")).rejects.toThrow(ThieuMinhChungBatBuocError);

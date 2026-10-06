@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { FormTepDanhSach } from "./form-tep-danh-sach";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa, danhSachKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
@@ -21,10 +23,14 @@ import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { FormImport } from "../form-import";
 import { FormThamDinh } from "../form-tham-dinh";
 import { FormXetDuyet } from "../form-xet-duyet";
+import { danhSachTheoThanhPhan } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
+import { KhongKhop, OTimKiem, PhanTrang, locVaPhanTrang, thamSoPhang, type ThamSoUrl } from "@/components/chung/phan-trang";
 import { FormThemHocVien } from "../form-them-hoc-vien";
 import { FormChuyenKhoa } from "../form-chuyen-khoa";
 import { FormXoaHocVien } from "../form-xoa-hoc-vien";
 import { xacNhanNopGiayAction, ghiNhanThoiHocAction, tuChoiThieuMinhChungAction } from "../actions";
+
+const NHAN_LE_PHI_TP: Record<string, string> = { CHUA_NOP: "Chưa đóng", CON_NO: "Nộp thiếu", DA_NOP_DU: "Đã đóng", MIEN_GIAM: "Miễn giảm" };
 
 const NHAN_KET_QUA_THAM_DINH: Record<string, string> = {
   HOP_LE: "Hợp lệ",
@@ -45,8 +51,28 @@ const NHAN_TRANG_THAI_DANG_KY: Record<string, string> = {
   THOI_HOC: "Thôi học",
 };
 
+// (bổ sung 05/10/2026 - HV-06) in đơn + điều chỉnh thông tin thí sinh trên từng hồ sơ
+function ThaoTacHoSo({ khoaId, maKhoa, dangKyId }: { khoaId: string; maKhoa: string; dangKyId: string }) {
+  return (
+    <div className="mt-1 flex gap-3 text-xs">
+      <Link href={`/khoa/${maKhoa}/don-dang-ky/${dangKyId}`} target="_blank" className="text-primary underline">
+        In đơn
+      </Link>
+      <Link href={`/khoa-hoc/${khoaId}/tuyen-sinh/ho-so/${dangKyId}`} className="text-primary underline">
+        Điều chỉnh
+      </Link>
+    </div>
+  );
+}
+
 // Tab Tuyển sinh của khóa: hồ sơ theo phương thức (HV-02/03/05), thẩm định (HV-06), xét duyệt (HV-07), danh sách (HV-09)
-export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TuyenSinhKhoaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<ThamSoUrl>;
+}) {
   try {
     await requirePermission("KH-01");
   } catch (error) {
@@ -92,6 +118,36 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
     danhSachChucDanhHocVi(),
     coQuyen("KH-06"),
   ]);
+  // (bổ sung 06/10/2026) mỗi danh sách có ô tìm nhanh (họ tên/mã SV/CCCD) và phân trang 20 dòng riêng
+  const sp = await searchParams;
+  const duong = `/khoa-hoc/${id}/tuyen-sinh`;
+  const thamSo = thamSoPhang(sp);
+  const hv = (dk: { hocVien: { hoTen: string; soCCCD: string | null; maSinhVien: string | null; maHocVien: string } }) => dk.hocVien;
+  const trangNopGiay = locVaPhanTrang(dsChoNopGiay, sp, "ng", hv);
+  const trangTuXacNhan = locVaPhanTrang(dsChoTuXacNhan, sp, "xn", hv, (dk) => [dk.hocVien.donViCongTac]);
+  const trangThiSinh = locVaPhanTrang(dsThiSinh, sp, "ts", hv, (dk) => [dk.hocVien.lopSinhHoat]);
+  // (bổ sung 06/10/2026) khóa chia thành phần lệ phí: danh sách riêng theo từng thành phần (vd. ôn thi, thi)
+  const dsTheoThanhPhan = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" ? await danhSachTheoThanhPhan(id) : [];
+  const tpChon = dsTheoThanhPhan.find((x) => x.thanhPhan.id === thamSo.tp);
+  const trangThanhPhan = locVaPhanTrang(tpChon?.ds ?? [], sp, "tp", (d) => d.hocPhi.hocVien, (d) => [d.hocPhi.hocVien.lopSinhHoat]);
+  const trangChoThamDinh = locVaPhanTrang(dsChoThamDinh, sp, "td", hv);
+  const trangDaThamDinh = locVaPhanTrang(dsDaThamDinh, sp, "dtd", hv);
+  const trangXetDuyet = locVaPhanTrang(dsHopLeChoXetDuyet, sp, "xd", hv);
+  const trangHocVien = locVaPhanTrang(dsHocVienTheoKhoa, sp, "hv", hv);
+  const trangLichSu = locVaPhanTrang(lichSuDanhSach, sp, "ls", (ls) => ({ hoTen: ls.chiTiet }), (ls) => [ls.nguoiThucHienTen]);
+  const thanhPhanTrang = (t: { ma: string; trang: number; tongTrang: number; tongDong: number }) => (
+    <PhanTrang duong={duong} thamSo={thamSo} ten={`${t.ma}_trang`} trang={t.trang} tongTrang={t.tongTrang} tongDong={t.tongDong} />
+  );
+  const oTim = (t: { ma: string; tuKhoa: string; tongDong: number; tongGoc: number }, goiY?: string) =>
+    (t.tongGoc > 0 || t.tuKhoa) && <OTimKiem duong={duong} thamSo={thamSo} ma={t.ma} tuKhoa={t.tuKhoa} ketQua={t.tongDong} goiY={goiY} />;
+  const khongKhop = (t: { tuKhoa: string; tongDong: number }) => t.tuKhoa && t.tongDong === 0 && <KhongKhop tuKhoa={t.tuKhoa} />;
+  const tieuDe = (h: React.ReactNode, t: Parameters<typeof oTim>[0], goiY?: string) => (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      {h}
+      {oTim(t, goiY)}
+    </div>
+  );
+
   const dsKhoaKhacRutGon = dsKhoaKhac
     .filter((k) => k.id !== khoa.id)
     .map((k) => ({ id: k.id, maKhoa: k.maKhoa }));
@@ -110,7 +166,8 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
       />
       {khoa.chuongTrinh.phuongThucDangKy === "TRUC_TUYEN_NOP_GIAY" && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-bold text-ued-blue-dam">HV-02 · Xác nhận đã nhận hồ sơ giấy</h2>
+          {tieuDe(<h2 className="text-base font-bold text-ued-blue-dam">HV-02 · Xác nhận đã nhận hồ sơ giấy</h2>, trangNopGiay)}
+          {khongKhop(trangNopGiay)}
 
           <Table>
             <TableHeader>
@@ -124,7 +181,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dsChoNopGiay.map((dk) => (
+              {trangNopGiay.dsTrang.map((dk) => (
                 <TableRow key={dk.id}>
                   <TableCell>{dk.hocVien.hoTen}</TableCell>
                   <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
@@ -153,6 +210,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
               )}
             </TableBody>
           </Table>
+          {thanhPhanTrang(trangNopGiay)}
         </section>
       )}
 
@@ -161,6 +219,8 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
           <h2 className="text-base font-bold text-ued-blue-dam">HV-03 · Import danh sách học viên</h2>
 
           <FormImport khoaId={khoa.id} />
+          {tieuDe(<span />, trangTuXacNhan, "Họ tên / CCCD / đơn vị công tác")}
+          {khongKhop(trangTuXacNhan)}
 
           <Table>
             <TableHeader>
@@ -172,7 +232,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dsChoTuXacNhan.map((dk) => (
+              {trangTuXacNhan.dsTrang.map((dk) => (
                 <TableRow key={dk.id}>
                   <TableCell>{dk.hocVien.hoTen}</TableCell>
                   <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
@@ -189,38 +249,128 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
               )}
             </TableBody>
           </Table>
+          {thanhPhanTrang(trangTuXacNhan)}
         </section>
       )}
 
       {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-bold text-ued-blue-dam">HV-05 · Danh sách thí sinh dự thi</h2>
+          {dsTheoThanhPhan.length > 0 && (
+            <nav aria-label="Danh sách theo thành phần" className="flex flex-wrap gap-1.5">
+              {[{ id: "", ten: "Tất cả thí sinh", so: dsThiSinh.length }, ...dsTheoThanhPhan.map((x) => ({ id: x.thanhPhan.id, ten: `Danh sách ${x.thanhPhan.ten.toLowerCase()}`, so: x.ds.length }))].map((t) => (
+                <Link
+                  key={t.id || "tat-ca"}
+                  href={t.id ? `${duong}?tp=${t.id}` : duong}
+                  scroll={false}
+                  aria-current={(tpChon?.thanhPhan.id ?? "") === t.id ? "page" : undefined}
+                  className={
+                    "rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap " +
+                    ((tpChon?.thanhPhan.id ?? "") === t.id ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted")
+                  }
+                >
+                  {t.ten} <span className="ml-1 text-xs opacity-80">{t.so}</span>
+                </Link>
+              ))}
+            </nav>
+          )}
+          {tpChon ? (
+            <>
+              {tieuDe(
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <h2 className="text-base font-bold text-ued-blue-dam">
+                    HV-05 · Danh sách {tpChon.thanhPhan.ten.toLowerCase()} ({tpChon.ds.length})
+                  </h2>
+                  <a href={`/api/hv/khoa/${khoa.id}/thanh-phan/${tpChon.thanhPhan.id}`} className="text-sm text-primary underline">
+                    Tải Excel
+                  </a>
+                </div>,
+                trangThanhPhan,
+              )}
+              {khongKhop(trangThanhPhan)}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">STT</TableHead>
+                    <TableHead>Thí sinh</TableHead>
+                    <TableHead>Mã SV · lớp</TableHead>
+                    <TableHead>CCCD</TableHead>
+                    <TableHead>Lệ phí {tpChon.thanhPhan.ten.toLowerCase()}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {trangThanhPhan.dsTrang.map((d, i) => (
+                    <TableRow key={d.id}>
+                      <TableCell>{trangThanhPhan.tuDong + i + 1}</TableCell>
+                      <TableCell>{d.hocPhi.hocVien.hoTen}</TableCell>
+                      <TableCell>
+                        {d.hocPhi.hocVien.maSinhVien ? (
+                          <>
+                            <span className="font-mono">{d.hocPhi.hocVien.maSinhVien}</span> · {d.hocPhi.hocVien.lopSinhHoat ?? "—"}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">Thí sinh tự do</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{d.hocPhi.hocVien.soCCCD ?? "—"}</TableCell>
+                      <TableCell>
+                        <NhanTrangThai ma={d.trangThai}>{NHAN_LE_PHI_TP[d.trangThai] ?? d.trangThai}</NhanTrangThai>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {tpChon.ds.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                        Chưa có thí sinh nào đăng ký {tpChon.thanhPhan.ten.toLowerCase()}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              {thanhPhanTrang(trangThanhPhan)}
+            </>
+          ) : (
+            <>
+          {tieuDe(<h2 className="text-base font-bold text-ued-blue-dam">HV-05 · Danh sách thí sinh dự thi ({dsThiSinh.length})</h2>, trangThiSinh)}
+          {khongKhop(trangThiSinh)}
 
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Thí sinh</TableHead>
+                <TableHead>Mã SV · lớp</TableHead>
                 <TableHead>CCCD</TableHead>
                 <TableHead>Ngày đăng ký</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dsThiSinh.map((dk) => (
+              {trangThiSinh.dsTrang.map((dk) => (
                 <TableRow key={dk.id}>
                   <TableCell>{dk.hocVien.hoTen}</TableCell>
+                  <TableCell>
+                    {dk.hocVien.maSinhVien ? (
+                      <>
+                        <span className="font-mono">{dk.hocVien.maSinhVien}</span> · {dk.hocVien.lopSinhHoat ?? "—"}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Thí sinh tự do</span>
+                    )}
+                  </TableCell>
                   <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
                   <TableCell>{new Date(dk.ngayDangKy).toLocaleDateString("vi-VN")}</TableCell>
                 </TableRow>
               ))}
               {dsThiSinh.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
                     Chưa có thí sinh nào đăng ký dự thi
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+          {thanhPhanTrang(trangThiSinh)}
+            </>
+          )}
         </section>
       )}
 
@@ -237,6 +387,10 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
           )}
         </div>
 
+        <FormTepDanhSach khoaId={khoa.id} loai="tham-dinh" />
+        {tieuDe(<h3 className="text-sm font-semibold">Chờ thẩm định ({dsChoThamDinh.length})</h3>, trangChoThamDinh)}
+        {khongKhop(trangChoThamDinh)}
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -248,9 +402,12 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {dsChoThamDinh.map((dk) => (
+            {trangChoThamDinh.dsTrang.map((dk) => (
               <TableRow key={dk.id}>
-                <TableCell>{dk.hocVien.hoTen}</TableCell>
+                <TableCell>
+                  {dk.hocVien.hoTen}
+                  <ThaoTacHoSo khoaId={khoa.id} maKhoa={khoa.maKhoa} dangKyId={dk.id} />
+                </TableCell>
                 <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
                 <TableCell>{new Date(dk.ngayDangKy).toLocaleDateString("vi-VN")}</TableCell>
                 <TableCell>
@@ -271,7 +428,11 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
           </TableBody>
         </Table>
 
-        {dsDaThamDinh.length > 0 && (
+        {thanhPhanTrang(trangChoThamDinh)}
+
+        {dsDaThamDinh.length > 0 && tieuDe(<h3 className="text-sm font-semibold">Đã thẩm định ({dsDaThamDinh.length})</h3>, trangDaThamDinh)}
+        {khongKhop(trangDaThamDinh)}
+        {trangDaThamDinh.tongDong > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
@@ -282,9 +443,12 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dsDaThamDinh.map((dk) => (
+              {trangDaThamDinh.dsTrang.map((dk) => (
                 <TableRow key={dk.id}>
-                  <TableCell>{dk.hocVien.hoTen}</TableCell>
+                  <TableCell>
+                    {dk.hocVien.hoTen}
+                    <ThaoTacHoSo khoaId={khoa.id} maKhoa={khoa.maKhoa} dangKyId={dk.id} />
+                  </TableCell>
                   <TableCell>
                     <ChiTietHoSo hoSo={hoSo.get(dk.id)} />
                   </TableCell>
@@ -300,14 +464,20 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-bold text-ued-blue-dam">HV-07 · Xét duyệt danh sách chính thức</h2>
 
+        <FormTepDanhSach khoaId={khoa.id} loai="xet-duyet" />
+
+        {tieuDe(<h3 className="text-sm font-semibold">Hồ sơ Hợp lệ chờ xét duyệt ({dsHopLeChoXetDuyet.length})</h3>, trangXetDuyet)}
+        {khongKhop(trangXetDuyet)}
         <FormXetDuyet
           khoaId={khoa.id}
-          dsHopLe={dsHopLeChoXetDuyet.map((dk) => ({
+          dsHopLe={trangXetDuyet.dsTrang.map((dk) => ({
             id: dk.id,
             hoTen: dk.hocVien.hoTen,
             soCCCD: dk.hocVien.soCCCD,
+            chuaXacNhanLePhi: dk.chuaXacNhanLePhi,
           }))}
         />
+        {thanhPhanTrang(trangXetDuyet)}
 
         {dsChinhThuc.length > 0 && (
           <p className="text-sm text-muted-foreground">
@@ -320,6 +490,8 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
         <h2 className="text-base font-bold text-ued-blue-dam">HV-09 · Quản lý danh sách học viên theo khóa</h2>
 
         <FormThemHocVien khoaId={khoa.id} />
+        {tieuDe(<h3 className="text-sm font-semibold">Học viên của khóa ({dsHocVienTheoKhoa.length})</h3>, trangHocVien)}
+        {khongKhop(trangHocVien)}
 
         <Table>
           <TableHeader>
@@ -331,7 +503,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {dsHocVienTheoKhoa.map((dk) => (
+            {trangHocVien.dsTrang.map((dk) => (
               <TableRow key={dk.id}>
                 <TableCell>{dk.hocVien.hoTen}</TableCell>
                 <TableCell>{dk.hocVien.soCCCD ?? "—"}</TableCell>
@@ -361,11 +533,15 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
           </TableBody>
         </Table>
 
+        {thanhPhanTrang(trangHocVien)}
+
         {lichSuDanhSach.length > 0 && (
-          <details className="text-sm">
+          <details className="text-sm" open={Boolean(trangLichSu.tuKhoa || thamSo.ls_trang)}>
             <summary className="cursor-pointer font-medium">Lịch sử thay đổi danh sách ({lichSuDanhSach.length})</summary>
+            <div className="mt-2">{oTim(trangLichSu, "Nội dung / người thực hiện")}</div>
+            {khongKhop(trangLichSu)}
             <ul className="mt-2 flex flex-col gap-1">
-              {lichSuDanhSach.map((ls) => (
+              {trangLichSu.dsTrang.map((ls) => (
                 <li key={ls.id}>
                   <span className="text-muted-foreground">{ls.thoiGian.toLocaleString("vi-VN")}</span> ·{" "}
                   {NHAN_HANH_DONG_HV09[ls.hanhDong] ?? ls.hanhDong}: {ls.chiTiet} ·{" "}
@@ -373,6 +549,7 @@ export default async function TuyenSinhKhoaPage({ params }: { params: Promise<{ 
                 </li>
               ))}
             </ul>
+            <div className="mt-2">{thanhPhanTrang(trangLichSu)}</div>
           </details>
         )}
       </section>

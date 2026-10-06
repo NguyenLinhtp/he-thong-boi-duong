@@ -7,6 +7,7 @@ import { MA_TEP_NOP_PHI } from "@/lib/form-dang-ky";
 import { dinhDangNgay, dinhDangTien } from "@/lib/dinh-dang";
 import { NutIn } from "./nut-in";
 import { FormMinhChungLePhi } from "./form-minh-chung";
+import { FormDoiThanhPhan } from "./form-doi-thanh-phan";
 import { prisma } from "@/lib/db/prisma";
 
 export default async function TrangDonDangKy({
@@ -68,12 +69,37 @@ export default async function TrangDonDangKy({
               ? "Bạn đã đăng ký đợt thi này trước đó - dưới đây là đơn của bạn."
               : "Đăng ký dự thi thành công! Vui lòng in đơn, ký tên và hoàn tất lệ phí theo hướng dẫn bên dưới."}{" "}
             Lưu lại đường dẫn trang này để quay lại nộp minh chứng (hoặc mở lại đơn bằng{" "}
-            {hv.maSinhVien ? "mã sinh viên + 4 số cuối CCCD" : "số CCCD + họ tên"} trên trang đăng ký) - không cần tài khoản.
+            {hv.maSinhVien ? "mã sinh viên" : "số CCCD"} + số điện thoại đã khai trên trang đăng ký) - không cần tài khoản.
           </p>
 
           {lePhi && (
             <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
               <h2 className="font-bold text-ued-blue-dam">Lệ phí thi: {dinhDangTien(lePhi.soTienPhaiNop)}</h2>
+              {/* (bổ sung 06/10/2026) thành phần lệ phí đã đăng ký + đổi lựa chọn đến hạn đăng ký */}
+              {lePhi.thanhPhan &&
+                (lePhi.thanhPhan.duocDoi && lePhi.thanhPhan.ds.some((t) => !t.coDinh || !t.daChon) ? (
+                  <FormDoiThanhPhan
+                    dangKyId={dangKy.id}
+                    maKhoa={maKhoa}
+                    ds={lePhi.thanhPhan.ds.map((t) => ({ id: t.id, ten: t.ten, batBuoc: t.batBuoc, mucSinhVien: t.muc, mucTuDo: null }))}
+                    daChon={lePhi.thanhPhan.ds.filter((t) => t.daChon).map((t) => t.id)}
+                    khoaChon={lePhi.thanhPhan.ds.filter((t) => t.daChon && t.coDinh && !t.batBuoc).map((t) => t.id)}
+                  />
+                ) : (
+                  <ul className="flex flex-col gap-1 text-sm">
+                    {lePhi.thanhPhan.ds
+                      .filter((t) => t.daChon)
+                      .map((t) => (
+                        <li key={t.id} className="flex justify-between gap-3 border-b pb-1 last:border-0">
+                          <span>{t.ten}</span>
+                          <span className="tabular-nums">
+                            {dinhDangTien(t.muc)}
+                            {t.trangThai && ["DA_NOP_DU", "MIEN_GIAM"].includes(t.trangThai) && <span className="ml-2 text-success">đã xác nhận</span>}
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                ))}
               {lePhi.daXong ? (
                 <p className="rounded-lg bg-success/10 p-3 text-sm text-success">Nhà trường đã xác nhận bạn đã nộp lệ phí thi.</p>
               ) : (
@@ -135,7 +161,7 @@ export default async function TrangDonDangKy({
             </p>
           </div>
           <h1 className="mt-6 text-center text-lg font-bold uppercase">Đơn đăng ký dự thi</h1>
-          <p className="text-center font-semibold uppercase">{dangKy.khoa.chuongTrinh.ten}</p>
+          <p className="text-center font-semibold uppercase">{dangKy.khoa.tenKhoa ?? dangKy.khoa.chuongTrinh.ten}</p>
           <p className="mt-4">Kính gửi: {tenCoQuan ?? "Phòng/Trung tâm bồi dưỡng"}</p>
           <div className="mt-2 grid grid-cols-2 gap-x-4">
             <p>Họ và tên: <b>{hv.hoTen}</b></p>
@@ -148,10 +174,20 @@ export default async function TrangDonDangKy({
           </div>
           {thongTinBoSung}
           <p className="mt-3">
-            Đăng ký dự thi: <b>{dangKy.khoa.chuongTrinh.ten}</b> - đợt thi <b>{dangKy.khoa.maKhoa}</b>
+            Đăng ký dự thi: <b>{dangKy.khoa.tenKhoa ?? dangKy.khoa.chuongTrinh.ten}</b> - đợt thi <b>{dangKy.khoa.maKhoa}</b>
             {dangKy.khoa.thoiGianKhaiGiang && <>, ngày thi dự kiến {dinhDangNgay(dangKy.khoa.thoiGianKhaiGiang)}</>}.
           </p>
-          {lePhi && <p>Lệ phí thi: {dinhDangTien(lePhi.soTienPhaiNop)}.</p>}
+          {lePhi && (
+            <p>
+              Lệ phí thi: {dinhDangTien(lePhi.soTienPhaiNop)}
+              {lePhi.thanhPhan &&
+                ` (${lePhi.thanhPhan.ds
+                  .filter((t) => t.daChon)
+                  .map((t) => `${t.ten}: ${dinhDangTien(t.muc)}`)
+                  .join("; ")})`}
+              .
+            </p>
+          )}
           <p>Mã hồ sơ: {hv.maHocVien} · Ngày đăng ký: {dinhDangNgay(dangKy.ngayDangKy)}</p>
           <p className="mt-3">
             Tôi xin cam đoan những thông tin trên là đúng sự thật và chấp hành nghiêm túc quy chế thi của nhà trường.
@@ -199,7 +235,7 @@ export default async function TrangDonDangKy({
         {chucDanh && <p>Chức danh, học hàm/học vị: {chucDanh.ten}</p>}
         {thongTinBoSung}
         <p className="mt-4">
-          Đăng ký tham gia khóa bồi dưỡng: <strong>{dangKy.khoa.chuongTrinh.ten}</strong>
+          Đăng ký tham gia khóa bồi dưỡng: <strong>{dangKy.khoa.tenKhoa ?? dangKy.khoa.chuongTrinh.ten}</strong>
         </p>
         <p>Mã khóa: {dangKy.khoa.maKhoa}</p>
         <p>Mã học viên: {hv.maHocVien}</p>

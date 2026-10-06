@@ -5,6 +5,7 @@ import { khoaDaPheDuyetKetQua } from "@/server/services/kq/dung-chung";
 import { ghiThaoTac, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { layThamSo } from "@/server/services/qt/qt-05-tham-so";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
+import { lePhiDaXacNhan, soDaNopPhanBatBuoc } from "@/server/services/hp/thanh-phan-le-phi-chung";
 import { dinhDangNgay } from "@/lib/dinh-dang";
 import { ChotDanhSachDuThiError, KhongTimThayKhoaError } from "@/server/services/hv/loi-hoc-vien";
 
@@ -54,13 +55,17 @@ export async function chotDanhSachDuThi(khoaId: string, nguoi: NguoiThucHien) {
         where: { AND: [dieuKienChiemCho(khoaId), { trangThai: { notIn: ["CHINH_THUC", "HOAN_THANH"] } }] },
         include: { hocVien: true },
       });
-      const dsHocPhi = await tx.hocPhi.findMany({ where: { khoaId, hocVienId: { in: dsCho.map((d) => d.hocVienId) } } });
-      const hp = new Map(dsHocPhi.map((h) => [h.hocVienId, h]));
-      const daDong = dsCho.filter((d) => {
-        const h = hp.get(d.hocVienId);
-        return h ? ["DA_NOP_DU", "MIEN_GIAM"].includes(h.trangThai) || h.boQuaKiemTra : !coLePhi;
+      const dsHocPhi = await tx.hocPhi.findMany({
+        where: { khoaId, hocVienId: { in: dsCho.map((d) => d.hocVienId) } },
+        include: { thanhPhans: { include: { thanhPhan: true } } },
       });
-      const chuaDong = dsCho.filter((d) => !daDong.includes(d) && Number(hp.get(d.hocVienId)?.soTienDaNop ?? 0) === 0);
+      const hp = new Map(dsHocPhi.map((h) => [h.hocVienId, h]));
+      const daDong = dsCho.filter((d) => lePhiDaXacNhan(hp.get(d.hocVienId), coLePhi));
+      // (bổ sung 06/10/2026) khóa có thành phần lệ phí: xét phần bắt buộc
+      const chuaDong = dsCho.filter((d) => {
+        const h = hp.get(d.hocVienId);
+        return !daDong.includes(d) && (h ? soDaNopPhanBatBuoc(h) : 0) === 0;
+      });
       const nopThieu = dsCho.filter((d) => !daDong.includes(d) && !chuaDong.includes(d));
 
       const soChinhThuc = await tx.dangKyHoc.count({ where: { khoaId, trangThai: { in: ["CHINH_THUC", "HOAN_THANH"] } } });
@@ -77,7 +82,7 @@ export async function chotDanhSachDuThi(khoaId: string, nguoi: NguoiThucHien) {
         });
         // khoản lệ phí chưa thu đồng nào, chưa có phiếu thu -> bỏ khỏi công nợ
         await tx.hocPhi.deleteMany({
-          where: { khoaId, hocVienId: { in: chuaDong.map((d) => d.hocVienId) }, soTienDaNop: 0, phieuThus: { none: {} } },
+          where: { khoaId, hocVienId: { in: chuaDong.map((d) => d.hocVienId) }, soTienDaNop: 0, phieuThus: { none: { daHuy: false } } },
         });
       }
       await ghiThaoTac(

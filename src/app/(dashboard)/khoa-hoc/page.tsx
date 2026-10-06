@@ -11,6 +11,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { FormTaoKhoa } from "./form-tao-khoa";
+import { NutXoaKhoa } from "./nut-xoa-khoa";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   CHUAN_BI: "Chuẩn bị",
@@ -97,7 +98,7 @@ export default async function KhoaHocPage({ searchParams }: { searchParams: Prom
         <TableHeader>
           <TableRow>
             <TableHead>Mã khóa</TableHead>
-            <TableHead>Chương trình</TableHead>
+            <TableHead>Tên khóa · chương trình</TableHead>
             <TableHead>Khai giảng</TableHead>
             <TableHead>Bế giảng</TableHead>
             <TableHead>Sĩ số</TableHead>
@@ -113,8 +114,21 @@ export default async function KhoaHocPage({ searchParams }: { searchParams: Prom
                   {khoa.maKhoa}
                 </Link>
               </TableCell>
-              <TableCell className="max-w-md truncate" title={khoa.chuongTrinh.ten}>
-                {khoa.chuongTrinh.ten}
+              <TableCell className="max-w-md">
+                {khoa.tenKhoa ? (
+                  <>
+                    <span className="block truncate font-medium" title={khoa.tenKhoa}>
+                      {khoa.tenKhoa}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground" title={khoa.chuongTrinh.ten}>
+                      {khoa.chuongTrinh.ten}
+                    </span>
+                  </>
+                ) : (
+                  <span className="block truncate" title={khoa.chuongTrinh.ten}>
+                    {khoa.chuongTrinh.ten}
+                  </span>
+                )}
               </TableCell>
               <TableCell>
                 {khoa.thoiGianKhaiGiang
@@ -131,9 +145,13 @@ export default async function KhoaHocPage({ searchParams }: { searchParams: Prom
               </TableCell>
               <TableCell><NhanTrangThai ma={khoa.trangThai}>{NHAN_TRANG_THAI[khoa.trangThai] ?? khoa.trangThai}</NhanTrangThai></TableCell>
               <TableCell>
-                <Link href={`/khoa-hoc/${khoa.id}`} className="text-sm">
-                  Chi tiết →
-                </Link>
+                <div className="flex items-center justify-end gap-3">
+                  <Link href={`/khoa-hoc/${khoa.id}`} className="text-sm whitespace-nowrap">
+                    Chi tiết →
+                  </Link>
+                  {/* (bổ sung 06/10/2026) xóa khóa tạo sai - chỉ hiện khi chưa có hồ sơ đăng ký */}
+                  {khoa._count.dangKys === 0 && <NutXoaKhoa khoaId={khoa.id} ten={`${khoa.maKhoa} · ${khoa.tenKhoa ?? khoa.chuongTrinh.ten}`} />}
+                </div>
               </TableCell>
             </TableRow>
           ))}

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { dieuKienChiemCho } from "@/server/services/kh/kh-05-trang-thai-si-so";
 
 export type LocBaoCaoHocPhi = {
   tuNgay?: Date;
@@ -18,6 +19,7 @@ function locKhoa(loc: { khoaId?: string; khoaIds?: string[] }) {
 export async function baoCaoDoanhThu(loc: LocBaoCaoHocPhi = {}) {
   const dsPhieuThu = await prisma.phieuThu.findMany({
     where: {
+      daHuy: false,
       ngayLap: { gte: loc.tuNgay, lte: loc.denNgay },
       hocPhi: loc.khoaId || loc.khoaIds ? { khoaId: locKhoa(loc) } : undefined,
     },
@@ -67,4 +69,40 @@ export async function baoCaoCongNo(loc: { khoaId?: string; khoaIds?: string[] } 
     soHocVienConNo: dsConNo.length,
     theoKhoa: [...theoKhoa.values()],
   };
+}
+
+/**
+ * (bổ sung 06/10/2026) Tổng hợp nhanh theo khóa cho màn hình "Học phí theo khóa":
+ * số học viên đăng ký (đăng ký còn hiệu lực - KH-05), số đã xác nhận học phí
+ * (nộp đủ/miễn giảm/qua ĐVLK đã hoàn tất/được bỏ chặn), số còn nợ (chưa nộp/nộp
+ * thiếu, chưa bỏ chặn) và tổng tiền đã thu (tổng phiếu thu chưa hủy - khớp HP-05).
+ * Không hiện "mức học phí" vì 1 khóa có thể có nhiều mức theo đối tượng (HP-01).
+ */
+export type TongHopHocPhiKhoa = { soDangKy: number; soDaXacNhan: number; soConNo: number; daThu: number };
+
+export async function tongHopHocPhiTheoKhoa(khoaIds: string[]): Promise<Map<string, TongHopHocPhiKhoa>> {
+  const [dangKy, hocPhi, phieuThu] = await Promise.all([
+    prisma.dangKyHoc.groupBy({
+      by: ["khoaId"],
+      where: { ...dieuKienChiemCho(""), khoaId: { in: khoaIds } },
+      _count: { _all: true },
+    }),
+    prisma.hocPhi.findMany({
+      where: { khoaId: { in: khoaIds } },
+      select: { id: true, khoaId: true, trangThai: true, boQuaKiemTra: true },
+    }),
+    prisma.phieuThu.findMany({
+      where: { daHuy: false, hocPhi: { khoaId: { in: khoaIds } } },
+      select: { soTien: true, hocPhi: { select: { khoaId: true } } },
+    }),
+  ]);
+  const kq = new Map<string, TongHopHocPhiKhoa>(khoaIds.map((id) => [id, { soDangKy: 0, soDaXacNhan: 0, soConNo: 0, daThu: 0 }]));
+  for (const d of dangKy) kq.get(d.khoaId)!.soDangKy = d._count._all;
+  for (const h of hocPhi) {
+    const k = kq.get(h.khoaId)!;
+    if (h.boQuaKiemTra || ["DA_NOP_DU", "MIEN_GIAM", "DA_HOAN_TAT"].includes(h.trangThai)) k.soDaXacNhan++;
+    else if (["CHUA_NOP", "CON_NO"].includes(h.trangThai)) k.soConNo++;
+  }
+  for (const pt of phieuThu) kq.get(pt.hocPhi.khoaId)!.daThu += Number(pt.soTien);
+  return kq;
 }

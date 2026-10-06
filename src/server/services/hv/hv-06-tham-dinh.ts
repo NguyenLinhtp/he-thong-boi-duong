@@ -7,7 +7,7 @@ import { minhChungConThieu } from "@/server/services/hv/form-dang-ky";
 const INCLUDE_DANG_KY = { hocVien: true, khoa: { include: { chuongTrinh: true } } } as const;
 
 /** Hồ sơ đã qua bước đăng ký ban đầu của cả 3 phương thức, sẵn sàng thẩm định. */
-const TRANG_THAI_SAN_SANG_THAM_DINH: TrangThaiDangKy[] = [
+export const TRANG_THAI_SAN_SANG_THAM_DINH: TrangThaiDangKy[] = [
   "DA_NOP_GIAY", // Phương thức 1 (HV-02)
   "DA_XAC_NHAN_THAM_GIA", // Phương thức 2 (HV-04)
   "CHO_DUYET", // Phương thức 3 (HV-05) hoặc mặc định chung

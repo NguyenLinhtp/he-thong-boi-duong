@@ -30,6 +30,16 @@ export function FormTaoKhoa({
           ))}
         </select>
       </div>
+      <div className="flex min-w-72 flex-1 flex-col gap-1.5">
+        <Label htmlFor="tenKhoa">Tên khóa</Label>
+        <Input
+          id="tenKhoa"
+          name="tenKhoa"
+          required
+          maxLength={200}
+          placeholder="Vd. Thi chuẩn đầu ra tiếng Anh đợt tháng 11 năm 2026"
+        />
+      </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="siSoToiDa">Sĩ số tối đa</Label>
         <Input id="siSoToiDa" name="siSoToiDa" type="number" min={1} required className="w-28" />
@@ -45,10 +55,6 @@ export function FormTaoKhoa({
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="hanDangKy">Hạn đăng ký</Label>
         <Input id="hanDangKy" name="hanDangKy" type="date" className="w-40" />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="mucHocPhi">Mức học phí/lệ phí</Label>
-        <Input id="mucHocPhi" name="mucHocPhi" type="number" min={0} className="w-32" />
       </div>
       <Button type="submit" disabled={dangXuLy}>
         {dangXuLy ? "Đang tạo..." : "Khởi tạo khóa (Chuẩn bị)"}

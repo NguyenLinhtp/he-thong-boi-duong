@@ -55,6 +55,7 @@ export async function chuongTrinhCongKhai(maCT: string) {
     canTaiKhoan: canTaiKhoanKhiDangKy(ct.phuongThucDangKy),
     dsKhoa: dsKhoa.map((k, i) => ({
       maKhoa: k.maKhoa,
+      tenKhoa: k.tenKhoa,
       khaiGiang: k.thoiGianKhaiGiang,
       beGiang: k.thoiGianBeGiang,
       hanDangKy: k.hanDangKy,

@@ -6,6 +6,7 @@ import {
 } from "@/server/services/hp/loi-hoc-phi";
 import { lapPhieuThu } from "@/server/services/hp/hp-04-phieu-thu";
 import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
+import { mienGiamThanhPhan, phanBoThanhToan } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
 
 const TRANG_THAI_QUA_DVLK = ["CHO_THANH_LY_HOP_DONG", "DA_HOAN_TAT"];
 
@@ -35,6 +36,13 @@ export async function xacNhanThanhToan(hocPhiId: string, input: XacNhanThanhToan
     const hocPhi = await tx.hocPhi.findUnique({ where: { id: hocPhiId } });
     if (!hocPhi) throw new KhongTimThayHocPhiError();
     if (TRANG_THAI_QUA_DVLK.includes(hocPhi.trangThai)) throw new HocPhiQuaDonViLienKetError();
+    // (bổ sung 06/10/2026) khóa có thành phần lệ phí: phân bổ vào từng thành phần, mỗi phần 1 phiếu thu
+    if ((await tx.hocPhiThanhPhan.count({ where: { hocPhiId } })) > 0) {
+      return phanBoThanhToan(tx, hocPhiId, input.soTien, input.hinhThucNop, {
+        nguoiThucHienId: input.nguoiXacNhanId,
+        nguoiThucHienTen: input.nguoiXacNhanTen,
+      });
+    }
 
     const soTienDaNopMoi = Number(hocPhi.soTienDaNop) + input.soTien;
     const trangThaiMoi = soTienDaNopMoi >= Number(hocPhi.soTienPhaiNop) ? "DA_NOP_DU" : "CON_NO";
@@ -90,9 +98,13 @@ export async function xacNhanMienGiam(hocPhiId: string, input: XacNhanMienGiamIn
   if (!hocPhi) throw new KhongTimThayHocPhiError();
   if (TRANG_THAI_QUA_DVLK.includes(hocPhi.trangThai)) throw new HocPhiQuaDonViLienKetError();
 
-  const hocPhiSau = await prisma.hocPhi.update({
-    where: { id: hocPhiId },
-    data: { trangThai: "MIEN_GIAM", hinhThucNop: "Miễn giảm", nguoiXacNhanId: input.nguoiXacNhanId ?? null },
+  const hocPhiSau = await prisma.$transaction(async (tx) => {
+    // (bổ sung 06/10/2026) khóa có thành phần lệ phí: các thành phần chưa xong -> Miễn giảm
+    await mienGiamThanhPhan(tx, hocPhiId);
+    return tx.hocPhi.update({
+      where: { id: hocPhiId },
+      data: { trangThai: "MIEN_GIAM", hinhThucNop: "Miễn giảm", nguoiXacNhanId: input.nguoiXacNhanId ?? null },
+    });
   });
 
   await ghiNhatKy({

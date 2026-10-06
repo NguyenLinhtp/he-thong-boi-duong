@@ -380,7 +380,6 @@ async function taoChuongTrinhThiSinhVien() {
         khoaId: khoa.id,
         hoTen: sv.hoTen,
         maSinhVien: sv.maSinhVien,
-        cuoiCCCD: sv.soCCCD.slice(-4),
         duLieuForm: {
           giaTri: {
             ngaySinh: `200${3 + (i % 2)}-0${1 + i}-1${i}`,

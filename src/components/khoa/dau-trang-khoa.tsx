@@ -17,13 +17,15 @@ const TAB = [
   { ma: "tuyen-sinh", nhan: "Tuyển sinh", duoi: "/tuyen-sinh", quyen: ["KH-01"] },
   { ma: "giang-day", nhan: "Giảng dạy", duoi: "/giang-day", quyen: ["KH-01"] },
   { ma: "lop-hoc", nhan: "Lớp học", duoi: "/lop-hoc", quyen: ["KH-07"] },
-  { ma: "ket-qua", nhan: "Kết quả học tập", duoi: "/ket-qua", quyen: ["KQ-02", "KQ-03"] },
+  // (sửa 06/10/2026) chỉ theo KQ-02 (cán bộ đào tạo): cán bộ tài chính có KQ-03 nhưng tab kết quả
+  // học tập không liên quan công việc của họ
+  { ma: "ket-qua", nhan: "Kết quả học tập", duoi: "/ket-qua", quyen: ["KQ-02"] },
   { ma: "chung-chi", nhan: "Văn bằng", duoi: "/chung-chi", quyen: ["CC-01"] },
   { ma: "hoc-phi", nhan: "Học phí", duoi: "/hoc-phi", quyen: ["HP-01"] },
 ] as const;
 
 type Props = {
-  khoa: { id: string; maKhoa: string; trangThai: string; chuongTrinh: { ten: string } };
+  khoa: { id: string; maKhoa: string; tenKhoa?: string | null; trangThai: string; chuongTrinh: { ten: string } };
   dangChon: (typeof TAB)[number]["ma"];
   phu?: React.ReactNode;
 };
@@ -50,7 +52,9 @@ export async function DauTrangKhoa({ khoa, dangChon, phu }: Props) {
       </nav>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-bold text-ued-blue-dam">
-          {khoa.maKhoa} · {khoa.chuongTrinh.ten}
+          {khoa.maKhoa} · {khoa.tenKhoa ?? khoa.chuongTrinh.ten}
+          {/* (bổ sung 06/10/2026) khóa có tên riêng: hiện thêm tên chương trình */}
+          {khoa.tenKhoa && <span className="block text-sm font-normal text-muted-foreground">Chương trình: {khoa.chuongTrinh.ten}</span>}
         </h1>
         <NhanTrangThai ma={khoa.trangThai}>{NHAN_TRANG_THAI_KHOA[khoa.trangThai] ?? khoa.trangThai}</NhanTrangThai>
         {phu}

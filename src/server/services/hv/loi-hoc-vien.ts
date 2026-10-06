@@ -23,7 +23,7 @@ export class KhoaKhongMoDangKyError extends Error {
 }
 
 export class DaDangKyKhoaNayError extends Error {
-  // (bổ sung 01/10/2026) hồ sơ đã có - chỉ gửi kèm khi danh tính đã được xác minh (mã SV + 4 số cuối CCCD)
+  // (bổ sung 01/10/2026) hồ sơ đã có - chỉ gửi kèm khi danh tính đã được xác minh (mã SV/CCCD + số điện thoại đã khai - sửa 05/10/2026)
   constructor(public readonly dangKyId?: string) {
     super("Học viên đã đăng ký khóa này rồi, không thể đăng ký trùng lần 2");
   }
@@ -130,6 +130,13 @@ export class DanhSachXetDuyetKhongHopLeError extends Error {
   }
 }
 
+// (bổ sung 06/10/2026 - HV-07) khóa dự thi: chỉ thí sinh đã xác nhận lệ phí mới vào danh sách chính thức
+export class ChuaXacNhanLePhiKhiXetDuyetError extends Error {
+  constructor(public dsHoTen: string[]) {
+    super(`Khóa dự thi chỉ duyệt chính thức thí sinh đã được xác nhận lệ phí - chưa xác nhận: ${dsHoTen.join(", ")}`);
+  }
+}
+
 export class VuotSiSoKhiXetDuyetError extends Error {
   constructor(soChoConLai: number) {
     super(`Số lượng xét duyệt chính thức vượt sĩ số tối đa của khóa (còn ${soChoConLai} chỗ)`);
@@ -211,9 +218,36 @@ export class SinhVienKhongCoTrongDanhSachError extends Error {
   }
 }
 
-export class XacMinhSinhVienKhongKhopError extends Error {
+// (sửa 05/10/2026) xác thực thí sinh dự thi bằng số điện thoại thay 4 số cuối CCCD
+export class SoDienThoaiXacThucKhongHopLeError extends Error {
   constructor() {
-    super("4 số cuối CCCD không khớp với mã sinh viên trong danh sách của nhà trường");
+    super("Số điện thoại xác thực không hợp lệ (10 chữ số, bắt đầu bằng 0)");
+  }
+}
+
+// đã có hồ sơ nhưng số điện thoại không khớp - không lộ thông tin đơn của người khác
+export class DaDangKyDuThiKhacSoDienThoaiError extends Error {
+  constructor(theo: "mã sinh viên" | "số CCCD") {
+    super(
+      `${theo === "mã sinh viên" ? "Mã sinh viên" : "Số CCCD"} này đã đăng ký đợt thi này. Để xem lại đơn, hãy dùng mục "Đã đăng ký?" với đúng số điện thoại đã khai khi đăng ký`,
+    );
+  }
+}
+
+// (sửa 05/10/2026 - HV-03) có mã sinh viên đã có trong CSDL với dữ liệu khác -> chờ cán bộ đào tạo xác nhận ghi đè
+type DuLieuSinhVien = { hoTen: string; soCCCD: string; lopSinhHoat: string | null; thongTinThem: Record<string, string> };
+export type DongGhiDeSinhVien = { dong: number; maSinhVien: string; cu: DuLieuSinhVien; moi: DuLieuSinhVien };
+
+// (bổ sung 05/10/2026 - HV-03) cột bổ sung của file mẫu danh sách sinh viên
+export class CauHinhCotSinhVienKhongHopLeError extends Error {
+  constructor(lyDo: string) {
+    super(`Chưa lưu được cột của file mẫu: ${lyDo}`);
+  }
+}
+
+export class CanXacNhanGhiDeSinhVienError extends Error {
+  constructor(public readonly cacDongGhiDe: DongGhiDeSinhVien[]) {
+    super(`Tệp có ${cacDongGhiDe.length} mã sinh viên đã có trong hệ thống với dữ liệu khác - cần xác nhận ghi đè trước khi nạp, chưa nạp dòng nào`);
   }
 }
 
@@ -232,5 +266,18 @@ export class ChotDanhSachDuThiError extends Error {
 export class LaSinhVienCuaTruongError extends Error {
   constructor() {
     super('Số CCCD này có trong danh sách sinh viên của trường - vui lòng chọn "Sinh viên của trường" và đăng ký bằng mã sinh viên');
+  }
+}
+
+// (bổ sung 05/10/2026 - HV-06/HV-07) thẩm định/xét duyệt theo danh sách từ tệp, điều chỉnh thông tin thí sinh
+export class TepDanhSachKhongHopLeError extends Error {
+  constructor(lyDo: string) {
+    super(`Tệp danh sách không hợp lệ: ${lyDo}`);
+  }
+}
+
+export class DieuChinhThongTinKhongHopLeError extends Error {
+  constructor(lyDo: string) {
+    super(`Chưa điều chỉnh được thông tin thí sinh: ${lyDo}`);
   }
 }

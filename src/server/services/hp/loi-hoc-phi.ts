@@ -45,9 +45,23 @@ export class TepDoiSoatKhongHopLeError extends Error {
   }
 }
 
+// (bổ sung 06/10/2026 - HP-02) chuyển trạng thái lệ phí trên danh sách đối soát bị chặn
+export class ChuyenTrangThaiLePhiKhongHopLeError extends Error {
+  constructor(lyDo: string) {
+    super(`Không chuyển được trạng thái lệ phí: ${lyDo}`);
+  }
+}
+
 // (bổ sung 01/10/2026 - HP-01) lệ phí thí sinh tự do chỉ cho khóa dự thi định danh bằng mã sinh viên
 export class LePhiTuDoKhongApDungError extends Error {
   constructor(lyDo = "lệ phí thí sinh tự do chỉ áp dụng cho khóa dự thi (Phương thức 3) có form đăng ký bằng mã sinh viên") {
     super(`Không lưu được: ${lyDo}`);
+  }
+}
+
+// (bổ sung 06/10/2026 - HP-01/HP-02) thành phần lệ phí của khóa dự thi
+export class ThanhPhanLePhiKhongHopLeError extends Error {
+  constructor(lyDo: string) {
+    super(`Thành phần lệ phí: ${lyDo}`);
   }
 }

@@ -23,6 +23,10 @@ export type ThietLapHocPhiInput = {
 export async function thietLapHocPhi(khoaId: string, input: ThietLapHocPhiInput, nguoi: NguoiThucHien = HE_THONG) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId } });
   if (!khoa) throw new KhongTimThayKhoaError();
+  // (bổ sung 06/10/2026) khóa đã chia thành phần lệ phí: mức theo từng thành phần (hp-01-thanh-phan-le-phi)
+  if ((await prisma.thanhPhanLePhi.count({ where: { khoaId } })) > 0) {
+    throw new LePhiTuDoKhongApDungError("khóa đang chia thành phần lệ phí - điều chỉnh mức ở từng thành phần");
+  }
 
   const mucCu = khoa.mucHocPhi ? Number(khoa.mucHocPhi) : null;
   const tuDoCu = khoa.mucHocPhiTuDo === null ? null : Number(khoa.mucHocPhiTuDo);
@@ -144,6 +148,11 @@ export async function taoHocPhiSauKhiChinhThuc(dangKyId: string) {
     include: { khoa: true, hocVien: true },
   });
   if (!dangKy || dangKy.khoa.mucHocPhi === null) return null;
+  // (bổ sung 06/10/2026) khóa có thành phần lệ phí: khoản lệ phí đã lập theo thành phần khi đăng ký,
+  // không đồng bộ lại theo 1 mức chung
+  if ((await prisma.thanhPhanLePhi.count({ where: { khoaId: dangKy.khoaId } })) > 0) {
+    return prisma.hocPhi.findUnique({ where: { hocVienId_khoaId: { hocVienId: dangKy.hocVienId, khoaId: dangKy.khoaId } } });
+  }
   const muc = {
     sinhVien: Number(dangKy.khoa.mucHocPhi),
     tuDo: dangKy.khoa.mucHocPhiTuDo === null ? null : Number(dangKy.khoa.mucHocPhiTuDo),

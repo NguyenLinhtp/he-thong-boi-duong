@@ -131,12 +131,12 @@ describe("KH-06 bổ sung - danh mục chương trình công khai", () => {
 });
 
 describe("HV-05 bổ sung - mở lại đơn dự thi (form định danh CCCD) không cần tài khoản", () => {
-  it("mở bằng số CCCD + họ tên; sai họ tên thì không mở", async () => {
+  it("mở bằng số CCCD + số điện thoại đã khai (sửa 05/10/2026); sai số điện thoại/CCCD thì không mở", async () => {
     const { khoa } = await taoKhoa("CHI_DU_THI");
     const c = cccd();
-    const dk = await dangKyDuThi({ khoaId: khoa.id, hoTen: "Lê Văn Thí Sinh", soCCCD: c });
-    expect(await timLaiDonDuThi(khoa.id, { soCCCD: c, hoTen: " lê văn  thí sinh " })).toBe(dk.id);
-    await expect(timLaiDonDuThi(khoa.id, { soCCCD: c, hoTen: "Người Khác" })).rejects.toThrow(KhongTimThayDangKyError);
-    await expect(timLaiDonDuThi(khoa.id, { soCCCD: cccd(), hoTen: "Lê Văn Thí Sinh" })).rejects.toThrow(KhongTimThayDangKyError);
+    const dk = await dangKyDuThi({ khoaId: khoa.id, soDienThoai: "0905000001", hoTen: "Lê Văn Thí Sinh", soCCCD: c });
+    expect(await timLaiDonDuThi(khoa.id, { soCCCD: c, soDienThoai: "0905 000 001" })).toBe(dk.id);
+    await expect(timLaiDonDuThi(khoa.id, { soCCCD: c, soDienThoai: "0905000999" })).rejects.toThrow(KhongTimThayDangKyError);
+    await expect(timLaiDonDuThi(khoa.id, { soCCCD: cccd(), soDienThoai: "0905000001" })).rejects.toThrow(KhongTimThayDangKyError);
   });
 });

@@ -6,9 +6,12 @@ import {
   SaiTrangThaiChuongTrinhError,
   KhongTimThayChuongTrinhError,
 } from "@/server/services/ct/loi-chuong-trinh";
+import { KhongTimThayKhoaError, KhongXoaDuocKhoaError, TenKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
 
 export type KhoiTaoKhoaInput = {
   chuongTrinhId: string;
+  // (bổ sung 06/10/2026) tên khóa, vd. "Thi chuẩn đầu ra tiếng Anh đợt tháng 11 năm 2026"
+  tenKhoa?: string | null;
   thoiGianKhaiGiang?: Date | string | null;
   thoiGianBeGiang?: Date | string | null;
   siSoToiDa: number;
@@ -36,10 +39,13 @@ export async function khoiTaoKhoa(input: KhoiTaoKhoaInput, nguoi: NguoiThucHien 
     );
   }
 
+  const tenKhoa = chuanHoaTenKhoa(input.tenKhoa);
+
   const khoa = await taoKhoaVoiMaTuSinh((maKhoa) =>
     prisma.khoa.create({
       data: {
         maKhoa,
+        tenKhoa,
         chuongTrinhId: input.chuongTrinhId,
         thoiGianKhaiGiang: input.thoiGianKhaiGiang ? new Date(input.thoiGianKhaiGiang) : null,
         thoiGianBeGiang: input.thoiGianBeGiang ? new Date(input.thoiGianBeGiang) : null,
@@ -57,14 +63,87 @@ export async function khoiTaoKhoa(input: KhoiTaoKhoaInput, nguoi: NguoiThucHien 
     "KHOI_TAO_KHOA",
     "Khoa",
     khoa.id,
-    `${khoa.maKhoa} từ chương trình ${chuongTrinh.maCT} - sĩ số ${khoa.siSoToiDa}`,
+    `${khoa.maKhoa}${tenKhoa ? ` "${tenKhoa}"` : ""} từ chương trình ${chuongTrinh.maCT} - sĩ số ${khoa.siSoToiDa}`,
   );
   return khoa;
 }
 
+export const TEN_KHOA_TOI_DA = 200;
+
+/** null/undefined = không đặt tên (hiển thị theo tên chương trình); chuỗi rỗng sau khi cắt khoảng trắng bị chặn. */
+function chuanHoaTenKhoa(ten: string | null | undefined) {
+  if (ten === null || ten === undefined) return null;
+  const t = ten.trim().replace(/\s+/g, " ");
+  if (!t) throw new TenKhoaKhongHopLeError("Chưa nhập tên khóa");
+  if (t.length > TEN_KHOA_TOI_DA) throw new TenKhoaKhongHopLeError(`Tên khóa tối đa ${TEN_KHOA_TOI_DA} ký tự`);
+  return t;
+}
+
+/** Tên hiển thị của khóa: tên khóa đã đặt, chưa đặt thì theo tên chương trình. */
+export const tenHienThiKhoa = (k: { tenKhoa: string | null; chuongTrinh: { ten: string } }) => k.tenKhoa ?? k.chuongTrinh.ten;
+
+/**
+ * (bổ sung 06/10/2026 - KH-01) Xóa khóa tạo sai: chỉ khi khóa chưa có hồ sơ đăng ký nào (kể cả đã
+ * hủy/không hợp lệ) và chưa phát sinh dữ liệu nghiệp vụ (học phí, hợp đồng liên kết, kết quả, văn
+ * bằng, tài liệu, bài làm). Buổi học, phân công giảng viên, lớp, thành phần lệ phí của khóa bị xóa
+ * theo. Ghi nhật ký. Khóa hàng khóa (FOR UPDATE) để không xóa khi đang có người đăng ký cùng lúc.
+ */
+export async function xoaKhoa(khoaId: string, nguoi: NguoiThucHien = HE_THONG) {
+  return prisma.$transaction(async (tx) => {
+    const dsKhoa = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM khoa WHERE id = ${khoaId} FOR UPDATE`;
+    if (dsKhoa.length === 0) throw new KhongTimThayKhoaError();
+    const khoa = await tx.khoa.findUniqueOrThrow({
+      where: { id: khoaId },
+      include: {
+        chuongTrinh: { select: { maCT: true, ten: true } },
+        _count: {
+          select: {
+            dangKys: true,
+            hocPhis: true,
+            hopDongs: true,
+            ketQuas: true,
+            ketQuaKhoas: true,
+            chungChis: true,
+            quyetDinhCapVanBangs: true,
+            taiLieus: true,
+            lanLamTracNghiems: true,
+            baiNopSanPhams: true,
+          },
+        },
+      },
+    });
+    const c = khoa._count;
+    if (c.dangKys > 0) throw new KhongXoaDuocKhoaError(`khóa đã có ${c.dangKys} hồ sơ đăng ký`);
+    const vuong = [
+      [c.hocPhis, "khoản học phí"],
+      [c.hopDongs, "hợp đồng liên kết"],
+      [c.ketQuas + c.ketQuaKhoas, "kết quả học tập"],
+      [c.chungChis + c.quyetDinhCapVanBangs, "văn bằng/quyết định cấp"],
+      [c.taiLieus, "tài liệu học tập"],
+      [c.lanLamTracNghiems + c.baiNopSanPhams, "bài làm/bài nộp"],
+    ].filter(([n]) => (n as number) > 0);
+    if (vuong.length > 0) throw new KhongXoaDuocKhoaError(`khóa đã có ${vuong.map(([n, ten]) => `${n} ${ten}`).join(", ")}`);
+
+    await tx.buoiHoc.deleteMany({ where: { khoaId } });
+    await tx.giangVienHocPhan.deleteMany({ where: { khoaId } });
+    await tx.thanhPhanLePhi.deleteMany({ where: { khoaId } });
+    await tx.lopHoc.deleteMany({ where: { khoaId } });
+    await tx.khoa.delete({ where: { id: khoaId } });
+    await ghiThaoTac(
+      nguoi,
+      "XOA_KHOA",
+      "Khoa",
+      khoaId,
+      `${khoa.maKhoa} · ${tenHienThiKhoa(khoa)} (chương trình ${khoa.chuongTrinh.maCT}) - xóa khóa tạo sai, chưa có đăng ký`,
+      tx,
+    );
+    return { maKhoa: khoa.maKhoa };
+  });
+}
+
 export async function danhSachKhoa() {
   return prisma.khoa.findMany({
-    include: { chuongTrinh: true },
+    include: { chuongTrinh: true, _count: { select: { dangKys: true } } },
     orderBy: { createdAt: "desc" },
   });
 }

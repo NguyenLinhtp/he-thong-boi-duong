@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ChonDoiTuongDuThi, type DoiTuongDuThi } from "@/components/dang-ky/truong-ma-sinh-vien";
 
 // (bổ sung 01/10/2026) thí sinh đã đăng ký dự thi mở lại đơn: in lại, chuyển khoản, nộp minh chứng.
-// Sinh viên của trường: mã SV + 4 số cuối CCCD; thí sinh tự do/form định danh CCCD: số CCCD + họ tên đã khai
+// (sửa 05/10/2026) sinh viên của trường: mã SV + số điện thoại; thí sinh tự do/form định danh CCCD: số CCCD + số điện thoại đã khai
 export function FormTimLaiDon({
   khoaId,
   maKhoa,
@@ -30,28 +30,20 @@ export function FormTimLaiDon({
         <input type="hidden" name="khoaId" value={khoaId} />
         <input type="hidden" name="maKhoa" value={maKhoa} />
         {laSinhVien ? (
-          <>
-            <label className="flex flex-col gap-1">
-              Mã sinh viên
-              <Input name="maSinhVien" required className="w-40 font-mono uppercase" />
-            </label>
-            <label className="flex flex-col gap-1">
-              4 số cuối CCCD
-              <Input name="cuoiCCCD" required inputMode="numeric" pattern="\d{4}" maxLength={4} className="w-28 font-mono" />
-            </label>
-          </>
+          <label className="flex flex-col gap-1">
+            Mã sinh viên
+            <Input name="maSinhVien" required className="w-40 font-mono uppercase" />
+          </label>
         ) : (
-          <>
-            <label className="flex flex-col gap-1">
-              Số CCCD
-              <Input name="soCCCD" required inputMode="numeric" className="w-44 font-mono" />
-            </label>
-            <label className="flex flex-col gap-1">
-              Họ tên
-              <Input name="hoTen" required className="w-56" />
-            </label>
-          </>
+          <label className="flex flex-col gap-1">
+            Số CCCD
+            <Input name="soCCCD" required inputMode="numeric" className="w-44 font-mono" />
+          </label>
         )}
+        <label className="flex flex-col gap-1">
+          Số điện thoại đã khai
+          <Input name="soDienThoai" type="tel" required inputMode="tel" className="w-40 font-mono" />
+        </label>
         <Button type="submit" variant="outline" disabled={dangXuLy}>
           {dangXuLy ? "Đang tìm..." : "Mở đơn"}
         </Button>

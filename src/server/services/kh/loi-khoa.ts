@@ -142,3 +142,16 @@ export class DaOLopNayError extends LoiLopHoc {
     super("Học viên đang ở lớp này rồi");
   }
 }
+
+// (bổ sung 06/10/2026 - KH-01) tên khóa / xóa khóa tạo sai
+export class TenKhoaKhongHopLeError extends Error {
+  constructor(msg: string) {
+    super(msg);
+  }
+}
+
+export class KhongXoaDuocKhoaError extends Error {
+  constructor(lyDo: string) {
+    super(`Không xóa được khóa: ${lyDo}`);
+  }
+}

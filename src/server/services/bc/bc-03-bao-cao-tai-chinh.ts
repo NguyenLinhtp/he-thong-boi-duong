@@ -38,7 +38,7 @@ export async function baoCaoTaiChinhHocPhi(loc: LocBaoCaoTaiChinh = {}) {
     baoCaoDoanhThu({ tuNgay: loc.tu, denNgay: loc.den, khoaIds }),
     baoCaoCongNo({ khoaIds }),
     prisma.phieuThu.findMany({
-      where: { ngayLap: { gte: loc.tu, lte: loc.den }, hocPhi: locKhoa ? { khoaId: locKhoa } : undefined },
+      where: { daHuy: false, ngayLap: { gte: loc.tu, lte: loc.den }, hocPhi: locKhoa ? { khoaId: locKhoa } : undefined },
       include: { hocPhi: { include: { hocVien: true, khoa: true } } },
       orderBy: [{ ngayLap: "asc" }, { soPhieu: "asc" }],
     }),
@@ -49,7 +49,7 @@ export async function baoCaoTaiChinhHocPhi(loc: LocBaoCaoTaiChinh = {}) {
     }),
     prisma.phieuThu.groupBy({
       by: ["hocPhiId"],
-      where: { hocPhi: locKhoa ? { khoaId: locKhoa } : undefined },
+      where: { daHuy: false, hocPhi: locKhoa ? { khoaId: locKhoa } : undefined },
       _sum: { soTien: true },
     }),
   ]);

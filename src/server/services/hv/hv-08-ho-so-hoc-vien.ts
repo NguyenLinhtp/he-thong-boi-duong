@@ -1,3 +1,4 @@
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { KhongTimThayHocVienError, CccdTrungError, NgoaiPhamViHoSoHocVienError } from "@/server/services/hv/loi-hoc-vien";
 import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
@@ -28,21 +29,36 @@ function kiemTraPhamVi(phamVi: PhamViHoSoHocVien, hocVienId: string) {
   if (!phamVi.toanBo && phamVi.hocVienId !== hocVienId) throw new NgoaiPhamViHoSoHocVienError();
 }
 
+function dieuKienTimHocVien(tuKhoa: string | undefined, phamVi: PhamViHoSoHocVien): Prisma.HocVienWhereInput {
+  const q = tuKhoa?.trim();
+  const ma = q?.replace(/\s+/g, "");
+  return {
+    id: phamVi.toanBo ? undefined : phamVi.hocVienId!,
+    OR: q
+      ? [
+          { hoTen: { contains: q, mode: "insensitive" } },
+          { maHocVien: { contains: ma, mode: "insensitive" } },
+          { maSinhVien: { contains: ma, mode: "insensitive" } },
+          { soCCCD: { contains: ma } },
+        ]
+      : undefined,
+  };
+}
+
 export async function danhSachHocVien(tuKhoa: string | undefined, phamVi: PhamViHoSoHocVien) {
   if (!phamVi.toanBo && !phamVi.hocVienId) return [];
-  return prisma.hocVien.findMany({
-    where: {
-      id: phamVi.toanBo ? undefined : phamVi.hocVienId!,
-      OR: tuKhoa
-        ? [
-            { hoTen: { contains: tuKhoa, mode: "insensitive" } },
-            { maHocVien: { contains: tuKhoa, mode: "insensitive" } },
-            { soCCCD: { contains: tuKhoa } },
-          ]
-        : undefined,
-    },
-    orderBy: { hoTen: "asc" },
-  });
+  return prisma.hocVien.findMany({ where: dieuKienTimHocVien(tuKhoa, phamVi), orderBy: { hoTen: "asc" } });
+}
+
+/** (bổ sung 06/10/2026) 1 trang danh sách hồ sơ học viên - phân trang trong CSDL. */
+export async function trangHoSoHocVien(tuKhoa: string | undefined, phamVi: PhamViHoSoHocVien, boQua: number, soDong: number) {
+  if (!phamVi.toanBo && !phamVi.hocVienId) return { ds: [], tong: 0 };
+  const where = dieuKienTimHocVien(tuKhoa, phamVi);
+  const [ds, tong] = await Promise.all([
+    prisma.hocVien.findMany({ where, orderBy: [{ hoTen: "asc" }, { maHocVien: "asc" }], skip: boQua, take: soDong }),
+    prisma.hocVien.count({ where }),
+  ]);
+  return { ds, tong };
 }
 
 /** HV-08: "lịch sử các khóa/kỳ thi đã hoặc đang tham gia của học viên". */

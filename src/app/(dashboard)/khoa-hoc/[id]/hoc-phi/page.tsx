@@ -9,7 +9,7 @@ import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { FormThietLap } from "./form-thiet-lap";
 import { FormDoiSoat, KhoiChotDanhSach } from "./khoi-le-phi-thi";
-import { bangDoiSoatLePhi } from "@/server/services/hp/hp-02-doi-soat-excel";
+import { bangDoiSoatLePhi, locVaSapXepDoiSoat } from "@/server/services/hp/hp-02-doi-soat-excel";
 import { duocChotDanhSach } from "@/server/services/hv/hv-07-chot-danh-sach-du-thi";
 import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { dinhDangNgay } from "@/lib/dinh-dang";
@@ -27,6 +27,13 @@ const NHAN_HO_SO: Record<string, string> = {
   HOAN_THANH: "Hoàn thành",
 };
 import { HangHocPhi } from "./hang-hoc-phi";
+import { KhongKhop, OTimKiem, PhanTrang, locVaPhanTrang, thamSoPhang, type ThamSoUrl } from "@/components/chung/phan-trang";
+import { NutTrangThaiLePhi } from "./nut-trang-thai-le-phi";
+import { CauHinhThanhPhanLePhi } from "./cau-hinh-thanh-phan";
+import { dsThanhPhanLePhi } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
+import { dinhDangTien } from "@/lib/dinh-dang";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -38,7 +45,13 @@ async function coQuyen(maCN: string): Promise<boolean> {
   }
 }
 
-export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function HocPhiKhoaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<ThamSoUrl>;
+}) {
   try {
     await requirePermission("HP-01");
   } catch (error) {
@@ -63,36 +76,74 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
     coQuyen("HV-07"),
     laDuThi ? bangDoiSoatLePhi(id) : Promise.resolve([]),
   ]);
+  // (bổ sung 06/10/2026) thành phần lệ phí của khóa dự thi (vd. ôn thi, thi)
+  const dsThanhPhan = laDuThi ? await dsThanhPhanLePhi(id) : [];
   const duocChot = laDuThi && duocChotDanhSach(khoa);
-  const soChinhThuc = bangLePhi.filter((d) => ["CHINH_THUC", "HOAN_THANH"].includes(d.dangKy.trangThai)).length;
+  const dsChinhThuc = bangLePhi.filter((d) => ["CHINH_THUC", "HOAN_THANH"].includes(d.dangKy.trangThai));
+  const soChinhThuc = dsChinhThuc.length;
+  // (bổ sung 06/10/2026 - HP-02/03/04) mỗi danh sách có ô tìm nhanh (họ tên/mã SV/CCCD)
+  // và phân trang 20 dòng riêng; bảng lệ phí: chưa xác nhận lệ phí lên trên
+  const sp = await searchParams;
+  const duong = `/khoa-hoc/${id}/hoc-phi`;
+  const thamSo = thamSoPhang(sp);
+  const lop = (d: { hocVien: { lopSinhHoat: string | null } }) => [d.hocVien.lopSinhHoat];
+  const trangLePhi = locVaPhanTrang(locVaSapXepDoiSoat(bangLePhi), sp, "lp", (d) => d.hocVien, lop);
+  const trangChinhThuc = locVaPhanTrang(dsChinhThuc, sp, "ct", (d) => d.hocVien, lop);
+  const trangCongNo = locVaPhanTrang(dsHocPhi, sp, "cn", (hp) => hp.hocVien);
+  const trangPhieuThu = locVaPhanTrang(dsPhieuThu, sp, "pt", (pt) => pt.hocPhi.hocVien, (pt) => [pt.soPhieu]);
+  const thanhPhanTrang = (t: { ma: string; trang: number; tongTrang: number; tongDong: number }) => (
+    <PhanTrang duong={duong} thamSo={thamSo} ten={`${t.ma}_trang`} trang={t.trang} tongTrang={t.tongTrang} tongDong={t.tongDong} />
+  );
+  const oTim = (t: { ma: string; tuKhoa: string; tongDong: number }, goiY?: string) => (
+    <OTimKiem duong={duong} thamSo={thamSo} ma={t.ma} tuKhoa={t.tuKhoa} ketQua={t.tongDong} goiY={goiY} />
+  );
   // HP-06 (Đưa vào theo HP-01): trang này đã yêu cầu HP-01 ở trên nên luôn
   // được phép - xem ghi chú trong actions.ts.
   const choPhepBoQua = true;
+  // (bổ sung 06/10/2026) mỗi danh sách 1 tab con (?muc=...) cho dễ quản lý
+  const dsTab = [
+    { ma: "doi-soat", nhan: "Lệ phí thi · đối soát", so: bangLePhi.length, hien: laDuThi },
+    { ma: "chinh-thuc", nhan: "Danh sách chính thức", so: soChinhThuc, hien: laDuThi },
+    { ma: "cong-no", nhan: laDuThi ? "Công nợ lệ phí" : "Công nợ học phí", so: dsHocPhi.length, hien: true },
+    { ma: "phieu-thu", nhan: "Phiếu thu", so: dsPhieuThu.length, hien: true },
+    { ma: "muc-phi", nhan: laDuThi ? "Mức lệ phí" : "Mức học phí", so: undefined, hien: true },
+  ].filter((t) => t.hien);
+  const muc = dsTab.find((t) => t.ma === thamSo.muc)?.ma ?? dsTab[0].ma;
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <DauTrangKhoa khoa={khoa} dangChon="hoc-phi" />
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold text-ued-blue-dam">HP-01 · Thiết lập mức học phí</h2>
-        <FormThietLap
-          khoaId={khoa.id}
-          mucHocPhi={khoa.mucHocPhi ? Number(khoa.mucHocPhi) : null}
-          chinhSachMienGiam={khoa.chinhSachMienGiam}
-          daCoDangKy={dsHocPhi.length > 0}
-          theoDoiTuong={theoDoiTuong}
-          mucHocPhiTuDo={khoa.mucHocPhiTuDo === null ? null : Number(khoa.mucHocPhiTuDo)}
-        />
-      </section>
+      <nav aria-label="Danh sách học phí" className="-mt-2 flex flex-wrap gap-1.5 print:hidden">
+        {dsTab.map((t) => (
+          <Link
+            key={t.ma}
+            href={`${duong}?muc=${t.ma}`}
+            scroll={false}
+            aria-current={t.ma === muc ? "page" : undefined}
+            className={cn(
+              "rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors",
+              t.ma === muc ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            {t.nhan}
+            {t.so !== undefined && <span className={cn("ml-1.5 text-xs", t.ma === muc ? "opacity-80" : "opacity-70")}>{t.so}</span>}
+          </Link>
+        ))}
+      </nav>
 
-      {laDuThi && (
+      {muc === "doi-soat" && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold text-ued-blue-dam">
-            Lệ phí thi · đối soát chuyển khoản ({bangLePhi.length} thí sinh đăng ký
-            {khoa.hanDangKy && `, hạn đăng ký ${dinhDangNgay(khoa.hanDangKy)}`})
-          </h2>
-          {bangLePhi.length > 0 && (
-            <div className="max-h-[28rem] overflow-auto rounded-lg border">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-sm font-bold text-ued-blue-dam">
+              Lệ phí thi · đối soát chuyển khoản ({bangLePhi.length} thí sinh đăng ký
+              {khoa.hanDangKy && `, hạn đăng ký ${dinhDangNgay(khoa.hanDangKy)}`})
+            </h2>
+            {bangLePhi.length > 0 && oTim(trangLePhi, "Mã sinh viên / số CCCD / họ tên")}
+          </div>
+          {trangLePhi.tuKhoa && trangLePhi.tongDong === 0 && <KhongKhop tuKhoa={trangLePhi.tuKhoa} />}
+          {trangLePhi.tongDong > 0 && (
+            <div className="overflow-x-auto rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -100,12 +151,24 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
                     <TableHead>Họ tên</TableHead>
                     <TableHead>Lớp</TableHead>
                     <TableHead>Minh chứng CK</TableHead>
-                    <TableHead>Lệ phí</TableHead>
+                    {dsThanhPhan.length > 0 ? (
+                      <>
+                        {dsThanhPhan.map((tp) => (
+                          <TableHead key={tp.id}>
+                            {tp.ten}
+                            {!tp.batBuoc && <span className="ml-1 text-xs font-normal text-muted-foreground">(tùy chọn)</span>}
+                          </TableHead>
+                        ))}
+                        <TableHead className="text-right">Tổng đã nộp</TableHead>
+                      </>
+                    ) : (
+                      <TableHead>Lệ phí</TableHead>
+                    )}
                     <TableHead>Hồ sơ</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {bangLePhi.map((d) => (
+                  {trangLePhi.dsTrang.map((d) => (
                     <TableRow key={d.dangKy.id}>
                       <TableCell className="font-mono">{d.hocVien.maSinhVien ?? d.hocVien.maHocVien}</TableCell>
                       <TableCell>{d.hocVien.hoTen}</TableCell>
@@ -119,13 +182,60 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
                           <span className="text-muted-foreground">Chưa nộp</span>
                         )}
                       </TableCell>
+                      {dsThanhPhan.length > 0 ? (
+                        <>
+                          {dsThanhPhan.map((tp) => {
+                            const dong = d.hocPhi?.thanhPhans.find((x) => x.thanhPhanId === tp.id);
+                            return (
+                              <TableCell key={tp.id}>
+                                {!dong ? (
+                                  <span className="text-xs text-muted-foreground">Không đăng ký</span>
+                                ) : choPhepThanhToan && ["CHUA_NOP", "CON_NO", "DA_NOP_DU"].includes(dong.trangThai) ? (
+                                  <NutTrangThaiLePhi
+                                    khoaId={khoa.id}
+                                    hocPhiId={d.hocPhi!.id}
+                                    hoTen={d.hocVien.hoTen}
+                                    trangThai={dong.trangThai}
+                                    soTienPhaiNop={Number(dong.soTienPhaiNop)}
+                                    soTienDaNop={Number(dong.soTienDaNop)}
+                                    thanhPhan={{ hocPhiThanhPhanId: dong.id, ten: tp.ten, batBuoc: tp.batBuoc }}
+                                  />
+                                ) : (
+                                  <NhanTrangThai ma={dong.trangThai}>{NHAN_LE_PHI[dong.trangThai] ?? dong.trangThai}</NhanTrangThai>
+                                )}
+                                {dong && <div className="mt-0.5 text-xs text-muted-foreground tabular-nums">{dinhDangTien(dong.soTienPhaiNop)}</div>}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell className="text-right text-xs whitespace-nowrap tabular-nums">
+                            {d.hocPhi ? (
+                              <>
+                                <b className="text-sm">{dinhDangTien(d.hocPhi.soTienDaNop)}</b>
+                                <div className="text-muted-foreground">/ {dinhDangTien(d.hocPhi.soTienPhaiNop)}</div>
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
+                        </>
+                      ) : (
                       <TableCell>
-                        {d.hocPhi ? (
+                        {d.hocPhi && choPhepThanhToan && ["CHUA_NOP", "CON_NO", "DA_NOP_DU"].includes(d.hocPhi.trangThai) ? (
+                          <NutTrangThaiLePhi
+                            khoaId={khoa.id}
+                            hocPhiId={d.hocPhi.id}
+                            hoTen={d.hocVien.hoTen}
+                            trangThai={d.hocPhi.trangThai}
+                            soTienPhaiNop={Number(d.hocPhi.soTienPhaiNop)}
+                            soTienDaNop={Number(d.hocPhi.soTienDaNop)}
+                          />
+                        ) : d.hocPhi ? (
                           <NhanTrangThai ma={d.hocPhi.trangThai}>{NHAN_LE_PHI[d.hocPhi.trangThai] ?? d.hocPhi.trangThai}</NhanTrangThai>
                         ) : (
                           "—"
                         )}
                       </TableCell>
+                      )}
                       <TableCell>
                         <NhanTrangThai ma={d.dangKy.trangThai}>{NHAN_HO_SO[d.dangKy.trangThai] ?? d.dangKy.trangThai}</NhanTrangThai>
                       </TableCell>
@@ -135,7 +245,13 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
               </Table>
             </div>
           )}
+          {thanhPhanTrang(trangLePhi)}
           {choPhepThanhToan && <FormDoiSoat khoaId={khoa.id} />}
+        </section>
+      )}
+
+      {muc === "chinh-thuc" && (
+        <section className="flex flex-col gap-3">
           {(choPhepThanhToan || choPhepXetDuyet) && (
             <>
               <h2 className="mt-2 text-sm font-bold text-ued-blue-dam">Danh sách chính thức dự thi</h2>
@@ -155,86 +271,187 @@ export default async function HocPhiKhoaPage({ params }: { params: Promise<{ id:
               />
             </>
           )}
+          {soChinhThuc > 0 && (
+            <>
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                {!(choPhepThanhToan || choPhepXetDuyet) ? (
+                  <h2 className="mt-2 text-sm font-bold text-ued-blue-dam">Danh sách chính thức dự thi</h2>
+                ) : (
+                  <span />
+                )}
+                {oTim(trangChinhThuc)}
+              </div>
+              {trangChinhThuc.tuKhoa && trangChinhThuc.tongDong === 0 && <KhongKhop tuKhoa={trangChinhThuc.tuKhoa} />}
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">STT</TableHead>
+                      <TableHead>Mã sinh viên</TableHead>
+                      <TableHead>Họ tên</TableHead>
+                      <TableHead>Lớp</TableHead>
+                      <TableHead>Lệ phí</TableHead>
+                      <TableHead>Hồ sơ</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {trangChinhThuc.dsTrang.map((d, i) => (
+                      <TableRow key={d.dangKy.id}>
+                        <TableCell>{trangChinhThuc.tuDong + i + 1}</TableCell>
+                        <TableCell className="font-mono">{d.hocVien.maSinhVien ?? d.hocVien.maHocVien}</TableCell>
+                        <TableCell>{d.hocVien.hoTen}</TableCell>
+                        <TableCell>{d.hocVien.lopSinhHoat ?? "—"}</TableCell>
+                        <TableCell>
+                          {d.hocPhi ? (
+                            <NhanTrangThai ma={d.hocPhi.trangThai}>{NHAN_LE_PHI[d.hocPhi.trangThai] ?? d.hocPhi.trangThai}</NhanTrangThai>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <NhanTrangThai ma={d.dangKy.trangThai}>{NHAN_HO_SO[d.dangKy.trangThai] ?? d.dangKy.trangThai}</NhanTrangThai>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {thanhPhanTrang(trangChinhThuc)}
+            </>
+          )}
         </section>
       )}
 
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-ued-blue-dam">HP-02/03 · Công nợ theo học viên</h2>
-          <a href="/hoc-phi/bao-cao" className="text-sm underline">
-            Báo cáo doanh thu/công nợ (HP-05)
-          </a>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Học viên</TableHead>
-              <TableHead>Phải nộp</TableHead>
-              <TableHead>Đã nộp</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Hạn nộp</TableHead>
-              <TableHead>Hành động</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dsHocPhi.map((hp) => (
-              <HangHocPhi
-                key={hp.id}
-                khoaId={khoa.id}
-                hocPhi={{
-                  id: hp.id,
-                  hoTen: hp.hocVien.hoTen,
-                  soTienPhaiNop: Number(hp.soTienPhaiNop),
-                  soTienDaNop: Number(hp.soTienDaNop),
-                  trangThai: hp.trangThai,
-                  hanNop: hp.hanNop?.toISOString() ?? null,
-                  boQuaKiemTra: hp.boQuaKiemTra,
-                }}
-                choPhepThanhToan={choPhepThanhToan}
-                choPhepCongNo={choPhepCongNo}
-                choPhepBoQua={choPhepBoQua}
-              />
-            ))}
-          </TableBody>
-        </Table>
-        {dsHocPhi.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            {laDuThi
-              ? "Chưa có dòng lệ phí nào - phát sinh khi thí sinh đăng ký sau khi khóa đã có mức lệ phí (HP-01)."
-              : "Chưa có dòng công nợ nào - chỉ phát sinh sau khi thiết lập mức học phí (HP-01) và có học viên Chính thức (HV-07)."}
-          </p>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold text-ued-blue-dam">HP-04 · Phiếu thu đã lập</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Số phiếu</TableHead>
-              <TableHead>Học viên</TableHead>
-              <TableHead>Số tiền</TableHead>
-              <TableHead>Ngày lập</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dsPhieuThu.map((pt) => (
-              <TableRow key={pt.id}>
-                <TableCell className="font-mono">{pt.soPhieu}</TableCell>
-                <TableCell>{pt.hocPhi.hocVien.hoTen}</TableCell>
-                <TableCell>{Number(pt.soTien).toLocaleString("vi-VN")}đ</TableCell>
-                <TableCell>{pt.ngayLap.toLocaleString("vi-VN")}</TableCell>
-                <TableCell>
-                  <a href={`/hoc-phi/phieu-thu/${pt.id}`} className="text-sm underline" target="_blank">
-                    In phiếu
-                  </a>
-                </TableCell>
+      {muc === "cong-no" && (
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <h2 className="text-sm font-bold text-ued-blue-dam">HP-02/03 · Công nợ theo học viên</h2>
+              <a href="/hoc-phi/bao-cao" className="text-sm underline">
+                Báo cáo doanh thu/công nợ (HP-05)
+              </a>
+            </div>
+            {dsHocPhi.length > 0 && oTim(trangCongNo)}
+          </div>
+          {trangCongNo.tuKhoa && trangCongNo.tongDong === 0 && <KhongKhop tuKhoa={trangCongNo.tuKhoa} />}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Học viên</TableHead>
+                <TableHead>Phải nộp</TableHead>
+                <TableHead>Đã nộp</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Hạn nộp</TableHead>
+                <TableHead>Hành động</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </section>
+            </TableHeader>
+            <TableBody>
+              {trangCongNo.dsTrang.map((hp) => (
+                <HangHocPhi
+                  key={hp.id}
+                  khoaId={khoa.id}
+                  hocPhi={{
+                    id: hp.id,
+                    hoTen: hp.hocVien.hoTen,
+                    soTienPhaiNop: Number(hp.soTienPhaiNop),
+                    soTienDaNop: Number(hp.soTienDaNop),
+                    trangThai: hp.trangThai,
+                    hanNop: hp.hanNop?.toISOString() ?? null,
+                    boQuaKiemTra: hp.boQuaKiemTra,
+                  }}
+                  choPhepThanhToan={choPhepThanhToan}
+                  choPhepCongNo={choPhepCongNo}
+                  choPhepBoQua={choPhepBoQua}
+                />
+              ))}
+            </TableBody>
+          </Table>
+          {thanhPhanTrang(trangCongNo)}
+          {dsHocPhi.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              {laDuThi
+                ? "Chưa có dòng lệ phí nào - phát sinh khi thí sinh đăng ký sau khi khóa đã có mức lệ phí (HP-01)."
+                : "Chưa có dòng công nợ nào - chỉ phát sinh sau khi thiết lập mức học phí (HP-01) và có học viên Chính thức (HV-07)."}
+            </p>
+          )}
+        </section>
+      )}
+
+      {muc === "phieu-thu" && (
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-sm font-bold text-ued-blue-dam">HP-04 · Phiếu thu đã lập ({dsPhieuThu.length})</h2>
+            {dsPhieuThu.length > 0 && oTim(trangPhieuThu, "Số phiếu / họ tên / mã SV / CCCD")}
+          </div>
+          {trangPhieuThu.tuKhoa && trangPhieuThu.tongDong === 0 && <KhongKhop tuKhoa={trangPhieuThu.tuKhoa} />}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Số phiếu</TableHead>
+                <TableHead>Học viên</TableHead>
+                <TableHead>Số tiền</TableHead>
+                <TableHead>Ngày lập</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {trangPhieuThu.dsTrang.map((pt) => (
+                <TableRow key={pt.id} className={pt.daHuy ? "text-muted-foreground line-through" : undefined}>
+                  <TableCell className="font-mono">
+                    {pt.soPhieu}
+                    {pt.daHuy && <span className="ml-1 inline-block text-xs text-destructive no-underline">(Đã hủy)</span>}
+                  </TableCell>
+                  <TableCell>{pt.hocPhi.hocVien.hoTen}</TableCell>
+                  <TableCell>{Number(pt.soTien).toLocaleString("vi-VN")}đ</TableCell>
+                  <TableCell>{pt.ngayLap.toLocaleString("vi-VN")}</TableCell>
+                  <TableCell>
+                    <a href={`/hoc-phi/phieu-thu/${pt.id}`} className="text-sm underline" target="_blank">
+                      In phiếu
+                    </a>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {thanhPhanTrang(trangPhieuThu)}
+        </section>
+      )}
+
+      {muc === "muc-phi" && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-bold text-ued-blue-dam">HP-01 · Thiết lập mức {laDuThi ? "lệ phí" : "học phí"}</h2>
+          {dsThanhPhan.length === 0 && (
+          <FormThietLap
+            khoaId={khoa.id}
+            mucHocPhi={khoa.mucHocPhi ? Number(khoa.mucHocPhi) : null}
+            chinhSachMienGiam={khoa.chinhSachMienGiam}
+            daCoDangKy={dsHocPhi.length > 0}
+            theoDoiTuong={theoDoiTuong}
+            mucHocPhiTuDo={khoa.mucHocPhiTuDo === null ? null : Number(khoa.mucHocPhiTuDo)}
+          />
+          )}
+          {laDuThi && (
+            <>
+              <h3 className="mt-2 text-sm font-semibold">
+                Thành phần lệ phí{dsThanhPhan.length === 0 && " (không bắt buộc - vd. tách Đăng ký ôn thi và Đăng ký thi)"}
+              </h3>
+              <CauHinhThanhPhanLePhi
+                key={dsThanhPhan.map((t) => `${t.id}:${t.ten}:${t.mucSinhVien}:${t.mucTuDo}:${t.thuTu}`).join("|")}
+                khoaId={khoa.id}
+                theoDoiTuong={theoDoiTuong}
+                daCoDangKy={bangLePhi.length > 0}
+                dsBanDau={dsThanhPhan.map((t) => ({
+                  id: t.id,
+                  ten: t.ten,
+                  batBuoc: t.batBuoc,
+                  mucSinhVien: String(Number(t.mucSinhVien)),
+                  mucTuDo: t.mucTuDo === null ? "" : String(Number(t.mucTuDo)),
+                }))}
+              />
+            </>
+          )}
+        </section>
+      )}
     </main>
   );
 }

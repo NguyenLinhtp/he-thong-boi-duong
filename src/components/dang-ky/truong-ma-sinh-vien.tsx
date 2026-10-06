@@ -16,9 +16,10 @@ const Sao = () => (
 
 /**
  * (bổ sung 01/10/2026 - HV-05) Định danh bằng mã sinh viên: gõ mã -> hệ thống
- * tra danh sách sinh viên đã import, hiện họ tên + lớp để thí sinh kiểm tra;
- * thí sinh nhập 4 số cuối CCCD để xác minh (máy chủ lấy họ tên/CCCD/lớp từ
- * danh sách, không tin dữ liệu hiển thị ở đây). traCuu = undefined: chế độ xem trước.
+ * tra danh sách sinh viên đã import, hiện họ tên + lớp để thí sinh kiểm tra
+ * (máy chủ lấy họ tên/CCCD/lớp từ danh sách, không tin dữ liệu hiển thị ở đây);
+ * (sửa 05/10/2026) xác thực bằng trường "Số điện thoại" bắt buộc của form dự thi,
+ * thay 4 số cuối CCCD. traCuu = undefined: chế độ xem trước.
  */
 export function TruongMaSinhVien({ traCuu }: { traCuu?: (ma: string) => Promise<KetQuaTraCuuSinhVien> }) {
   const [kq, setKq] = useState<KetQuaTraCuuSinhVien | null>(null);
@@ -78,13 +79,6 @@ export function TruongMaSinhVien({ traCuu }: { traCuu?: (ma: string) => Promise<
         <Label htmlFor="lopSv">Lớp sinh hoạt</Label>
         <Input id="lopSv" readOnly tabIndex={-1} value={sv ? (sv.lopSinhHoat ?? "—") : ""} placeholder="Tự điền theo mã sinh viên" />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="cuoiCCCD">
-          4 số cuối CCCD <Sao />
-        </Label>
-        <Input id="cuoiCCCD" name="cuoiCCCD" required inputMode="numeric" pattern="\d{4}" maxLength={4} className="w-32 font-mono" />
-        <p className="text-xs text-muted-foreground">Để xác minh đúng là bạn đăng ký.</p>
-      </div>
     </>
   );
 }
@@ -131,7 +125,7 @@ export function ChonDoiTuongDuThi({
   return (
     <div role="radiogroup" aria-label="Đối tượng dự thi" className={"flex flex-col gap-2 sm:flex-row " + (className ?? "")}>
       {nut("SINH_VIEN", "Sinh viên Trường ĐHSP - ĐHĐN", "Nhập mã sinh viên, hệ thống tự điền họ tên, lớp")}
-      {nut("TU_DO", "Thí sinh tự do", "Không phải sinh viên của trường - nhập họ tên, số CCCD")}
+      {nut("TU_DO", "Thí sinh tự do", "Không phải sinh viên của trường - nhập đầy đủ thông tin, số CCCD")}
     </div>
   );
 }

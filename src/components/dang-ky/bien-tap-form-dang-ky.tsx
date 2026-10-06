@@ -9,6 +9,7 @@ import { CacTruongDangKy, TruongDinhDanh } from "@/components/dang-ky/cac-truong
 import { ChonDoiTuongDuThi, TruongMaSinhVien } from "@/components/dang-ky/truong-ma-sinh-vien";
 import {
   NHAN_KIEU_TRUONG,
+  apDungSoDienThoaiXacThuc,
   chuanHoaCauHinh,
   sinhMaTruong,
   type CauHinhForm,
@@ -79,10 +80,11 @@ export function BienTapFormDangKy({
   };
 
   // xem trước theo đúng quy tắc chuẩn hóa (trường chưa đặt tên vẫn hiện để thấy vị trí)
-  const xemTruoc = useMemo(
-    () => ds.map((t) => ({ ...t, nhan: t.nhan || "(chưa đặt tên)", luaChon: t.luaChon.filter(Boolean) })),
-    [ds],
-  );
+  // (sửa 05/10/2026) form dự thi: số điện thoại xác thực luôn bắt buộc, đứng đầu
+  const xemTruoc = useMemo(() => {
+    const truong = ds.map((t) => ({ ...t, nhan: t.nhan || "(chưa đặt tên)", luaChon: t.luaChon.filter(Boolean) }));
+    return choPhepMaSinhVien ? apDungSoDienThoaiXacThuc({ dinhDanh, truong }).truong : truong;
+  }, [ds, dinhDanh, choPhepMaSinhVien]);
 
   const luu = () => {
     const kq = chuanHoaCauHinh({ dinhDanh, truong: ds });
@@ -133,7 +135,7 @@ export function BienTapFormDangKy({
                 <Link href="/hoc-vien/sinh-vien" className="underline">
                   danh sách sinh viên đã import
                 </Link>
-                ; thí sinh xác minh bằng 4 số cuối CCCD. Đầu form có lựa chọn <i>Thí sinh tự do</i> cho người không phải
+                ; thí sinh xác thực bằng số điện thoại. Đầu form có lựa chọn <i>Thí sinh tự do</i> cho người không phải
                 sinh viên của trường (nhập họ tên + CCCD, không cần mã sinh viên)
               </span>
             </label>
@@ -142,13 +144,19 @@ export function BienTapFormDangKy({
         <div className="rounded-lg border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
           {dinhDanh === "MA_SINH_VIEN" ? (
             <>
-              <b className="text-foreground">Mã sinh viên</b> và <b className="text-foreground">4 số cuối CCCD</b> luôn có và bắt buộc;
+              <b className="text-foreground">Mã sinh viên</b> và <b className="text-foreground">Số điện thoại</b> luôn có và bắt buộc;
               họ tên, CCCD, lớp lấy theo danh sách sinh viên.
             </>
           ) : (
             <>
               <b className="text-foreground">Họ tên</b> và <b className="text-foreground">Số CCCD</b> luôn có và bắt buộc (dùng để định danh
               học viên, tránh trùng hồ sơ).
+              {choPhepMaSinhVien && (
+                <>
+                  {" "}
+                  <b className="text-foreground">Số điện thoại</b> luôn bắt buộc (xác thực khi thí sinh xem lại đơn).
+                </>
+              )}
             </>
           )}
         </div>

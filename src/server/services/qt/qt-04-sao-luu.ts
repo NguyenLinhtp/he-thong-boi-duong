@@ -64,6 +64,8 @@ export const THU_TU_BANG = [
   "ketQuaHocTap",
   "ketQuaKhoa",
   "hocPhi",
+  "thanhPhanLePhi",
+  "hocPhiThanhPhan",
   "phieuThu",
   "banGiaoChungChi",
   "quyetDinhCapVanBang",

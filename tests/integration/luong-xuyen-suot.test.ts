@@ -221,13 +221,14 @@ describe("Luồng xuyên suốt: đăng ký → xét duyệt → học → đi�
   it("Phương thức 3: chỉ dự thi - không nhập điểm học phần, cấp văn bằng theo kết quả thi", async () => {
     const { khoa, dsHocPhan } = await moKhoa("CHI_DU_THI", 500_000);
 
-    const dkEm = await dangKyDuThi({ khoaId: khoa.id, hoTen: "Hoàng Văn Em", soCCCD: `2${uid()}` });
-    const dkGiang = await dangKyDuThi({ khoaId: khoa.id, hoTen: "Vũ Thị Giang", soCCCD: `2${uid()}` });
+    const dkEm = await dangKyDuThi({ khoaId: khoa.id, soDienThoai: "0905000001", hoTen: "Hoàng Văn Em", soCCCD: `2${uid()}` });
+    const dkGiang = await dangKyDuThi({ khoaId: khoa.id, soDienThoai: "0905000001", hoTen: "Vũ Thị Giang", soCCCD: `2${uid()}` });
     for (const dk of [dkEm, dkGiang]) await thamDinhHoSo(dk.id, "HOP_LE");
-    await xetDuyetDanhSachChinhThuc(khoa.id, [dkEm.id, dkGiang.id]);
+    // (sửa 06/10/2026) khóa dự thi: xác nhận lệ phí trước rồi mới duyệt chính thức (HV-07)
     for (const hp of await hocPhiCuaKhoa(khoa.id)) {
       await xacNhanThanhToan(hp.id, { ...TC, soTien: 500_000, hinhThucNop: "Tiền mặt" });
     }
+    await xetDuyetDanhSachChinhThuc(khoa.id, [dkEm.id, dkGiang.id]);
     await chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA");
 
     // chặn: khóa chỉ dự thi không có giảng dạy (HV-05) - không phân công giảng viên (KH-02),

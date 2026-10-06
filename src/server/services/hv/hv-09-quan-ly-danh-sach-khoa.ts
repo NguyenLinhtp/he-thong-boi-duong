@@ -76,7 +76,7 @@ async function kiemTraRutKhoiKhoa(dangKy: { hocVienId: string; khoaId: string; h
   if (await coDiemHoacChungChiOKhoa(dangKy.hocVienId, dangKy.khoaId)) throw new KhongTheXoaHocVienCoKetQuaError();
   const hocPhi = await prisma.hocPhi.findUnique({
     where: { hocVienId_khoaId: { hocVienId: dangKy.hocVienId, khoaId: dangKy.khoaId } },
-    include: { _count: { select: { phieuThus: true } } },
+    include: { _count: { select: { phieuThus: { where: { daHuy: false } } } } },
   });
   if (hocPhi && (Number(hocPhi.soTienDaNop) > 0 || hocPhi._count.phieuThus > 0)) throw new DaNopHocPhiKhoaNayError();
   return hocPhi;

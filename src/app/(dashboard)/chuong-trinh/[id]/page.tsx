@@ -14,6 +14,10 @@ import { LichSuPhienBan } from "./lich-su-phien-ban";
 import { KhoiPhuongThucDangKy } from "./khoi-phuong-thuc-dang-ky";
 import { KhoiLoaiVanBang } from "./khoi-loai-van-bang";
 import { KhoiNgungHieuLuc } from "./khoi-ngung-hieu-luc";
+import { FormImportSinhVien } from "@/components/dang-ky/form-import-sinh-vien";
+import { danhSachSinhVien, layCotBoSungSinhVien } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
+import { CauHinhCotSinhVien } from "@/components/dang-ky/cau-hinh-cot-sinh-vien";
+import Link from "next/link";
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -57,6 +61,10 @@ export default async function ChiTietChuongTrinhPage({
   const choPhepLoaiVanBang = chuongTrinh.trangThai !== "NGUNG_HIEU_LUC" && (await coQuyen("CT-01"));
   const choPhepNgungHieuLuc =
     (daBanHanh || chuongTrinh.trangThai === "NGUNG_HIEU_LUC") && (await coQuyen("CT-06"));
+  // (bổ sung 05/10/2026 - HV-03) chương trình dự thi: nạp danh sách sinh viên ngay khi khởi tạo chương trình
+  const choPhepNapSinhVien =
+    chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && chuongTrinh.trangThai !== "NGUNG_HIEU_LUC" && (await coQuyen("HV-03"));
+  const dsCotSinhVien = choPhepNapSinhVien ? await layCotBoSungSinhVien() : [];
   const tongTiet = chuongTrinh.hocPhans.reduce((tong, hp) => tong + hp.soTiet, 0);
   const tongTietKhop = chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong;
 
@@ -132,6 +140,21 @@ export default async function ChiTietChuongTrinhPage({
           chuongTrinhId={chuongTrinh.id}
           phuongThucHienTai={chuongTrinh.phuongThucDangKy}
         />
+      )}
+
+      {choPhepNapSinhVien && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-bold text-ued-blue-dam">Danh sách sinh viên của trường</h2>
+          <p className="text-sm text-muted-foreground">
+            Hiện có {(await danhSachSinhVien(undefined, 0)).tong.toLocaleString("vi-VN")} sinh viên (dùng chung toàn trường). Thí sinh là sinh viên
+            nhập mã sinh viên khi đăng ký dự thi để hệ thống tự điền họ tên, lớp.{" "}
+            <Link href="/hoc-vien/sinh-vien" className="underline">
+              Xem danh sách
+            </Link>
+          </p>
+          <CauHinhCotSinhVien dsCot={dsCotSinhVien} />
+          <FormImportSinhVien dsCot={dsCotSinhVien} />
+        </section>
       )}
 
       {choPhepLoaiVanBang && (

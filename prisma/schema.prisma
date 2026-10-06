@@ -370,6 +370,8 @@ model HocPhan {
 model Khoa {
   id                  String           @id @default(cuid())
   maKhoa              String           @unique
+  // (bổ sung 06/10/2026) tên khóa do cán bộ đặt khi khởi tạo (vd. "Thi chuẩn đầu ra tiếng Anh đợt tháng 11 năm 2026"); null = hiển thị theo tên chương trình
+  tenKhoa             String?
   chuongTrinhId       String
   chuongTrinh         ChuongTrinh      @relation(fields: [chuongTrinhId], references: [id])
   dotTuyenSinhId      String?
@@ -399,6 +401,8 @@ model Khoa {
   buoiHocs             BuoiHoc[]
   dangKys              DangKyHoc[]
   hocPhis              HocPhi[]
+  // (bổ sung 06/10/2026 - HP-01) thành phần lệ phí của khóa dự thi (vd. ôn thi, thi)
+  thanhPhanLePhis      ThanhPhanLePhi[]
   chungChis            ChungChi[]
   hopDongs             HopDongLienKet[]
   giangViens           GiangVienHocPhan[]
@@ -558,6 +562,10 @@ model DangKyHoc {
   // (bổ sung 30/09/2026) câu trả lời các trường tùy chỉnh của form đăng ký,
   // chụp kèm nhãn lúc đăng ký: [{ ma, nhan, kieu, giaTri }]
   thongTinBoSung   Json?
+  // (sửa 05/10/2026 - HV-05) số điện thoại thí sinh dự thi khai khi đăng ký - cùng mã
+  // SV/CCCD làm khóa mở lại đơn (thay 4 số cuối CCCD); lưu theo hồ sơ vì hồ sơ học
+  // viên cũ không bị ghi đè số điện thoại
+  soDienThoaiXacThuc String?
 
   lichSuChuyenLops LichSuChuyenLop[]
   tepHoSos         TepHoSoDangKy[]
@@ -591,6 +599,9 @@ model SinhVien {
   soCCCD      String   @unique
   hoTen       String
   lopSinhHoat String?
+  // (bổ sung 05/10/2026 - HV-03) giá trị các cột bổ sung do cán bộ đào tạo khai báo
+  // cho file mẫu (tham số SV_COT_BO_SUNG): { [mã cột]: giá trị }
+  thongTinThem Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -784,6 +795,9 @@ model HocPhi {
   lyDoBoQua      String?
 
   phieuThus PhieuThu[]
+  // (bổ sung 06/10/2026) khóa có thành phần lệ phí: các thành phần thí sinh đã chọn;
+  // soTienPhaiNop/soTienDaNop/trangThai của HocPhi = tổng hợp các thành phần
+  thanhPhans HocPhiThanhPhan[]
 
   @@unique([hocVienId, khoaId])
   @@map("hoc_phi")
@@ -802,8 +816,52 @@ model PhieuThu {
   ngayLap     DateTime @default(now())
   nguoiLapId  String?
   nguoiLapTen String?
+  // (bổ sung 06/10/2026 - HP-02) phiếu thu của 1 thành phần lệ phí (null = khoản chung)
+  hocPhiThanhPhanId String?
+  hocPhiThanhPhan   HocPhiThanhPhan? @relation(fields: [hocPhiThanhPhanId], references: [id])
+  // (bổ sung 06/10/2026 - HP-02/HP-04) hủy ghi nhận thanh toán: phiếu giữ số,
+  // không xóa, không cấp lại số; không tính vào doanh thu/đối soát
+  daHuy       Boolean   @default(false)
+  lyDoHuy     String?
+  huyLuc      DateTime?
+  nguoiHuyTen String?
 
   @@map("phieu_thu")
+}
+
+// (bổ sung 06/10/2026 - HP-01) thành phần lệ phí cấu hình động của khóa dự thi (PT3):
+// thí sinh luôn có thành phần bắt buộc, chọn thêm thành phần tùy chọn khi đăng ký
+model ThanhPhanLePhi {
+  id          String   @id @default(cuid())
+  khoaId      String
+  khoa        Khoa     @relation(fields: [khoaId], references: [id], onDelete: Cascade)
+  ten         String
+  batBuoc     Boolean  @default(false)
+  // mức sinh viên ĐHSP-ĐHĐN; thí sinh tự do theo mucTuDo (null = như sinh viên)
+  mucSinhVien Decimal  @db.Decimal(12, 2)
+  mucTuDo     Decimal? @db.Decimal(12, 2)
+  thuTu       Int      @default(0)
+
+  hocPhiThanhPhans HocPhiThanhPhan[]
+
+  @@map("thanh_phan_le_phi")
+}
+
+// (bổ sung 06/10/2026 - HP-02) 1 thành phần lệ phí thí sinh đã chọn - xác nhận/hủy theo từng phần
+model HocPhiThanhPhan {
+  id            String          @id @default(cuid())
+  hocPhiId      String
+  hocPhi        HocPhi          @relation(fields: [hocPhiId], references: [id], onDelete: Cascade)
+  thanhPhanId   String
+  thanhPhan     ThanhPhanLePhi  @relation(fields: [thanhPhanId], references: [id])
+  soTienPhaiNop Decimal         @db.Decimal(12, 2)
+  soTienDaNop   Decimal         @default(0) @db.Decimal(12, 2)
+  trangThai     TrangThaiHocPhi @default(CHUA_NOP)
+
+  phieuThus PhieuThu[]
+
+  @@unique([hocPhiId, thanhPhanId])
+  @@map("hoc_phi_thanh_phan")
 }
 
 // CC-01..04. Không có thao tác xóa ở tầng service: hồ sơ lưu vĩnh viễn (CC-04),

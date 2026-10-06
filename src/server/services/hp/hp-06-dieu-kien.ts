@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { KhongTimThayHocPhiError, ThieuLyDoBoQuaError } from "@/server/services/hp/loi-hoc-phi";
 import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
+import { lePhiDaXacNhan } from "@/server/services/hp/thanh-phan-le-phi-chung";
 
 /**
  * HP-06 (actor "Hệ thống - tự động kiểm tra"): cổng điều kiện tài chính dùng
@@ -19,7 +20,10 @@ import { ghiNhatKy } from "@/server/services/qt/qt-03-nhat-ky";
  */
 export async function daHoanTatNghiaVuTaiChinh(hocVienId: string, khoaId: string): Promise<boolean> {
   const [hocPhi, dangKy] = await Promise.all([
-    prisma.hocPhi.findUnique({ where: { hocVienId_khoaId: { hocVienId, khoaId } } }),
+    prisma.hocPhi.findUnique({
+      where: { hocVienId_khoaId: { hocVienId, khoaId } },
+      include: { thanhPhans: { include: { thanhPhan: true } } },
+    }),
     prisma.dangKyHoc.findUnique({
       where: { hocVienId_khoaId: { hocVienId, khoaId } },
       include: { hopDongLienKet: true },
@@ -35,7 +39,8 @@ export async function daHoanTatNghiaVuTaiChinh(hocVienId: string, khoaId: string
     const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, select: { mucHocPhi: true } });
     return !khoa?.mucHocPhi || Number(khoa.mucHocPhi) === 0;
   }
-  return hocPhi.trangThai === "DA_NOP_DU" || hocPhi.trangThai === "MIEN_GIAM";
+  // (bổ sung 06/10/2026) khóa có thành phần lệ phí: chỉ xét các thành phần bắt buộc
+  return lePhiDaXacNhan(hocPhi, true);
 }
 
 export type BoQuaDieuKienInput = {

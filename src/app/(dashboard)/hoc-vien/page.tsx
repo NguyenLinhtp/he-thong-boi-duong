@@ -2,16 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
-import { danhSachHocVien, phamViHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
+import { phamViHoSoHocVien, trangHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { OTimKiem, PhanTrang, SO_DONG_MOI_TRANG, thamSoDanhSach, thamSoPhang, viTriTrang, type ThamSoUrl } from "@/components/chung/phan-trang";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 
 export default async function HocVienPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<ThamSoUrl>;
 }) {
   let phien;
   try {
@@ -24,23 +23,26 @@ export default async function HocVienPage({
     throw error;
   }
 
-  const { q } = await searchParams;
+  const sp = await searchParams;
+  const ten = thamSoDanhSach("hv");
+  const thamSo = thamSoPhang(sp);
+  const q = (thamSo[ten.q] ?? "").trim();
   const phamVi = await phamViHoSoHocVien(phien.userId);
   // học viên: chỉ có hồ sơ của chính mình -> vào thẳng
   if (!phamVi.toanBo) {
     if (phamVi.hocVienId) redirect(`/hoc-vien/${phamVi.hocVienId}`);
     return <p className="p-6 text-muted-foreground">Tài khoản chưa được liên kết với hồ sơ học viên nào.</p>;
   }
-  const dsHocVien = await danhSachHocVien(q || undefined, phamVi);
+  // (bổ sung 06/10/2026) phân trang 20 dòng trong CSDL; tìm theo họ tên/mã học viên/mã SV/CCCD
+  const { tong } = await trangHoSoHocVien(q || undefined, phamVi, 0, 0);
+  const vt = viTriTrang(tong, thamSo[ten.trang]);
+  const { ds: dsHocVien } = await trangHoSoHocVien(q || undefined, phamVi, vt.tuDong, SO_DONG_MOI_TRANG);
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <h1 className="text-xl font-bold text-ued-blue-dam">HV-08 · Hồ sơ học viên</h1>
 
-      <form method="get" className="flex items-end gap-2">
-        <Input name="q" defaultValue={q ?? ""} placeholder="Tìm theo tên, mã học viên, CCCD..." />
-        <Button type="submit">Tìm kiếm</Button>
-      </form>
+      <OTimKiem duong="/hoc-vien" thamSo={thamSo} ma="hv" tuKhoa={q} ketQua={tong} goiY="Họ tên / mã học viên / mã SV / CCCD" />
 
       <Table>
         <TableHeader>
@@ -75,6 +77,7 @@ export default async function HocVienPage({
           )}
         </TableBody>
       </Table>
+      <PhanTrang duong="/hoc-vien" thamSo={thamSo} ten={ten.trang} trang={vt.trang} tongTrang={vt.tongTrang} tongDong={tong} />
     </main>
   );
 }

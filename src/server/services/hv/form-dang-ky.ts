@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import {
   CAU_HINH_MAC_DINH,
   MA_TEP_NOP_PHI,
+  apDungSoDienThoaiXacThuc,
   chuanHoaCauHinh,
   docCauHinh,
   kiemTraDuLieu,
@@ -32,14 +33,16 @@ export type NguonCauHinh = "KHOA" | "CHUONG_TRINH" | "MAC_DINH";
 export async function cauHinhHieuLuc(khoaId: string): Promise<{ cauHinh: CauHinhForm; nguon: NguonCauHinh }> {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  // mã sinh viên chỉ dùng cho Phương thức 3 - chương trình đổi phương thức sau đó thì quay về CCCD
+  const duThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  // mã sinh viên chỉ dùng cho Phương thức 3 - chương trình đổi phương thức sau đó thì quay về CCCD;
+  // (sửa 05/10/2026) form dự thi luôn có số điện thoại xác thực bắt buộc
   const hopLe = (c: CauHinhForm): CauHinhForm =>
-    c.dinhDanh === "MA_SINH_VIEN" && khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI" ? { ...c, dinhDanh: "CCCD" } : c;
+    duThi ? apDungSoDienThoaiXacThuc(c) : c.dinhDanh === "MA_SINH_VIEN" ? { ...c, dinhDanh: "CCCD" } : c;
   const cuaKhoa = docCauHinh(khoa.cauHinhFormDangKy);
   if (cuaKhoa) return { cauHinh: hopLe(cuaKhoa), nguon: "KHOA" };
   const cuaCt = docCauHinh(khoa.chuongTrinh.cauHinhFormDangKy);
   if (cuaCt) return { cauHinh: hopLe(cuaCt), nguon: "CHUONG_TRINH" };
-  return { cauHinh: CAU_HINH_MAC_DINH, nguon: "MAC_DINH" };
+  return { cauHinh: hopLe(CAU_HINH_MAC_DINH), nguon: "MAC_DINH" };
 }
 
 function chanMaSinhVienNgoaiPT3(cauHinh: CauHinhForm | null, phuongThuc: string | null) {

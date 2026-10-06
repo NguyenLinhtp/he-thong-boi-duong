@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { doiThanhPhanDaChon } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
 import { auth } from "@/lib/auth";
 import { dangKyTrucTuyen } from "@/server/services/hv/hv-01-dang-ky-truc-tuyen";
 import { xacNhanThamGia } from "@/server/services/hv/hv-04-tu-xac-nhan";
@@ -116,13 +117,14 @@ export async function dangKyDuThiAction(
       hoTen: String(formData.get("hoTen") ?? ""),
       soCCCD: String(formData.get("soCCCD") ?? ""),
       maSinhVien: String(formData.get("maSinhVien") ?? ""),
-      cuoiCCCD: String(formData.get("cuoiCCCD") ?? ""),
       laThiSinhTuDo: formData.get("doiTuong") === "TU_DO",
+      // (bổ sung 06/10/2026) thành phần lệ phí tùy chọn thí sinh tick
+      dsThanhPhan: formData.getAll("thanhPhan").map(String),
       duLieuForm: await duLieuForm(formData),
     });
     dangKyId = dangKy.id;
   } catch (error) {
-    // (bổ sung 01/10/2026) đã xác minh mã SV + 4 số cuối CCCD -> mở lại đơn đã đăng ký
+    // (bổ sung 01/10/2026) đã xác thực mã SV/CCCD + đúng số điện thoại đã khai (sửa 05/10/2026) -> mở lại đơn đã đăng ký
     if (error instanceof DaDangKyKhoaNayError && error.dangKyId) {
       dangKyId = error.dangKyId;
       daDangKy = true;
@@ -139,9 +141,8 @@ export async function timLaiDonDuThiAction(_prev: string | undefined, formData: 
   try {
     dangKyId = await timLaiDonDuThi(String(formData.get("khoaId")), {
       maSinhVien: String(formData.get("maSinhVien") ?? ""),
-      cuoiCCCD: String(formData.get("cuoiCCCD") ?? ""),
       soCCCD: String(formData.get("soCCCD") ?? ""),
-      hoTen: String(formData.get("hoTen") ?? ""),
+      soDienThoai: String(formData.get("soDienThoai") ?? ""),
     });
   } catch (error) {
     if (error instanceof Error) return error.message;
@@ -160,6 +161,21 @@ export async function traCuuSinhVienAction(khoaId: string, maSinhVien: string): 
 }
 
 // (bổ sung 01/10/2026) thí sinh nộp minh chứng chuyển khoản lệ phí - quyền theo đường link đơn đăng ký (mã hồ sơ ngẫu nhiên)
+// (bổ sung 06/10/2026 - HV-05) thí sinh đổi thành phần lệ phí đã đăng ký (vd. thêm ôn thi) đến hạn đăng ký
+export async function doiThanhPhanAction(dangKyId: string, _prev: string | undefined, formData: FormData): Promise<string | undefined> {
+  try {
+    await doiThanhPhanDaChon(dangKyId, formData.getAll("thanhPhan").map(String), {
+      nguoiThucHienId: null,
+      nguoiThucHienTen: "Thí sinh (trang đơn đăng ký)",
+    });
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+  revalidatePath(`/khoa/${formData.get("maKhoa")}/don-dang-ky/${dangKyId}`);
+  return "OK";
+}
+
 export async function nopMinhChungLePhiAction(
   dangKyId: string,
   _prev: string | undefined,

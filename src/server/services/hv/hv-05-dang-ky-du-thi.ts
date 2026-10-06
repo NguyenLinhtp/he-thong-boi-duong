@@ -14,23 +14,26 @@ import {
   KhoaKhongMoDangKyError,
   DaDangKyKhoaNayError,
   SinhVienKhongCoTrongDanhSachError,
-  XacMinhSinhVienKhongKhopError,
+  SoDienThoaiXacThucKhongHopLeError,
+  DaDangKyDuThiKhacSoDienThoaiError,
   NopMinhChungLePhiError,
   LaSinhVienCuaTruongError,
   ThongTinDangKyKhongHopLeError,
 } from "@/server/services/hv/loi-hoc-vien";
 import { chuanHoaCCCD } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
+import { kiemTraLuaChonThanhPhan, taoLePhiTheoThanhPhan, thanhPhanCuaDangKy } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
 import { taoLePhiKhiDangKyDuThi } from "@/server/services/hp/hp-01-thiet-lap";
 import { layThamSo, layThamSoSo } from "@/server/services/qt/qt-05-tham-so";
 import { dinhDangTien } from "@/lib/dinh-dang";
 
 export type DangKyDuThiInput = ThongTinHocVienInput & {
   khoaId: string;
-  // (bổ sung 01/10/2026) form định danh bằng mã sinh viên: mã SV + 4 số cuối CCCD để xác minh
-  cuoiCCCD?: string | null;
   // (bổ sung 01/10/2026) form mã sinh viên nhưng thí sinh chọn "Thí sinh tự do" (không phải sinh viên của trường)
   laThiSinhTuDo?: boolean;
+  // (bổ sung 06/10/2026) khóa chia thành phần lệ phí: id các thành phần tùy chọn thí sinh tick
+  // (thành phần bắt buộc luôn được tính)
+  dsThanhPhan?: string[];
 };
 
 async function khoaDuThiDangMo(khoaId: string) {
@@ -62,43 +65,70 @@ export async function traCuuSinhVienDuThi(khoaId: string, maSinhVien: string) {
   return { maSinhVien: sv.maSinhVien, hoTen: sv.hoTen, lopSinhHoat: sv.lopSinhHoat };
 }
 
-async function xacMinhSinhVien(maSinhVien: string | null | undefined, cuoiCCCD: string | null | undefined) {
+async function laySinhVien(maSinhVien: string | null | undefined) {
   const sv = await prisma.sinhVien.findUnique({ where: { maSinhVien: chuanMaSinhVien(maSinhVien) } });
   if (!sv) throw new SinhVienKhongCoTrongDanhSachError();
-  const cuoi = (cuoiCCCD ?? "").trim();
-  if (!/^\d{4}$/.test(cuoi) || !sv.soCCCD.endsWith(cuoi)) throw new XacMinhSinhVienKhongKhopError();
   return sv;
 }
 
 /**
- * (bổ sung 01/10/2026) Thí sinh mở lại đơn đã đăng ký (in lại, nộp minh chứng
- * chuyển khoản) bằng mã sinh viên + 4 số cuối CCCD - dùng được cả khi đã hết
- * hạn đăng ký. Trả về mã hồ sơ (đường link đơn).
+ * (sửa 05/10/2026) Số điện thoại xác thực thí sinh dự thi (thay 4 số cuối CCCD):
+ * bỏ dấu cách/chấm/gạch, +84/84 đầu số đổi thành 0; hợp lệ = 10 chữ số bắt đầu bằng 0.
  */
-export type ThongTinTimLaiDon = { maSinhVien?: string | null; cuoiCCCD?: string | null; soCCCD?: string | null; hoTen?: string | null };
+export function chuanHoaSoDienThoai(tho: string | null | undefined): string | null {
+  let so = (tho ?? "").replace(/[\s.\-()]/g, "");
+  if (so.startsWith("+84")) so = `0${so.slice(3)}`;
+  else if (/^84\d{9}$/.test(so)) so = `0${so.slice(2)}`;
+  return /^0\d{9}$/.test(so) ? so : null;
+}
+
+// hồ sơ đăng ký trước khi có số điện thoại xác thực: dùng số điện thoại trong hồ sơ học viên
+const khopSoDienThoai = (
+  dk: { soDienThoaiXacThuc: string | null; hocVien: { soDienThoai: string | null } },
+  soDienThoai: string,
+) => chuanHoaSoDienThoai(dk.soDienThoaiXacThuc ?? dk.hocVien.soDienThoai) === soDienThoai;
+
+const dieuKienTheoSinhVien = (sv: { maSinhVien: string; soCCCD: string }): Prisma.HocVienWhereInput => ({
+  OR: [{ maSinhVien: sv.maSinhVien }, { soCCCD: sv.soCCCD }],
+});
+
+/**
+ * (bổ sung 01/10/2026) Thí sinh mở lại đơn đã đăng ký (in lại, nộp minh chứng
+ * chuyển khoản) - dùng được cả khi đã hết hạn đăng ký. Trả về mã hồ sơ (đường link đơn).
+ * (sửa 05/10/2026) sinh viên: mã sinh viên + số điện thoại; thí sinh tự do/form
+ * định danh CCCD: số CCCD + số điện thoại đã khai khi đăng ký.
+ */
+export type ThongTinTimLaiDon = { maSinhVien?: string | null; soCCCD?: string | null; soDienThoai?: string | null };
 
 export async function timLaiDonDuThi(khoaId: string, tt: ThongTinTimLaiDon) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
   if (khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") throw new SaiPhuongThucDangKyError("Phương thức 3 (đăng ký dự thi, không qua học)");
   const { cauHinh } = await cauHinhHieuLuc(khoa.id);
+  const soDienThoai = chuanHoaSoDienThoai(tt.soDienThoai);
+  if (!soDienThoai) throw new SoDienThoaiXacThucKhongHopLeError();
   let dieuKien: Prisma.HocVienWhereInput;
-  const theoMaSinhVien = cauHinh.dinhDanh === "MA_SINH_VIEN" && !!tt.maSinhVien?.trim();
-  if (theoMaSinhVien) {
-    const sv = await xacMinhSinhVien(tt.maSinhVien, tt.cuoiCCCD);
-    dieuKien = { OR: [{ maSinhVien: sv.maSinhVien }, { soCCCD: sv.soCCCD }] };
+  if (cauHinh.dinhDanh === "MA_SINH_VIEN" && tt.maSinhVien?.trim()) {
+    dieuKien = dieuKienTheoSinhVien(await laySinhVien(tt.maSinhVien));
   } else {
-    // (bổ sung 01/10/2026) form định danh CCCD: số CCCD + họ tên đã khai (không phân biệt hoa thường/dấu cách)
-    const soCCCD = (tt.soCCCD ?? "").trim();
-    if (!soCCCD || !(tt.hoTen ?? "").trim()) throw new KhongTimThayDangKyError();
+    const soCCCD = chuanHoaCCCD((tt.soCCCD ?? "").trim());
+    if (!soCCCD) throw new KhongTimThayDangKyError();
     dieuKien = { soCCCD };
   }
   const dangKy = await prisma.dangKyHoc.findFirst({ where: { khoaId: khoa.id, hocVien: dieuKien }, include: { hocVien: true } });
-  const chuan = (x: string) => x.trim().replace(/\s+/g, " ").toLocaleLowerCase("vi");
-  if (!dangKy || (!theoMaSinhVien && chuan(dangKy.hocVien.hoTen) !== chuan(tt.hoTen ?? ""))) {
-    throw new KhongTimThayDangKyError();
-  }
+  if (!dangKy || !khopSoDienThoai(dangKy, soDienThoai)) throw new KhongTimThayDangKyError();
   return dangKy.id;
+}
+
+/**
+ * Đã có hồ sơ của mã SV/CCCD này trong khóa: đúng số điện thoại đã khai thì mở
+ * lại đơn cũ, sai thì báo đã đăng ký (không trả về mã hồ sơ của người khác).
+ */
+async function chanDangKyTrung(khoaId: string, dieuKien: Prisma.HocVienWhereInput, soDienThoai: string, theo: "mã sinh viên" | "số CCCD") {
+  const daCo = await prisma.dangKyHoc.findFirst({ where: { khoaId, hocVien: dieuKien }, include: { hocVien: true } });
+  if (!daCo) return;
+  if (khopSoDienThoai(daCo, soDienThoai)) throw new DaDangKyKhoaNayError(daCo.id);
+  throw new DaDangKyDuThiKhacSoDienThoaiError(theo);
 }
 
 /**
@@ -109,22 +139,24 @@ export async function timLaiDonDuThi(khoaId: string, tt: ThongTinTimLaiDon) {
  * danh/giảng dạy" - module GD tự kiểm tra phuongThucDangKy.
  *
  * (bổ sung 01/10/2026) Form định danh bằng mã sinh viên: họ tên, CCCD, lớp
- * lấy từ danh sách sinh viên đã import (HV-03), thí sinh xác minh bằng 4 số
- * cuối CCCD; lệ phí phát sinh ngay khi đăng ký (thí sinh chuyển khoản theo mã
+ * lấy từ danh sách sinh viên đã import (HV-03), thí sinh xác thực bằng số điện
+ * thoại (sửa 05/10/2026, thay 4 số cuối CCCD); lệ phí phát sinh ngay khi đăng ký (thí sinh chuyển khoản theo mã
  * QR rồi nộp minh chứng, cán bộ tài chính đối soát - HP-02).
  */
 export async function dangKyDuThi(input: DangKyDuThiInput) {
   const khoa = await khoaDuThiDangMo(input.khoaId);
   const { cauHinh } = await cauHinhHieuLuc(khoa.id);
+  await kiemTraLuaChonThanhPhan(khoa.id, input.dsThanhPhan);
+
+  // (sửa 05/10/2026) số điện thoại xác thực bắt buộc ở mọi form dự thi (trường "Số điện thoại" của form)
+  const soDienThoai = chuanHoaSoDienThoai(input.duLieuForm ? input.duLieuForm.giaTri.soDienThoai : input.soDienThoai);
+  if (!soDienThoai) throw new SoDienThoaiXacThucKhongHopLeError();
 
   let thongTinGoc: ThongTinHocVienInput = input;
   if (cauHinh.dinhDanh === "MA_SINH_VIEN" && !input.laThiSinhTuDo) {
-    const sv = await xacMinhSinhVien(input.maSinhVien, input.cuoiCCCD);
-    // danh tính đã xác minh -> đăng ký lại thì trả về hồ sơ cũ để xem đơn/nộp minh chứng
-    const daCo = await prisma.dangKyHoc.findFirst({
-      where: { khoaId: khoa.id, hocVien: { OR: [{ maSinhVien: sv.maSinhVien }, { soCCCD: sv.soCCCD }] } },
-    });
-    if (daCo) throw new DaDangKyKhoaNayError(daCo.id);
+    const sv = await laySinhVien(input.maSinhVien);
+    // đăng ký lại với đúng số điện thoại đã khai -> mở hồ sơ cũ để xem đơn/nộp minh chứng
+    await chanDangKyTrung(khoa.id, dieuKienTheoSinhVien(sv), soDienThoai, "mã sinh viên");
     thongTinGoc = { ...input, hoTen: sv.hoTen, soCCCD: sv.soCCCD, maSinhVien: sv.maSinhVien, lopSinhHoat: sv.lopSinhHoat };
   } else {
     if (cauHinh.dinhDanh === "MA_SINH_VIEN") {
@@ -138,6 +170,9 @@ export async function dangKyDuThi(input: DangKyDuThiInput) {
     } else {
       thongTinGoc = { ...input, maSinhVien: null, lopSinhHoat: null };
     }
+    // số CCCD là khóa định danh thí sinh tự do
+    const soCCCD = chuanHoaCCCD((thongTinGoc.soCCCD ?? "").trim());
+    if (soCCCD) await chanDangKyTrung(khoa.id, { soCCCD }, soDienThoai, "số CCCD");
   }
 
   // (bổ sung 30/09/2026) kiểm tra theo form đăng ký cấu hình của khóa trước khi tạo hồ sơ
@@ -147,7 +182,7 @@ export async function dangKyDuThi(input: DangKyDuThiInput) {
   let dangKy;
   try {
     dangKy = await prisma.dangKyHoc.create({
-      data: { hocVienId: hocVien.id, khoaId: khoa.id },
+      data: { hocVienId: hocVien.id, khoaId: khoa.id, soDienThoaiXacThuc: soDienThoai },
       include: { hocVien: true, khoa: { include: { chuongTrinh: true } } },
     });
   } catch (error) {
@@ -157,7 +192,7 @@ export async function dangKyDuThi(input: DangKyDuThiInput) {
     throw error;
   }
   await luuHoSoBoSung(dangKy.id, boSung);
-  const lePhi = await taoLePhiKhiDangKyDuThi(dangKy.id);
+  const lePhi = (await taoLePhiTheoThanhPhan(dangKy.id, input.dsThanhPhan)) ?? (await taoLePhiKhiDangKyDuThi(dangKy.id));
 
   await guiThongBao(
     hocVien.id,
@@ -227,6 +262,8 @@ export async function thongTinLePhiDuThi(dangKyId: string) {
         : null,
     minhChung: minhChung ? { id: minhChung.id, tenFile: minhChung.tenFile, taiLenLuc: minhChung.taiLenLuc } : null,
     choNopMinhChung: !daXong && !["KHONG_HOP_LE", "THOI_HOC"].includes(dangKy.trangThai),
+    // (bổ sung 06/10/2026) khóa chia thành phần lệ phí: từng phần đã chọn + được đổi lựa chọn không
+    thanhPhan: await thanhPhanCuaDangKy(dangKyId),
   };
 }
 

@@ -56,6 +56,7 @@ describe("HV-05 đăng ký dự thi, không qua học (Phương thức 3)", () =
     const khoa = await taoKhoaDangTuyenSinh();
     const dangKy = await dangKyDuThi({
       khoaId: khoa.id,
+      soDienThoai: "0905000001",
       hoTen: "Thí sinh A",
       soCCCD: `CCCD_${crypto.randomUUID()}`,
     });
@@ -69,6 +70,7 @@ describe("HV-05 đăng ký dự thi, không qua học (Phương thức 3)", () =
     const khoa = await taoKhoaDangTuyenSinh();
     const dangKy = await dangKyDuThi({
       khoaId: khoa.id,
+      soDienThoai: "0905000001",
       hoTen: "Thí sinh B",
       soCCCD: `CCCD_${crypto.randomUUID()}`,
     });
@@ -81,34 +83,34 @@ describe("HV-05 đăng ký dự thi, không qua học (Phương thức 3)", () =
   it("chặn khi chương trình không cấu hình Phương thức 3", async () => {
     const khoa = await taoKhoaDangTuyenSinh("TRUC_TUYEN_NOP_GIAY");
     await expect(
-      dangKyDuThi({ khoaId: khoa.id, hoTen: "C", soCCCD: `CCCD_${crypto.randomUUID()}` }),
+      dangKyDuThi({ khoaId: khoa.id, soDienThoai: "0905000001", hoTen: "C", soCCCD: `CCCD_${crypto.randomUUID()}` }),
     ).rejects.toThrow(SaiPhuongThucDangKyError);
   });
 
   it("chặn khi khóa đã đủ sĩ số", async () => {
     const khoa = await taoKhoaDangTuyenSinh("CHI_DU_THI", 1);
-    const dk1 = await dangKyDuThi({ khoaId: khoa.id, hoTen: "D1", soCCCD: `CCCD_${crypto.randomUUID()}` });
+    const dk1 = await dangKyDuThi({ khoaId: khoa.id, soDienThoai: "0905000001", hoTen: "D1", soCCCD: `CCCD_${crypto.randomUUID()}` });
     hocVienTaoTrongTest.push(dk1.hocVienId);
 
     await expect(
-      dangKyDuThi({ khoaId: khoa.id, hoTen: "D2", soCCCD: `CCCD_${crypto.randomUUID()}` }),
+      dangKyDuThi({ khoaId: khoa.id, soDienThoai: "0905000001", hoTen: "D2", soCCCD: `CCCD_${crypto.randomUUID()}` }),
     ).rejects.toThrow(KhoaKhongMoDangKyError);
   });
 
   it("không đăng ký trùng vào 1 khóa quá 1 lần (cùng CCCD)", async () => {
     const khoa = await taoKhoaDangTuyenSinh("CHI_DU_THI", 5);
     const cccd = `CCCD_${crypto.randomUUID()}`;
-    const dk1 = await dangKyDuThi({ khoaId: khoa.id, hoTen: "E", soCCCD: cccd });
+    const dk1 = await dangKyDuThi({ khoaId: khoa.id, soDienThoai: "0905000001", hoTen: "E", soCCCD: cccd });
     hocVienTaoTrongTest.push(dk1.hocVienId);
 
-    await expect(dangKyDuThi({ khoaId: khoa.id, hoTen: "E", soCCCD: cccd })).rejects.toThrow(
+    await expect(dangKyDuThi({ khoaId: khoa.id, soDienThoai: "0905000001", hoTen: "E", soCCCD: cccd })).rejects.toThrow(
       DaDangKyKhoaNayError,
     );
   });
 
   it("không tìm thấy khóa", async () => {
     await expect(
-      dangKyDuThi({ khoaId: "khong-ton-tai", hoTen: "F", soCCCD: `CCCD_${crypto.randomUUID()}` }),
+      dangKyDuThi({ khoaId: "khong-ton-tai", soDienThoai: "0905000001", hoTen: "F", soCCCD: `CCCD_${crypto.randomUUID()}` }),
     ).rejects.toThrow(KhongTimThayKhoaError);
   });
 });

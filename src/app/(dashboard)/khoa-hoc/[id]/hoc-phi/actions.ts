@@ -17,7 +17,11 @@ import {
   HocPhiQuaDonViLienKetError,
   ThieuLyDoBoQuaError,
   LePhiTuDoKhongApDungError,
+  ChuyenTrangThaiLePhiKhongHopLeError,
+  ThanhPhanLePhiKhongHopLeError,
 } from "@/server/services/hp/loi-hoc-phi";
+import { luuThanhPhanLePhi, type ThanhPhanNhap } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
+import { chuyenTrangThaiLePhi, type TrangThaiDongPhi } from "@/server/services/hp/hp-02-chuyen-trang-thai-le-phi";
 import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 
 function duongDan(khoaId: string) {
@@ -155,6 +159,39 @@ export async function nhapDoiSoatAction(
   }
 }
 
+// (bổ sung 06/10/2026 - HP-02) chuyển Đã đóng / Chưa đóng trên từng dòng bảng đối soát
+export async function chuyenTrangThaiLePhiAction(
+  khoaId: string,
+  hocPhiId: string,
+  trangThai: TrangThaiDongPhi,
+  lyDo: string,
+  // (bổ sung 06/10/2026) xác nhận/hủy riêng 1 thành phần lệ phí
+  hocPhiThanhPhanId?: string | null,
+): Promise<{ loi?: string; ok?: string }> {
+  const phien = await requirePermission("HP-02");
+  try {
+    const kq = await chuyenTrangThaiLePhi(hocPhiId, trangThai, lyDo, nguoiTuPhien(phien), hocPhiThanhPhanId);
+    revalidatePath(duongDan(khoaId));
+    revalidatePath(`/khoa-hoc/${khoaId}/tuyen-sinh`);
+    return {
+      ok:
+        "phieuThu" in kq
+          ? `Đã ghi nhận đóng phí, phiếu thu ${kq.phieuThu.soPhieu}.`
+          : `Đã chuyển về Chưa đóng${kq.phieuDaHuy.length > 0 ? `, hủy phiếu thu ${kq.phieuDaHuy.join(", ")}` : ""}${kq.traVeHopLe ? ", hồ sơ trả về Hợp lệ (rời danh sách chính thức)" : ""}.`,
+    };
+  } catch (error) {
+    if (
+      error instanceof KhongTimThayHocPhiError ||
+      error instanceof HocPhiQuaDonViLienKetError ||
+      error instanceof ChuyenTrangThaiLePhiKhongHopLeError ||
+      error instanceof ThanhPhanLePhiKhongHopLeError
+    ) {
+      return { loi: error.message };
+    }
+    throw error;
+  }
+}
+
 // (bổ sung 01/10/2026 - HV-07) chốt danh sách chính thức khóa dự thi theo lệ phí đã xác nhận
 export type TrangThaiChot = { ok?: string; loi?: string; nopThieu?: string[] };
 
@@ -170,6 +207,19 @@ export async function chotDanhSachDuThiAction(khoaId: string): Promise<TrangThai
     };
   } catch (error) {
     if (error instanceof Error) return { loi: error.message };
+    throw error;
+  }
+}
+
+// (bổ sung 06/10/2026 - HP-01) cấu hình thành phần lệ phí của khóa dự thi
+export async function luuThanhPhanLePhiAction(khoaId: string, ds: ThanhPhanNhap[], lyDo: string): Promise<{ ok?: string; loi?: string }> {
+  const phien = await requirePermission("HP-01");
+  try {
+    const kq = await luuThanhPhanLePhi(khoaId, ds, lyDo, nguoiTuPhien(phien));
+    revalidatePath(duongDan(khoaId));
+    return { ok: kq.length > 0 ? `Đã lưu ${kq.length} thành phần lệ phí.` : "Đã bỏ chia thành phần - khóa thu 1 mức lệ phí chung." };
+  } catch (error) {
+    if (error instanceof ThanhPhanLePhiKhongHopLeError || error instanceof KhongTimThayKhoaError) return { loi: error.message };
     throw error;
   }
 }

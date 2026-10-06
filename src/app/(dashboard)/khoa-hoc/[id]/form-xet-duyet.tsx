@@ -9,7 +9,7 @@ export function FormXetDuyet({
   dsHopLe,
 }: {
   khoaId: string;
-  dsHopLe: { id: string; hoTen: string; soCCCD: string | null }[];
+  dsHopLe: { id: string; hoTen: string; soCCCD: string | null; chuaXacNhanLePhi?: boolean }[];
 }) {
   const [loi, formAction, dangXuLy] = useActionState(xetDuyetDanhSachChinhThucAction, undefined);
 
@@ -26,8 +26,14 @@ export function FormXetDuyet({
       <input type="hidden" name="khoaId" value={khoaId} />
       {dsHopLe.map((hv) => (
         <label key={hv.id} className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="dangKyId" value={hv.id} defaultChecked />
-          {hv.hoTen} {hv.soCCCD ? `(${hv.soCCCD})` : ""}
+          {/* (bổ sung 06/10/2026) khóa dự thi: chưa xác nhận lệ phí thì không chọn duyệt được */}
+          <input type="checkbox" name="dangKyId" value={hv.id} defaultChecked={!hv.chuaXacNhanLePhi} disabled={hv.chuaXacNhanLePhi} />
+          <span className={hv.chuaXacNhanLePhi ? "text-muted-foreground" : undefined}>
+            {hv.hoTen} {hv.soCCCD ? `(${hv.soCCCD})` : ""}
+          </span>
+          {hv.chuaXacNhanLePhi && (
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800 ring-1 ring-amber-600/30">Chưa xác nhận lệ phí</span>
+          )}
         </label>
       ))}
       <Button type="submit" disabled={dangXuLy} className="mt-2 self-start">

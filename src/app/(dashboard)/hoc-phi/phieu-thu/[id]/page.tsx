@@ -27,6 +27,13 @@ export default async function PhieuThuPage({ params }: { params: Promise<{ id: s
     <main className="mx-auto flex max-w-xl flex-col gap-4 p-8 print:p-0">
       <h1 className="text-center text-lg font-semibold">PHIẾU THU HỌC PHÍ</h1>
       <p className="text-center text-sm text-muted-foreground">Số phiếu: {phieuThu.soPhieu}</p>
+      {phieuThu.daHuy && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-center text-sm font-semibold text-destructive">
+          PHIẾU ĐÃ HỦY {phieuThu.huyLuc && `ngày ${phieuThu.huyLuc.toLocaleDateString("vi-VN")}`}
+          {phieuThu.nguoiHuyTen && ` - ${phieuThu.nguoiHuyTen}`}
+          {phieuThu.lyDoHuy && <span className="block font-normal">Lý do: {phieuThu.lyDoHuy}</span>}
+        </p>
+      )}
       <div className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm text-sm">
         <p>Học viên: {phieuThu.hocPhi.hocVien.hoTen}</p>
         <p>Khóa: {phieuThu.hocPhi.khoa.maKhoa}</p>

@@ -46,7 +46,7 @@ export default async function TrangChuongTrinhCongKhai({ params }: { params: Pro
           ) : (
             <span>
               Đăng ký dự thi <b>không cần tài khoản</b>. Sau khi đăng ký, bạn in đơn, chuyển khoản lệ phí và nộp minh chứng; muốn
-              xem lại đơn chỉ cần xác nhận 4 số cuối CCCD (sinh viên của trường) hoặc số CCCD + họ tên (thí sinh tự do).
+              xem lại đơn chỉ cần mã sinh viên (sinh viên của trường) hoặc số CCCD (thí sinh tự do) kèm số điện thoại đã khai.
             </span>
           )}
         </p>
@@ -62,6 +62,7 @@ export default async function TrangChuongTrinhCongKhai({ params }: { params: Pro
               className="group grid gap-3 rounded-lg border bg-card p-5 shadow-sm transition hover:border-primary/40 hover:shadow-md sm:grid-cols-[1fr_auto] sm:items-center"
             >
               <div className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+                {k.tenKhoa && <p className="font-semibold text-ued-blue-dam sm:col-span-4">{k.tenKhoa}</p>}
                 <div>
                   <p className="text-xs text-muted-foreground">Mã {laDuThi ? "đợt thi" : "khóa"}</p>
                   <p className="font-bold text-ued-blue-dam">{k.maKhoa}</p>

@@ -7,6 +7,7 @@ import { guiGiuDuLieu } from "@/components/dang-ky/gui-giu-du-lieu";
 import { CacTruongDangKy, TruongDinhDanh } from "@/components/dang-ky/cac-truong-dang-ky";
 import { ChonDoiTuongDuThi, TruongMaSinhVien, type DoiTuongDuThi } from "@/components/dang-ky/truong-ma-sinh-vien";
 import type { DuLieuDungForm } from "./kieu-form";
+import { ChonThanhPhanLePhi } from "@/components/dang-ky/chon-thanh-phan-le-phi";
 
 // HV-05 (PT3): form theo cấu hình chương trình/khóa (bổ sung 30/09/2026); định danh bằng mã sinh viên,
 // kèm lựa chọn thí sinh tự do không phải sinh viên của trường (bổ sung 01/10/2026)
@@ -23,7 +24,7 @@ export function FormDangKyDuThi({ khoaId, maKhoa, form }: { khoaId: string; maKh
       {coMaSinhVien && (
         <>
           <input type="hidden" name="doiTuong" value={doiTuong} />
-          <ChonDoiTuongDuThi giaTri={doiTuong} onChon={setDoiTuong} lePhi={form.lePhi} className="sm:col-span-2" />
+          <ChonDoiTuongDuThi giaTri={doiTuong} onChon={setDoiTuong} lePhi={form.thanhPhan?.length ? null : form.lePhi} className="sm:col-span-2" />
         </>
       )}
       {theoMaSinhVien ? (
@@ -32,6 +33,10 @@ export function FormDangKyDuThi({ khoaId, maKhoa, form }: { khoaId: string; maKh
         <TruongDinhDanh key="tu-do" giaTri={form.giaTri ?? undefined} khoa={!!form.giaTri} />
       )}
       <CacTruongDangKy truong={form.truong} dsChucDanh={form.dsChucDanh} giaTri={form.giaTri ?? undefined} />
+      {/* (bổ sung 06/10/2026) chọn thành phần lệ phí - tổng tiền theo mục đã chọn và đối tượng */}
+      {form.thanhPhan && form.thanhPhan.length > 0 && (
+        <ChonThanhPhanLePhi ds={form.thanhPhan} laTuDo={coMaSinhVien && doiTuong === "TU_DO"} className="sm:col-span-2" />
+      )}
       <div className="flex flex-col gap-2 sm:col-span-2">
         <Button type="submit" disabled={dangXuLy}>
           {dangXuLy ? "Đang đăng ký..." : "Đăng ký dự thi"}

@@ -48,6 +48,7 @@ async function taoDangKyChoDuyet() {
 
   const dangKy = await dangKyDuThi({
     khoaId: khoa.id,
+    soDienThoai: "0905000001",
     hoTen: "Học viên test",
     soCCCD: `CCCD_${crypto.randomUUID()}`,
   });

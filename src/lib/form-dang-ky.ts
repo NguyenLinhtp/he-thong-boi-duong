@@ -75,6 +75,22 @@ function truongCoSanMacDinh(ma: MaTruongCoSan): TruongForm {
 /** Form mặc định khi chương trình/khóa chưa cấu hình - giữ đúng form trước khi có tính năng. */
 export const CAU_HINH_MAC_DINH: CauHinhForm = { dinhDanh: "CCCD", truong: MA_TRUONG_CO_SAN.map(truongCoSanMacDinh) };
 
+/**
+ * (sửa 05/10/2026 - HV-05) Form đăng ký dự thi (Phương thức 3): "Số điện thoại" luôn
+ * hiện, bắt buộc, thí sinh tự nhập (không điền sẵn/cố định) và đứng đầu danh sách
+ * ngay sau phần định danh - là số điện thoại xác thực để mở lại đơn (thay 4 số cuối CCCD).
+ */
+export function apDungSoDienThoaiXacThuc(c: CauHinhForm): CauHinhForm {
+  const sdt = c.truong.find((t) => t.ma === "soDienThoai") ?? truongCoSanMacDinh("soDienThoai");
+  return {
+    ...c,
+    truong: [
+      { ...sdt, hien: true, batBuoc: true, macDinh: null, coDinh: false, goiY: "Dùng để xác thực khi xem lại đơn, nộp minh chứng lệ phí" },
+      ...c.truong.filter((t) => t.ma !== "soDienThoai"),
+    ],
+  };
+}
+
 export const SO_TRUONG_TOI_DA = 30;
 // (bổ sung 01/10/2026) mã "trường" của tệp minh chứng chuyển khoản lệ phí thi (HV-05) -
 // bắt đầu bằng "_" nên không trùng mã trường cấu hình (luôn bắt đầu bằng chữ cái)
@@ -224,7 +240,7 @@ export function kiemTraDuLieu(
 /**
  * (bổ sung 01/10/2026) Khóa có giai đoạn học (Phương thức 1, 2, 4) cần tài khoản
  * học viên để đăng ký (học trực tuyến, xem điểm, nhận thông báo); khóa chỉ đăng
- * ký dự thi (Phương thức 3) không cần - thí sinh mở lại đơn bằng 4 số cuối CCCD.
+ * ký dự thi (Phương thức 3) không cần - thí sinh mở lại đơn bằng mã SV/CCCD + số điện thoại.
  */
 export function canTaiKhoanKhiDangKy(phuongThuc: string | null | undefined) {
   return phuongThuc !== "CHI_DU_THI";

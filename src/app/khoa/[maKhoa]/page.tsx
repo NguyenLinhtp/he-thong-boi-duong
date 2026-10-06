@@ -11,6 +11,7 @@ import { dinhDangNgay, dinhDangTien } from "@/lib/dinh-dang";
 import { canTaiKhoanKhiDangKy } from "@/lib/form-dang-ky";
 import { UserRoundCheck } from "lucide-react";
 import { FormDangKyDuThi } from "./form-dang-ky-du-thi";
+import { dsThanhPhanLePhi } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
 import { FormDangKyQuaDVLK } from "./form-dang-ky-qua-dvlk";
 import { FormTimLaiDon } from "./form-tim-lai-don";
 import { cauHinhHieuLuc, giaTriTuHoSo } from "@/server/services/hv/form-dang-ky";
@@ -39,6 +40,8 @@ export default async function TrangDangKyCongKhaiKhoa({
     laDuThi && cauHinh.dinhDanh === "MA_SINH_VIEN" && khoa.mucHocPhiTuDo !== null
       ? { sinhVien: dinhDangTien(khoa.mucHocPhi, "Liên hệ"), tuDo: dinhDangTien(khoa.mucHocPhiTuDo) }
       : null;
+  // (bổ sung 06/10/2026) thành phần lệ phí của khóa dự thi (vd. ôn thi, thi)
+  const dsThanhPhan = laDuThi ? await dsThanhPhanLePhi(khoa.id) : [];
   const userId = (await auth())?.phienDangNhap?.userId;
   const tuHoSo = await giaTriTuHoSo(userId, cauHinh);
   // (bổ sung 01/10/2026) khóa bồi dưỡng cần tài khoản học viên; khóa chỉ thi thì không
@@ -81,6 +84,13 @@ export default async function TrangDangKyCongKhaiKhoa({
       : [],
     giaTri: tuHoSo?.giaTri ?? null,
     lePhi: lePhiTheoDoiTuong,
+    thanhPhan: dsThanhPhan.map((t) => ({
+      id: t.id,
+      ten: t.ten,
+      batBuoc: t.batBuoc,
+      mucSinhVien: Number(t.mucSinhVien),
+      mucTuDo: t.mucTuDo === null ? null : Number(t.mucTuDo),
+    })),
   };
   const goiYDangNhap =
     conMo && !chanTaiKhoan && khoa.chuongTrinh.phuongThucDangKy !== "IMPORT_TU_XAC_NHAN" && cauHinh.dinhDanh !== "MA_SINH_VIEN" ? (
@@ -110,7 +120,8 @@ export default async function TrangDangKyCongKhaiKhoa({
           <p className="text-sm font-medium tracking-wide text-ued-vang uppercase">
             {laDuThi ? "Đăng ký dự thi" : "Đăng ký khóa bồi dưỡng"}
           </p>
-          <h1 className="mt-2 text-2xl leading-tight font-bold text-balance md:text-3xl">{khoa.chuongTrinh.ten}</h1>
+          <h1 className="mt-2 text-2xl leading-tight font-bold text-balance md:text-3xl">{khoa.tenKhoa ?? khoa.chuongTrinh.ten}</h1>
+          {khoa.tenKhoa && <p className="mt-1 text-sm text-white/80">Chương trình: {khoa.chuongTrinh.ten}</p>}
           <p className="mt-1 text-sm text-white/80">
             Mã khóa: {khoa.maKhoa} ·{" "}
             <Link href={`/dang-ky/${khoa.chuongTrinh.maCT}`} className="text-white underline hover:text-ued-vang">
@@ -143,7 +154,17 @@ export default async function TrangDangKyCongKhaiKhoa({
             )}
             <div>
               <dt className="text-white/70">{laDuThi ? "Lệ phí thi" : "Mức học phí"}</dt>
-              {lePhiTheoDoiTuong ? (
+              {dsThanhPhan.length > 0 ? (
+                <dd className="text-sm font-bold">
+                  {dsThanhPhan.map((t) => (
+                    <span key={t.id} className="block">
+                      {t.ten}
+                      {!t.batBuoc && <span className="font-normal text-white/70"> (tùy chọn)</span>}: {dinhDangTien(t.mucSinhVien)}
+                      {lePhiTheoDoiTuong && t.mucTuDo !== null && <span className="font-normal text-white/80"> · tự do {dinhDangTien(t.mucTuDo)}</span>}
+                    </span>
+                  ))}
+                </dd>
+              ) : lePhiTheoDoiTuong ? (
                 <dd className="text-sm font-bold">
                   Sinh viên ĐHSP-ĐHĐN: {lePhiTheoDoiTuong.sinhVien}
                   <br />

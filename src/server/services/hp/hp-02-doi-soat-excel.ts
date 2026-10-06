@@ -1,10 +1,13 @@
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/db/prisma";
 import { MA_TEP_NOP_PHI } from "@/lib/form-dang-ky";
+import { khopTuKhoa } from "@/lib/tim-kiem";
+import { dsThanhPhanLePhi, ghiNhanThanhPhan } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
+import { lePhiDaXacNhan } from "@/server/services/hp/thanh-phan-le-phi-chung";
 import { dieuKienChiemCho } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { xacNhanThanhToan } from "@/server/services/hp/hp-02-thanh-toan";
 import { layThamSo } from "@/server/services/qt/qt-05-tham-so";
-import { chuanHoaChu, docBangTinh, timDongTieuDe } from "@/server/services/chung/bang-tinh";
+import { chuanHoaChu, docBangTinh, maKhoaTrongTep, timDongTieuDe } from "@/server/services/chung/bang-tinh";
 import { KhongTimThayKhoaError, TepDoiSoatKhongHopLeError } from "@/server/services/hp/loi-hoc-phi";
 import { DuLieuImportLoiError, type DongLoiImport } from "@/server/services/hv/loi-hoc-vien";
 import type { NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
@@ -30,7 +33,7 @@ async function duLieuDoiSoat(khoaId: string) {
       include: { hocVien: true, tepHoSos: { where: { maTruong: MA_TEP_NOP_PHI } } },
       orderBy: [{ hocVien: { lopSinhHoat: "asc" } }, { hocVien: { hoTen: "asc" } }],
     }),
-    prisma.hocPhi.findMany({ where: { khoaId } }),
+    prisma.hocPhi.findMany({ where: { khoaId }, include: { thanhPhans: { include: { thanhPhan: true }, orderBy: { thanhPhan: { thuTu: "asc" } } } } }),
   ]);
   const hocPhiTheoHv = new Map(dsHocPhi.map((h) => [h.hocVienId, h]));
   return {
@@ -42,6 +45,32 @@ async function duLieuDoiSoat(khoaId: string) {
 /** Bảng thí sinh + lệ phí + minh chứng để hiển thị trên trang học phí của khóa. */
 export async function bangDoiSoatLePhi(khoaId: string) {
   return (await duLieuDoiSoat(khoaId)).dong;
+}
+
+type DongDoiSoat = Awaited<ReturnType<typeof bangDoiSoatLePhi>>[number];
+
+/**
+ * Lệ phí chưa được xác nhận: chưa có khoản phí, chưa nộp/nộp thiếu và chưa bỏ chặn
+ * (bổ sung 06/10/2026: khóa có thành phần lệ phí - còn thành phần bắt buộc chưa xác nhận).
+ */
+export function chuaXacNhanLePhi(d: Pick<DongDoiSoat, "hocPhi">) {
+  return !lePhiDaXacNhan(d.hocPhi, true);
+}
+
+/**
+ * (bổ sung 06/10/2026 - HP-02) bảng đối soát trên màn hình: tìm nhanh theo mã
+ * sinh viên / số CCCD / mã hồ sơ / họ tên; thí sinh chưa xác nhận lệ phí lên
+ * trên, rồi theo thời gian nộp minh chứng mới nhất (chưa nộp minh chứng xếp cuối nhóm).
+ */
+export function locVaSapXepDoiSoat<T extends Pick<DongDoiSoat, "hocPhi" | "hocVien" | "minhChung">>(dong: T[], tuKhoa?: string | null): T[] {
+  const loc = dong.filter((d) => khopTuKhoa(d.hocVien, tuKhoa));
+  const thoiGian = (d: T) => d.minhChung?.taiLenLuc.getTime() ?? -Infinity;
+  return [...loc].sort(
+    (a, b) =>
+      Number(!chuaXacNhanLePhi(a)) - Number(!chuaXacNhanLePhi(b)) ||
+      thoiGian(b) - thoiGian(a) ||
+      a.hocVien.hoTen.localeCompare(b.hocVien.hoTen, "vi"),
+  );
 }
 
 const COT = [
@@ -60,23 +89,37 @@ const COT = [
   { tieuDe: "Ghi chú", rong: 24 },
 ];
 
+/** (bổ sung 06/10/2026) tiêu đề cột trạng thái của 1 thành phần lệ phí trong tệp đối soát */
+export const tieuDeCotThanhPhan = (ten: string) => `Trạng thái phí - ${ten}`;
+const KHONG_DANG_KY = "Không đăng ký";
+
 export async function xuatExcelDoiSoat(khoaId: string) {
-  const [{ khoa, dong }, tenCoQuan] = await Promise.all([duLieuDoiSoat(khoaId), layThamSo("CC_TEN_CO_QUAN_CAP")]);
+  const [{ khoa, dong }, tenCoQuan, dsTp] = await Promise.all([duLieuDoiSoat(khoaId), layThamSo("CC_TEN_CO_QUAN_CAP"), dsThanhPhanLePhi(khoaId)]);
+  // (bổ sung 06/10/2026) khóa chia thành phần lệ phí: thay cột "Trạng thái phí" bằng 1 cột mỗi thành phần
+  const viTriTrangThai = COT.findIndex((c) => c.tieuDe === "Trạng thái phí");
+  const COT_TEP =
+    dsTp.length > 0
+      ? [...COT.slice(0, viTriTrangThai), ...dsTp.map((tp) => ({ tieuDe: tieuDeCotThanhPhan(tp.ten), rong: 18 })), ...COT.slice(viTriTrangThai + 1)]
+      : COT;
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Đối soát lệ phí", { pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
-  ws.columns = COT.map((c) => ({ width: c.rong }));
+  ws.columns = COT_TEP.map((c) => ({ width: c.rong }));
   const tieuDe = (s: string, dam = false, co = 11) => {
     const r = ws.addRow([s]);
-    ws.mergeCells(r.number, 1, r.number, COT.length);
+    ws.mergeCells(r.number, 1, r.number, COT_TEP.length);
     r.getCell(1).font = { bold: dam, size: co };
     r.getCell(1).alignment = { horizontal: "center" };
   };
   tieuDe((tenCoQuan ?? "CƠ SỞ ĐÀO TẠO, BỒI DƯỠNG").toUpperCase(), true);
   tieuDe("DANH SÁCH THÍ SINH ĐĂNG KÝ - ĐỐI SOÁT LỆ PHÍ", true, 14);
   tieuDe(`${khoa.chuongTrinh.ten} · Mã khóa: ${khoa.maKhoa}`);
-  tieuDe(`Ghi "${DA_DONG}" ở cột Trạng thái phí cho thí sinh đã chuyển khoản, giữ nguyên cột Mã hồ sơ, rồi tải tệp lên hệ thống.`);
+  tieuDe(
+    dsTp.length > 0
+      ? `Ghi "${DA_DONG}" ở cột trạng thái của từng phần (${dsTp.map((t) => t.ten).join(", ")}) thí sinh đã chuyển khoản, giữ nguyên cột Mã hồ sơ, rồi tải tệp lên hệ thống.`
+      : `Ghi "${DA_DONG}" ở cột Trạng thái phí cho thí sinh đã chuyển khoản, giữ nguyên cột Mã hồ sơ, rồi tải tệp lên hệ thống.`,
+  );
   ws.addRow([]);
-  const header = ws.addRow(COT.map((c) => c.tieuDe));
+  const header = ws.addRow(COT_TEP.map((c) => c.tieuDe));
   header.font = { bold: true };
   header.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
   dong.forEach((d, i) => {
@@ -92,13 +135,22 @@ export async function xuatExcelDoiSoat(khoaId: string) {
       d.hocPhi ? Number(d.hocPhi.soTienDaNop) : null,
       `${khoa.maKhoa} ${d.hocVien.maSinhVien ?? d.hocVien.maHocVien}`,
       d.minhChung ? `Đã nộp ${d.minhChung.taiLenLuc.toLocaleString("vi-VN")}` : "Chưa nộp",
-      d.hocPhi && (XONG.includes(d.hocPhi.trangThai) || d.hocPhi.boQuaKiemTra) ? DA_DONG : CHUA_DONG,
+      ...(dsTp.length > 0
+        ? dsTp.map((tp) => {
+            const x = d.hocPhi?.thanhPhans.find((t) => t.thanhPhanId === tp.id);
+            return !x ? KHONG_DANG_KY : XONG.includes(x.trangThai) || d.hocPhi?.boQuaKiemTra ? DA_DONG : CHUA_DONG;
+          })
+        : [d.hocPhi && (XONG.includes(d.hocPhi.trangThai) || d.hocPhi.boQuaKiemTra) ? DA_DONG : CHUA_DONG]),
       "",
     ]);
-    r.getCell(12).dataValidation = { type: "list", allowBlank: true, formulae: [`"${DA_DONG},${CHUA_DONG}"`] };
+    const soCotTrangThai = Math.max(dsTp.length, 1);
+    for (let k = 0; k < soCotTrangThai; k++) {
+      const o = r.getCell(viTriTrangThai + 1 + k);
+      if (o.value !== KHONG_DANG_KY) o.dataValidation = { type: "list", allowBlank: true, formulae: [`"${DA_DONG},${CHUA_DONG}"`] };
+    }
   });
   for (let r = header.number; r <= ws.rowCount; r++) {
-    COT.forEach((_, i) => {
+    COT_TEP.forEach((_, i) => {
       const o = ws.getCell(r, i + 1);
       o.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
       if ((i === 7 || i === 8) && r > header.number) o.numFmt = "#,##0";
@@ -127,17 +179,18 @@ export async function nhapExcelDoiSoat(khoaId: string, noiDung: Buffer, tenTep: 
   );
   if (!tieuDe) throw new TepDoiSoatKhongHopLeError('không thấy cột "Mã hồ sơ" và "Trạng thái phí" - hãy dùng tệp tải từ hệ thống');
   // tệp phải đúng của khóa này (dòng mô tả "Mã khóa: ..." phía trên bảng)
-  const maKhoaTrongTep = dsDong
-    .slice(0, tieuDe.viTriTieuDe)
-    .map((d) => d.o.join(" ").match(/Mã khóa:\s*([A-Za-z0-9_-]+)/)?.[1])
-    .find(Boolean);
-  if (maKhoaTrongTep !== khoa.maKhoa) {
+  const maKhoaTep = maKhoaTrongTep(dsDong, tieuDe.viTriTieuDe);
+  if (maKhoaTep !== khoa.maKhoa) {
     throw new TepDoiSoatKhongHopLeError(
-      maKhoaTrongTep
-        ? `đây là danh sách của khóa ${maKhoaTrongTep}, không phải ${khoa.maKhoa}`
+      maKhoaTep
+        ? `đây là danh sách của khóa ${maKhoaTep}, không phải ${khoa.maKhoa}`
         : "không xác định được mã khóa trong tệp - hãy dùng tệp tải từ hệ thống",
     );
   }
+
+  // (bổ sung 06/10/2026) khóa chia thành phần lệ phí: đọc 1 cột trạng thái mỗi thành phần
+  const dsTp = await dsThanhPhanLePhi(khoaId);
+  if (dsTp.length > 0) return nhapTheoThanhPhan(dsTp, dong, dsDong, tieuDe.viTriTieuDe, tieuDe.cot.maHoSo!, tenTep, nguoi);
 
   const theoMa = new Map(dong.map((d) => [d.hocVien.maHocVien, d]));
   const loi: DongLoiImport[] = [];
@@ -181,6 +234,72 @@ export async function nhapExcelDoiSoat(khoaId: string, noiDung: Buffer, tenTep: 
       nguoiXacNhanTen: nguoi.nguoiThucHienTen,
     });
     kq.daGhiNhan.push({ maHoSo: d.hocVien.maHocVien, hoTen: d.hocVien.hoTen, soTien, soPhieu: phieuThu.soPhieu });
+  }
+  return kq;
+}
+
+/**
+ * (bổ sung 06/10/2026 - HP-02) Đối soát Excel khóa chia thành phần lệ phí: mỗi thành phần 1 cột
+ * "Trạng thái phí - <tên>"; dòng "Đã đóng" ở phần thí sinh đã chọn và chưa xác nhận -> ghi nhận
+ * phần đó (1 phiếu thu/phần). Có dòng lỗi thì không ghi nhận dòng nào; phần đã ghi nhận bỏ qua;
+ * "Chưa đóng" không tự hủy phần đã ghi nhận (chỉ cảnh báo).
+ */
+async function nhapTheoThanhPhan(
+  dsTp: { id: string; ten: string }[],
+  dong: Awaited<ReturnType<typeof duLieuDoiSoat>>["dong"],
+  dsDong: Awaited<ReturnType<typeof docBangTinh>>,
+  viTriTieuDe: number,
+  cotMaHoSo: number,
+  tenTep: string,
+  nguoi: NguoiThucHien,
+): Promise<KetQuaDoiSoat> {
+  const tieuDeTep = dsDong[viTriTieuDe].o.map((t) => chuanHoaChu(t));
+  const cotTp = dsTp.map((tp) => ({ tp, cot: tieuDeTep.indexOf(chuanHoaChu(tieuDeCotThanhPhan(tp.ten))) }));
+  const thieu = cotTp.filter((c) => c.cot < 0);
+  if (thieu.length > 0) {
+    throw new TepDoiSoatKhongHopLeError(`thiếu cột ${thieu.map((c) => `"${tieuDeCotThanhPhan(c.tp.ten)}"`).join(", ")} - hãy tải lại tệp đối soát từ hệ thống`);
+  }
+  const theoMa = new Map(dong.map((d) => [d.hocVien.maHocVien, d]));
+  const loi: DongLoiImport[] = [];
+  const daGap = new Set<string>();
+  const canGhi: { d: (typeof dong)[number]; dongTp: NonNullable<(typeof dong)[number]["hocPhi"]>["thanhPhans"][number]; ten: string }[] = [];
+  const kq: KetQuaDoiSoat = { daGhiNhan: [], daCoTruoc: 0, chuaDong: 0, canhBao: [] };
+  for (const { soDong, o } of dsDong.slice(viTriTieuDe + 1)) {
+    const ma = (o[cotMaHoSo] ?? "").trim();
+    if (!ma) continue;
+    const d = theoMa.get(ma);
+    if (!d) {
+      loi.push({ dong: soDong, loi: `Mã hồ sơ ${ma} không thuộc danh sách đăng ký của khóa` });
+      continue;
+    }
+    if (daGap.has(ma)) {
+      loi.push({ dong: soDong, loi: `Mã hồ sơ ${ma} xuất hiện nhiều lần` });
+      continue;
+    }
+    daGap.add(ma);
+    for (const { tp, cot } of cotTp) {
+      const tt = o[cot] ?? "";
+      const x = d.hocPhi?.thanhPhans.find((t) => t.thanhPhanId === tp.id);
+      const xong = x && (XONG.includes(x.trangThai) || d.hocPhi!.boQuaKiemTra);
+      if (laDaDong(tt)) {
+        if (!x) loi.push({ dong: soDong, loi: `${ma}: thí sinh không đăng ký "${tp.ten}"` });
+        else if (xong) kq.daCoTruoc++;
+        else canGhi.push({ d, dongTp: x, ten: tp.ten });
+      } else if (laChuaDong(tt) || chuanHoaChu(tt) === chuanHoaChu(KHONG_DANG_KY)) {
+        if (x) kq.chuaDong++;
+        if (xong) kq.canhBao.push(`${ma} - ${d.hocVien.hoTen}: "${tp.ten}" tệp ghi "${CHUA_DONG}" nhưng đã ghi nhận trước đó - không tự hủy, điều chỉnh thủ công nếu cần`);
+      } else loi.push({ dong: soDong, loi: `${ma}: trạng thái "${tt}" của "${tp.ten}" không hợp lệ (chỉ "${DA_DONG}" hoặc "${CHUA_DONG}")` });
+    }
+  }
+  if (loi.length > 0) throw new DuLieuImportLoiError(loi);
+
+  const hinhThuc = `Chuyển khoản (đối soát Excel ${tenTep})`.slice(0, 120);
+  for (const { d, dongTp, ten } of canGhi) {
+    const { phieuThu } = await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, `HP02:${d.hocPhi!.id}`);
+      return ghiNhanThanhPhan(tx, dongTp.id, null, hinhThuc, nguoi);
+    });
+    kq.daGhiNhan.push({ maHoSo: d.hocVien.maHocVien, hoTen: `${d.hocVien.hoTen} - ${ten}`, soTien: Number(phieuThu.soTien), soPhieu: phieuThu.soPhieu });
   }
   return kq;
 }

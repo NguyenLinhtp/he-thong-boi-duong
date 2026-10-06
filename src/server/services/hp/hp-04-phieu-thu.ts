@@ -26,6 +26,8 @@ export type LapPhieuThuInput = {
   hinhThucNop?: string | null;
   nguoiLapId?: string | null;
   nguoiLapTen?: string | null;
+  // (bổ sung 06/10/2026) phiếu thu của 1 thành phần lệ phí
+  hocPhiThanhPhanId?: string | null;
 };
 
 // Được gọi từ HP-02 ngay sau khi 1 khoản nộp được xác nhận, trong cùng
@@ -39,6 +41,7 @@ export async function lapPhieuThu(input: LapPhieuThuInput, tx: Prisma.Transactio
       hinhThucNop: input.hinhThucNop ?? null,
       nguoiLapId: input.nguoiLapId ?? null,
       nguoiLapTen: input.nguoiLapTen ?? null,
+      hocPhiThanhPhanId: input.hocPhiThanhPhanId ?? null,
     },
   });
 }

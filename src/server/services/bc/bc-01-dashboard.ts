@@ -44,7 +44,7 @@ export async function tongQuanDashboard(bayGio = new Date()) {
       },
       orderBy: { thoiGianKhaiGiang: "asc" },
     }),
-    prisma.phieuThu.findMany({ where: { ngayLap: { gte: dauThang(bayGio, 5) } }, select: { ngayLap: true, soTien: true } }),
+    prisma.phieuThu.findMany({ where: { daHuy: false, ngayLap: { gte: dauThang(bayGio, 5) } }, select: { ngayLap: true, soTien: true } }),
     prisma.hocPhi.aggregate({
       where: { trangThai: { notIn: ["MIEN_GIAM", ...QUA_DVLK] } },
       _sum: { soTienPhaiNop: true, soTienDaNop: true },
