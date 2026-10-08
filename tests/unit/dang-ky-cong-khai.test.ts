@@ -107,6 +107,8 @@ describe("QT-01 bổ sung - học viên tự đăng ký tài khoản", () => {
     await expect(dangKyTaiKhoanHocVien(tk(cccd(), { matKhau: "abc", nhapLaiMatKhau: "abc" }))).rejects.toThrow(MatKhauYeuError);
     await expect(dangKyTaiKhoanHocVien(tk(cccd(), { nhapLaiMatKhau: "Khac12345" }))).rejects.toThrow(/không khớp/);
     await expect(dangKyTaiKhoanHocVien(tk(cccd(), { email: "x@" }))).rejects.toThrow(/Email/);
+    // (bổ sung 08/10/2026) email sai định dạng dù có @ và dấu chấm
+    await expect(dangKyTaiKhoanHocVien(tk(cccd(), { email: "ten@gmail..com" }))).rejects.toThrow(/định dạng/);
     await expect(dangKyTaiKhoanHocVien(tk(cccd(), { ngaySinh: "20/05/1990" }))).rejects.toThrow(/Ngày sinh/);
   });
 });

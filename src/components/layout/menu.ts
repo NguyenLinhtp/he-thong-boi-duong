@@ -85,6 +85,7 @@ export const MENU: NhomMenu[] = [
     tienTo: ["/hoc-phi"],
     muc: [
       { href: "/hoc-phi", nhan: "Học phí theo khóa", maCN: "HP-01" },
+      { href: "/hoc-phi/giao-dich", nhan: "Giao dịch chuyển khoản", maCN: "HP-02" },
       { href: "/hoc-phi/bao-cao", nhan: "Doanh thu & công nợ", maCN: "HP-05" },
     ],
   },

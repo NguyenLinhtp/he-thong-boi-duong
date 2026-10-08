@@ -1,3 +1,4 @@
+import { laEmailHopLe } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
 import { kiemTraChinhSachMatKhau } from "@/server/services/qt/qt-01-quan-ly-tai-khoan";
@@ -32,7 +33,6 @@ export type DangKyTaiKhoanInput = {
   nhapLaiMatKhau: string;
 };
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ngayISO = (d: Date) => d.toISOString().slice(0, 10);
 
 export async function dangKyTaiKhoanHocVien(input: DangKyTaiKhoanInput) {
@@ -46,7 +46,7 @@ export async function dangKyTaiKhoanHocVien(input: DangKyTaiKhoanInput) {
     throw new DangKyTaiKhoanError("Ngày sinh không hợp lệ");
   }
   if (!/^[0-9+ .]{9,15}$/.test(soDienThoai)) throw new DangKyTaiKhoanError("Số điện thoại không hợp lệ");
-  if (email && !EMAIL.test(email)) throw new DangKyTaiKhoanError("Email không hợp lệ");
+  if (email && !laEmailHopLe(email)) throw new DangKyTaiKhoanError("Email chưa đúng định dạng (ví dụ: ten@gmail.com)");
   if (input.matKhau !== input.nhapLaiMatKhau) throw new DangKyTaiKhoanError("Mật khẩu nhập lại không khớp");
   kiemTraChinhSachMatKhau(input.matKhau);
 

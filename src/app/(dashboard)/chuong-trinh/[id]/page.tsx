@@ -18,6 +18,8 @@ import { FormImportSinhVien } from "@/components/dang-ky/form-import-sinh-vien";
 import { danhSachSinhVien, layCotBoSungSinhVien } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
 import { CauHinhCotSinhVien } from "@/components/dang-ky/cau-hinh-cot-sinh-vien";
 import Link from "next/link";
+import { prisma } from "@/lib/db/prisma";
+import { NutXoaChuongTrinh } from "../nut-xoa-chuong-trinh";
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -53,7 +55,8 @@ export default async function ChiTietChuongTrinhPage({
   const dangDuThao = chuongTrinh.trangThai === "DU_THAO";
   const choPhepSuaDuThao = dangDuThao && (await coQuyen("CT-01"));
   const daBanHanh = chuongTrinh.trangThai === "DA_BAN_HANH";
-  const choPhepSuaHocPhan = dangDuThao && (await coQuyen("CT-02"));
+  // (sửa 07/10/2026) học phần sửa được cả khi đã ban hành (bắt buộc lý do, ghi nhật ký)
+  const choPhepSuaHocPhan = (dangDuThao || daBanHanh) && (await coQuyen("CT-02"));
   const choPhepPheDuyet = await coQuyen("CT-03");
   const choPhepSuaBanHanh = daBanHanh && (await coQuyen("CT-04"));
   const choPhepPhuongThucDangKy =
@@ -65,6 +68,8 @@ export default async function ChiTietChuongTrinhPage({
   const choPhepNapSinhVien =
     chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && chuongTrinh.trangThai !== "NGUNG_HIEU_LUC" && (await coQuyen("HV-03"));
   const dsCotSinhVien = choPhepNapSinhVien ? await layCotBoSungSinhVien() : [];
+  // (bổ sung 07/10/2026 - CT-01) xóa chương trình tạo sai khi chưa mở khóa nào
+  const choPhepXoa = (await coQuyen("CT-01")) && (await prisma.khoa.count({ where: { chuongTrinhId: chuongTrinh.id } })) === 0;
   const tongTiet = chuongTrinh.hocPhans.reduce((tong, hp) => tong + hp.soTiet, 0);
   const tongTietKhop = chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong;
 
@@ -118,6 +123,7 @@ export default async function ChiTietChuongTrinhPage({
         tongTiet={tongTiet}
         tongThoiLuong={chuongTrinh.tongThoiLuong}
         choPhepSua={choPhepSuaHocPhan}
+        canLyDo={daBanHanh}
       />
 
       {choPhepPheDuyet && chuongTrinh.trangThai !== "NGUNG_HIEU_LUC" && (
@@ -170,6 +176,16 @@ export default async function ChiTietChuongTrinhPage({
             ngayNgungHieuLuc: chuongTrinh.ngayNgungHieuLuc,
           }}
         />
+      )}
+
+      {choPhepXoa && (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-card p-4 shadow-sm">
+          <div className="text-sm">
+            <p className="font-bold text-destructive">Xóa chương trình</p>
+            <p className="text-muted-foreground">Chương trình chưa mở khóa nào nên xóa được (dùng khi tạo sai). Học phần, học liệu khung và lịch sử phiên bản bị xóa theo.</p>
+          </div>
+          <NutXoaChuongTrinh chuongTrinh={{ id: chuongTrinh.id, maCT: chuongTrinh.maCT, ten: chuongTrinh.ten, soQuyetDinh: chuongTrinh.soQuyetDinh }} veDanhSach />
+        </section>
       )}
     </main>
   );

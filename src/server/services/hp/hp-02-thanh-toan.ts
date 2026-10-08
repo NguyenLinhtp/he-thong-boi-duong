@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import {
   KhongTimThayHocPhiError,
   SoTienKhongHopLeError,
@@ -29,10 +30,21 @@ export type XacNhanThanhToanInput = {
 export async function xacNhanThanhToan(hocPhiId: string, input: XacNhanThanhToanInput) {
   if (!(input.soTien > 0) || !Number.isFinite(input.soTien)) throw new SoTienKhongHopLeError();
 
-  return prisma.$transaction(async (tx) => {
-    // khóa tư vấn theo khoản học phí (tự nhả khi transaction kết thúc) - không
-    // phụ thuộc tên bảng/schema như SELECT ... FOR UPDATE
-    await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, `HP02:${hocPhiId}`);
+  return prisma.$transaction((tx) => ghiThanhToanTrongGiaoDich(tx, hocPhiId, input));
+}
+
+/** Khóa tư vấn theo khoản học phí (tự nhả khi transaction kết thúc) - không phụ thuộc tên bảng như SELECT ... FOR UPDATE. */
+export const khoaKhoanHocPhi = (tx: Prisma.TransactionClient, hocPhiId: string) =>
+  tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, `HP02:${hocPhiId}`);
+
+/**
+ * Phần lõi của xacNhanThanhToan chạy trong transaction có sẵn - dùng chung với đối soát giao dịch
+ * ngân hàng tự động (bổ sung 08/10/2026) để ghi giao dịch + biên lai + nhật ký cùng 1 transaction.
+ */
+export async function ghiThanhToanTrongGiaoDich(tx: Prisma.TransactionClient, hocPhiId: string, input: XacNhanThanhToanInput) {
+  if (!(input.soTien > 0) || !Number.isFinite(input.soTien)) throw new SoTienKhongHopLeError();
+  {
+    await khoaKhoanHocPhi(tx, hocPhiId);
     const hocPhi = await tx.hocPhi.findUnique({ where: { id: hocPhiId } });
     if (!hocPhi) throw new KhongTimThayHocPhiError();
     if (TRANG_THAI_QUA_DVLK.includes(hocPhi.trangThai)) throw new HocPhiQuaDonViLienKetError();
@@ -82,7 +94,7 @@ export async function xacNhanThanhToan(hocPhiId: string, input: XacNhanThanhToan
     );
 
     return { hocPhi: hocPhiSau, phieuThu };
-  });
+  }
 }
 
 export type XacNhanMienGiamInput = {

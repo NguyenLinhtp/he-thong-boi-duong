@@ -11,6 +11,8 @@ import { DauTrangThemMoi } from "@/components/chung/dau-trang-them-moi";
 import { TrangThaiRong } from "@/components/chung/trang-thai-rong";
 import { FormTaoChuongTrinh } from "./form-tao-chuong-trinh";
 import { FormTraCuuChuongTrinh } from "./form-tra-cuu-chuong-trinh";
+import { NutXoaChuongTrinh } from "./nut-xoa-chuong-trinh";
+import { Pencil } from "lucide-react";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   DU_THAO: "Dự thảo",
@@ -76,11 +78,8 @@ export default async function ChuongTrinhPage({
       ) : (
         <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
           {dsChuongTrinh.map((ct) => (
-            <li key={ct.id}>
-              <Link
-                href={`/chuong-trinh/${ct.id}`}
-                className="group flex h-full flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
-              >
+            <li key={ct.id} className="flex h-full flex-col rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md">
+              <Link href={`/chuong-trinh/${ct.id}`} className="group flex flex-1 flex-col gap-2 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <span className="font-mono text-xs text-muted-foreground">{ct.maCT}</span>
                   <NhanTrangThai ma={ct.trangThai}>{NHAN_TRANG_THAI[ct.trangThai] ?? ct.trangThai}</NhanTrangThai>
@@ -92,6 +91,16 @@ export default async function ChuongTrinhPage({
                   {ct.doiTuongApDung && <span>Đối tượng: {ct.doiTuongApDung}</span>}
                 </span>
               </Link>
+              {choPhepTao && (
+                <div className="flex items-center justify-end gap-4 border-t px-4 py-2">
+                  <span className="mr-auto text-xs text-muted-foreground">{ct._count.khoas > 0 ? `${ct._count.khoas} khóa` : "Chưa mở khóa"}</span>
+                  <Link href={`/chuong-trinh/${ct.id}`} className="inline-flex items-center gap-1 text-sm text-ued-blue hover:underline" aria-label={`Sửa chương trình ${ct.ten}`}>
+                    <Pencil className="size-3.5" />
+                    Sửa
+                  </Link>
+                  {ct._count.khoas === 0 && <NutXoaChuongTrinh chuongTrinh={{ id: ct.id, maCT: ct.maCT, ten: ct.ten, soQuyetDinh: ct.soQuyetDinh }} />}
+                </div>
+              )}
             </li>
           ))}
         </ul>

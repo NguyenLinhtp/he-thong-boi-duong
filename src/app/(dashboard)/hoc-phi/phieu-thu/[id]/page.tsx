@@ -4,6 +4,8 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { chiTietPhieuThu } from "@/server/services/hp/hp-04-phieu-thu";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NutIn } from "./nut-in";
+import { noiDungInPhieuThu } from "@/server/services/chung/mau-in";
+import { BanInBienLai } from "@/components/mau-in/ban-in-bien-lai";
 
 // HP-04: "in/xuất được PDF" - chưa có thư viện tạo PDF trong dự án, dùng
 // trang HTML in được (Ctrl+P / Lưu thành PDF của trình duyệt) thay vì tự
@@ -23,26 +25,28 @@ export default async function PhieuThuPage({ params }: { params: Promise<{ id: s
   const phieuThu = await chiTietPhieuThu(id);
   if (!phieuThu) notFound();
 
+  const nd = await noiDungInPhieuThu(phieuThu);
+
+  // (bổ sung 07/10/2026) biên lai thu tiền mẫu C45-BB theo mẫu của chương trình (nội dung chốt khi lập)
   return (
-    <main className="mx-auto flex max-w-xl flex-col gap-4 p-8 print:p-0">
-      <h1 className="text-center text-lg font-semibold">PHIẾU THU HỌC PHÍ</h1>
-      <p className="text-center text-sm text-muted-foreground">Số phiếu: {phieuThu.soPhieu}</p>
-      {phieuThu.daHuy && (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-center text-sm font-semibold text-destructive">
-          PHIẾU ĐÃ HỦY {phieuThu.huyLuc && `ngày ${phieuThu.huyLuc.toLocaleDateString("vi-VN")}`}
-          {phieuThu.nguoiHuyTen && ` - ${phieuThu.nguoiHuyTen}`}
-          {phieuThu.lyDoHuy && <span className="block font-normal">Lý do: {phieuThu.lyDoHuy}</span>}
+    <main className="mx-auto flex max-w-3xl flex-col gap-4 p-8 print:max-w-none print:p-0">
+      <div className="flex items-center justify-between gap-3 print:hidden">
+        <p className="text-sm text-muted-foreground">
+          Hình thức nộp: {phieuThu.hinhThucNop ?? "—"} · Khóa {phieuThu.hocPhi.khoa.maKhoa}
         </p>
-      )}
-      <div className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm text-sm">
-        <p>Học viên: {phieuThu.hocPhi.hocVien.hoTen}</p>
-        <p>Khóa: {phieuThu.hocPhi.khoa.maKhoa}</p>
-        <p>Số tiền: {Number(phieuThu.soTien).toLocaleString("vi-VN")}đ</p>
-        <p>Hình thức nộp: {phieuThu.hinhThucNop ?? "—"}</p>
-        <p>Ngày lập: {phieuThu.ngayLap.toLocaleString("vi-VN")}</p>
-        <p>Người lập: {phieuThu.nguoiLapTen ?? "—"}</p>
+        <NutIn />
       </div>
-      <NutIn />
+      <div className="rounded-lg border print:border-0">
+        <BanInBienLai
+          nd={nd}
+          soPhieu={phieuThu.soPhieu}
+          ngayLap={phieuThu.ngayLap}
+          soTien={Number(phieuThu.soTien)}
+          nguoiThuTen={phieuThu.nguoiLapTen}
+          thayChoSoPhieu={phieuThu.thayChoSoPhieu}
+          daHuy={phieuThu.daHuy ? { luc: phieuThu.huyLuc, lyDo: phieuThu.lyDoHuy, nguoi: phieuThu.nguoiHuyTen } : null}
+        />
+      </div>
     </main>
   );
 }

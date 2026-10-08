@@ -67,6 +67,8 @@ export const THU_TU_BANG = [
   "thanhPhanLePhi",
   "hocPhiThanhPhan",
   "phieuThu",
+  "phieuThuChiTiet",
+  "giaoDichNganHang",
   "banGiaoChungChi",
   "quyetDinhCapVanBang",
   "chungChi",

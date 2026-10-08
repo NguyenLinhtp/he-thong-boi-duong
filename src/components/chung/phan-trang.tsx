@@ -30,7 +30,8 @@ export function locVaPhanTrang<T>(
   const ten = thamSoDanhSach(ma);
   const tuKhoa = (motGiaTri(sp[ten.q]) ?? "").trim();
   const loc = tuKhoa ? ds.filter((x) => khopTuKhoa(lay(x), tuKhoa, them?.(x))) : ds;
-  return { ma, tuKhoa, tongGoc: ds.length, ...catTrang(loc, motGiaTri(sp[ten.trang])) };
+  // dsLoc: toàn bộ dòng khớp tìm kiếm (mọi trang) - dùng cho "chọn tất cả" khi thao tác hàng loạt
+  return { ma, tuKhoa, tongGoc: ds.length, dsLoc: loc, ...catTrang(loc, motGiaTri(sp[ten.trang])) };
 }
 
 /** Chuỗi tham số URL hiện tại dạng phẳng (bỏ giá trị rỗng) để ghép link/ô tìm. */

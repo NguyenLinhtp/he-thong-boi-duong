@@ -5,6 +5,7 @@ import { capNhatHoSoAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OEmail } from "@/components/chung/o-email";
 
 export function FormSuaHoSo({
   hocVien,
@@ -55,7 +56,7 @@ export function FormSuaHoSo({
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" defaultValue={hocVien.email ?? ""} />
+          <OEmail id="email" name="email" defaultValue={hocVien.email ?? ""} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="donViCongTac">Đơn vị công tác</Label>

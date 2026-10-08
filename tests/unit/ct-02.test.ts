@@ -13,8 +13,14 @@ import { SaiTrangThaiChuongTrinhError } from "@/server/services/ct/loi-chuong-tr
 
 const chuongTrinhTaoTrongTest: string[] = [];
 const loaiHinhTaoTrongTest: string[] = [];
+const khoaTaoTrongTest: string[] = [];
+const hocVienTaoTrongTest: string[] = [];
 
 afterAll(async () => {
+  await prisma.ketQuaHocTap.deleteMany({ where: { khoaId: { in: khoaTaoTrongTest } } });
+  await prisma.buoiHoc.deleteMany({ where: { khoaId: { in: khoaTaoTrongTest } } });
+  await prisma.khoa.deleteMany({ where: { id: { in: khoaTaoTrongTest } } });
+  await prisma.hocVien.deleteMany({ where: { id: { in: hocVienTaoTrongTest } } });
   await prisma.hocPhan.deleteMany({ where: { chuongTrinhId: { in: chuongTrinhTaoTrongTest } } });
   await prisma.chuongTrinh.deleteMany({ where: { id: { in: chuongTrinhTaoTrongTest } } });
   await prisma.loaiHinhBoiDuong.deleteMany({ where: { id: { in: loaiHinhTaoTrongTest } } });
@@ -86,17 +92,62 @@ describe("CT-02 quản lý học phần/chuyên đề trong chương trình", ()
     expect(await tongTietDaKhopThoiLuong(ct.id)).toBe(true);
   });
 
-  it("chặn thêm/sửa/xóa học phần khi chương trình không còn ở trạng thái Dự thảo", async () => {
+  it("chặn thêm/sửa/xóa/sắp xếp học phần khi chương trình Chờ thẩm định hoặc Ngừng hiệu lực", async () => {
+    const ct = await taoChuongTrinhTest();
+    const hp = await themHocPhan(ct.id, { ten: "A", soTiet: 5 });
+    for (const trangThai of ["CHO_THAM_DINH", "NGUNG_HIEU_LUC"] as const) {
+      await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { trangThai } });
+      await expect(themHocPhan(ct.id, { ten: "B", soTiet: 5, lyDo: "x" })).rejects.toThrow(SaiTrangThaiChuongTrinhError);
+      await expect(suaHocPhan(hp.id, { ten: "Sửa", soTiet: 5, lyDo: "x" })).rejects.toThrow(SaiTrangThaiChuongTrinhError);
+      await expect(xoaHocPhan(hp.id, "x")).rejects.toThrow(SaiTrangThaiChuongTrinhError);
+      await expect(sapXepHocPhan(ct.id, [hp.id])).rejects.toThrow(SaiTrangThaiChuongTrinhError);
+    }
+  });
+
+  it("chặn tên trống, số tiết không phải số nguyên dương", async () => {
+    const ct = await taoChuongTrinhTest();
+    await expect(themHocPhan(ct.id, { ten: "  ", soTiet: 5 })).rejects.toThrow(/tên học phần/);
+    await expect(themHocPhan(ct.id, { ten: "A", soTiet: 0 })).rejects.toThrow(/Số tiết/);
+    await expect(themHocPhan(ct.id, { ten: "A", soTiet: 1.5 })).rejects.toThrow(/Số tiết/);
+  });
+
+  it("(07/10/2026) chương trình đã ban hành: thêm/sửa/xóa bắt buộc lý do và ghi nhật ký; sắp xếp không cần lý do", async () => {
     const ct = await taoChuongTrinhTest();
     const hp = await themHocPhan(ct.id, { ten: "A", soTiet: 5 });
     await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { trangThai: "DA_BAN_HANH" } });
+    const NGUOI = { nguoiThucHienId: null, nguoiThucHienTen: "Test CT-02" };
 
-    await expect(themHocPhan(ct.id, { ten: "B", soTiet: 5 })).rejects.toThrow(
-      SaiTrangThaiChuongTrinhError,
-    );
-    await expect(suaHocPhan(hp.id, { ten: "Sửa", soTiet: 5 })).rejects.toThrow(
-      SaiTrangThaiChuongTrinhError,
-    );
-    await expect(xoaHocPhan(hp.id)).rejects.toThrow(SaiTrangThaiChuongTrinhError);
+    await expect(themHocPhan(ct.id, { ten: "B", soTiet: 5 })).rejects.toThrow(/lý do/);
+    await expect(suaHocPhan(hp.id, { ten: "Sửa", soTiet: 5, lyDo: " " })).rejects.toThrow(/lý do/);
+    await expect(xoaHocPhan(hp.id)).rejects.toThrow(/lý do/);
+
+    const hpB = await themHocPhan(ct.id, { ten: "B", soTiet: 3, lyDo: "Bổ sung phần thực hành" }, NGUOI);
+    expect(hpB.thuTu).toBe(2);
+    await suaHocPhan(hp.id, { ten: "A (sửa)", soTiet: 6, lyDo: "Điều chỉnh theo quyết định" }, NGUOI);
+    await sapXepHocPhan(ct.id, [hpB.id, hp.id]);
+    expect((await danhSachHocPhan(ct.id)).map((h) => h.ten)).toEqual(["B", "A (sửa)"]);
+    await xoaHocPhan(hpB.id, "Tạo nhầm", NGUOI);
+    expect((await danhSachHocPhan(ct.id)).map((h) => [h.ten, h.thuTu])).toEqual([["A (sửa)", 1]]);
+
+    const nk = await prisma.nhatKyThaoTac.findMany({ where: { doiTuongId: { in: [hp.id, hpB.id] } }, orderBy: { thoiGian: "asc" } });
+    expect(nk.map((n) => n.hanhDong)).toEqual(["THEM_HOC_PHAN", "SUA_HOC_PHAN", "XOA_HOC_PHAN"]);
+    expect(nk[1].chiTiet).toContain("Điều chỉnh theo quyết định");
+  });
+
+  it("(07/10/2026) không xóa học phần đã có dữ liệu ở khóa; không đổi số tiết học phần đã có kết quả (đổi tên vẫn được)", async () => {
+    const ct = await taoChuongTrinhTest();
+    const hp = await themHocPhan(ct.id, { ten: "A", soTiet: 5 });
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { trangThai: "DA_BAN_HANH" } });
+    const khoa = await prisma.khoa.create({ data: { maKhoa: `KHCT02${crypto.randomUUID().slice(0, 8)}`, chuongTrinhId: ct.id, siSoToiDa: 10 } });
+    khoaTaoTrongTest.push(khoa.id);
+    await prisma.buoiHoc.create({ data: { khoaId: khoa.id, hocPhanId: hp.id, ngayHoc: new Date() } });
+    await expect(xoaHocPhan(hp.id, "x")).rejects.toThrow(/1 buổi học/);
+
+    const hv = await prisma.hocVien.create({ data: { maHocVien: `HVCT02${crypto.randomUUID().slice(0, 8)}`, hoTen: "HV" } });
+    hocVienTaoTrongTest.push(hv.id);
+    await prisma.ketQuaHocTap.create({ data: { hocVienId: hv.id, khoaId: khoa.id, hocPhanId: hp.id } });
+    await expect(suaHocPhan(hp.id, { ten: "A", soTiet: 6, lyDo: "x" })).rejects.toThrow(/không đổi được số tiết/);
+    expect((await suaHocPhan(hp.id, { ten: "A mới", soTiet: 5, lyDo: "Đổi tên" })).ten).toBe("A mới");
+    await expect(xoaHocPhan(hp.id, "x")).rejects.toThrow(/kết quả học tập/);
   });
 });

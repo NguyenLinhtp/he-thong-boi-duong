@@ -1,5 +1,6 @@
 "use server";
 
+import { luuMauDonKhoa, MauInKhongHopLeError } from "@/server/services/chung/mau-in";
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/guard";
 import { phanCongGiangVien } from "@/server/services/kh/kh-02-phan-cong-giang-vien";
@@ -21,7 +22,6 @@ import { importDanhSachHocVien } from "@/server/services/hv/hv-03-import-danh-sa
 import { thamDinhHoSo, tuChoiHoSoThieuMinhChung, type KetQuaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
 import { luuCauHinhKhoa } from "@/server/services/hv/form-dang-ky";
 import { CauHinhFormKhongHopLeError } from "@/server/services/hv/loi-hoc-vien";
-import { xetDuyetDanhSachChinhThuc } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
 import {
   themHocVienVaoKhoa,
   xoaHocVienKhoiKhoa,
@@ -261,25 +261,6 @@ export async function importDanhSachAction(
   }
 }
 
-export async function xetDuyetDanhSachChinhThucAction(
-  _prevState: string | undefined,
-  formData: FormData,
-): Promise<string | undefined> {
-  const phien = await requirePermission("HV-07");
-  const khoaId = String(formData.get("khoaId"));
-  const dsDangKyId = formData.getAll("dangKyId") as string[];
-
-  try {
-    await xetDuyetDanhSachChinhThuc(khoaId, dsDangKyId, nguoiTuPhien(phien));
-  } catch (error) {
-    if (error instanceof Error) return error.message;
-    throw error;
-  }
-
-  lamMoiKhoa(khoaId);
-  return undefined;
-}
-
 export async function themHocVienVaoKhoaAction(
   _prevState: string | undefined,
   formData: FormData,
@@ -377,6 +358,19 @@ export async function luuFormDangKyKhoaAction(khoaId: string, cauHinhJson: strin
     await luuCauHinhKhoa(khoaId, cauHinhJson === null ? null : JSON.parse(cauHinhJson), nguoiTuPhien(phien));
   } catch (error) {
     if (error instanceof CauHinhFormKhongHopLeError || error instanceof SyntaxError) return error.message;
+    throw error;
+  }
+  lamMoiKhoa(khoaId);
+  return undefined;
+}
+
+// (bổ sung 07/10/2026) mẫu đơn đăng ký riêng của khóa (null = dùng lại mẫu của chương trình) - cùng quyền sửa form đăng ký của khóa
+export async function luuMauDonKhoaAction(khoaId: string, json: string | null): Promise<string | undefined> {
+  const phien = await requirePermission("KH-06");
+  try {
+    await luuMauDonKhoa(khoaId, json === null ? null : JSON.parse(json), nguoiTuPhien(phien));
+  } catch (error) {
+    if (error instanceof MauInKhongHopLeError || error instanceof SyntaxError) return error.message;
     throw error;
   }
   lamMoiKhoa(khoaId);

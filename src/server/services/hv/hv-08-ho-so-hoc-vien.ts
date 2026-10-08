@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { KhongTimThayHocVienError, CccdTrungError, NgoaiPhamViHoSoHocVienError } from "@/server/services/hv/loi-hoc-vien";
+import { KhongTimThayHocVienError, CccdTrungError, NgoaiPhamViHoSoHocVienError, ThongTinDangKyKhongHopLeError } from "@/server/services/hv/loi-hoc-vien";
+import { chuanHoaEmail, laEmailHopLe } from "@/lib/email";
 import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
 
 /**
@@ -107,6 +108,12 @@ export async function capNhatHoSoHocVien(id: string, input: CapNhatHoSoHocVienIn
     if (doiHoTen || doiCccd) {
       throw new NgoaiPhamViHoSoHocVienError("Học viên không tự đổi họ tên/số CCCD - liên hệ cán bộ quản lý đào tạo");
     }
+  }
+
+  // (bổ sung 08/10/2026) email đúng định dạng, lưu viết thường
+  if (input.email !== undefined) {
+    input = { ...input, email: chuanHoaEmail(input.email) || null };
+    if (input.email && !laEmailHopLe(input.email)) throw new ThongTinDangKyKhongHopLeError("Email chưa đúng định dạng (ví dụ: ten@gmail.com)");
   }
 
   if (input.soCCCD && input.soCCCD !== hocVien.soCCCD) {

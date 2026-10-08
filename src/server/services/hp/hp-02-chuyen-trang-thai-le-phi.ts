@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { xacNhanThanhToan } from "@/server/services/hp/hp-02-thanh-toan";
-import { ghiNhanThanhPhan, huyGhiNhanThanhPhan } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
+import { ghiNhanCacThanhPhan, ghiNhanThanhPhan, huyGhiNhanCacThanhPhan } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
 import { khoaDaPheDuyetKetQua } from "@/server/services/kq/dung-chung";
 import { ghiThaoTac, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import {
@@ -90,24 +90,22 @@ export async function chuyenTrangThaiLePhi(
     // cùng khóa tư vấn với HP-02 để không chạy song song với 1 lần ghi nhận
     await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, `HP02:${hocPhiId}`);
     if (hocPhi.thanhPhans.length > 0) {
-      // hủy 1 thành phần, hoặc mọi thành phần đã có tiền
+      // hủy 1 thành phần, hoặc mọi thành phần đã có tiền (1 lần - biên lai nhiều phần không bị lập lại rồi hủy tiếp)
       const dsHuy = dong ? [dong] : hocPhi.thanhPhans.filter((d) => Number(d.soTienDaNop) > 0 || d.trangThai === "DA_NOP_DU");
-      const kq = [];
-      for (const d of dsHuy) kq.push(await huyGhiNhanThanhPhan(tx, d.id, lyDoGon, nguoi));
+      const kq = await huyGhiNhanCacThanhPhan(tx, dsHuy.map((d) => d.id), lyDoGon, nguoi);
       if (traVeHopLe) await tx.dangKyHoc.update({ where: { id: dangKy.id }, data: { trangThai: "HOP_LE" } });
-      const phieuDaHuy = kq.flatMap((k) => k.phieuDaHuy);
       await ghiThaoTac(
         nguoi,
         "HUY_GHI_NHAN_THANH_TOAN",
         "HocPhi",
         hocPhiId,
-        `Hủy ghi nhận ${kq.map((k) => `${k.thanhPhan.ten} ${k.tongHuy.toLocaleString("vi-VN")}đ`).join(", ")}; phiếu thu hủy: ${
-          phieuDaHuy.join(", ") || "không có"
-        }${traVeHopLe ? "; hồ sơ Chính thức -> Hợp lệ" : ""}. Lý do: ${lyDoGon}`,
+        `Hủy ghi nhận ${kq.dsThanhPhan.map((t) => t.ten).join(", ")} (${kq.tongHuy.toLocaleString("vi-VN")}đ); biên lai hủy: ${
+          kq.phieuDaHuy.join(", ") || "không có"
+        }${kq.phieuThayThe.length > 0 ? `; lập biên lai thay thế: ${kq.phieuThayThe.join(", ")}` : ""}${traVeHopLe ? "; hồ sơ Chính thức -> Hợp lệ" : ""}. Lý do: ${lyDoGon}`,
         tx,
       );
       const hocPhiSau = await tx.hocPhi.findUniqueOrThrow({ where: { id: hocPhiId } });
-      return { hocPhi: hocPhiSau, phieuDaHuy, traVeHopLe };
+      return { hocPhi: hocPhiSau, phieuDaHuy: kq.phieuDaHuy, phieuThayThe: kq.phieuThayThe, traVeHopLe };
     }
     const dsPhieu = await tx.phieuThu.findMany({ where: { hocPhiId, daHuy: false }, orderBy: { soPhieu: "asc" } });
     await tx.phieuThu.updateMany({
@@ -133,5 +131,24 @@ export async function chuyenTrangThaiLePhi(
       tx,
     );
     return { hocPhi: hocPhiSau, phieuDaHuy: dsPhieu.map((p) => p.soPhieu), traVeHopLe };
+  });
+}
+
+/**
+ * (bổ sung 07/10/2026 - HP-02) Xác nhận Đã đóng nhiều thành phần của 1 thí sinh trong cùng 1 lần
+ * (vd. thao tác hàng loạt "tất cả phần", tệp đối soát ghi Đã đóng nhiều cột): lập chung 1 biên lai.
+ * Thành phần đã đóng đủ/miễn giảm bị bỏ qua; không còn phần nào thì báo lỗi.
+ */
+export async function xacNhanCacThanhPhan(hocPhiId: string, dsHocPhiThanhPhanId: string[], nguoi: NguoiThucHien, hinhThucNop = HINH_THUC_TREN_DANH_SACH) {
+  const hocPhi = await prisma.hocPhi.findUnique({ where: { id: hocPhiId }, include: { thanhPhans: { include: { thanhPhan: true } } } });
+  if (!hocPhi) throw new KhongTimThayHocPhiError();
+  if (QUA_DVLK.includes(hocPhi.trangThai)) throw new HocPhiQuaDonViLienKetError();
+  const chon = hocPhi.thanhPhans.filter((d) => dsHocPhiThanhPhanId.includes(d.id));
+  if (chon.length !== new Set(dsHocPhiThanhPhanId).size) throw new ChuyenTrangThaiLePhiKhongHopLeError("thành phần không thuộc khoản lệ phí của thí sinh");
+  const canGhi = chon.filter((d) => d.trangThai !== "DA_NOP_DU" && d.trangThai !== "MIEN_GIAM" && Number(d.soTienPhaiNop) > Number(d.soTienDaNop));
+  if (canGhi.length === 0) throw new ChuyenTrangThaiLePhiKhongHopLeError("các phần đã chọn đã đóng đủ hoặc miễn giảm");
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, `HP02:${hocPhiId}`);
+    return ghiNhanCacThanhPhan(tx, canGhi.map((d) => ({ hocPhiThanhPhanId: d.id, soTien: null })), hinhThucNop, nguoi);
   });
 }

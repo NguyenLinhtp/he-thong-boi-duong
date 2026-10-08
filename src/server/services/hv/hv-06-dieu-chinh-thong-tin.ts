@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db/prisma";
 import type { MucBoSung, TruongForm } from "@/lib/form-dang-ky";
 import { cauHinhHieuLuc } from "@/server/services/hv/form-dang-ky";
-import { chuanHoaCCCD } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
+import { chuanHoaSoDinhDanh } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
+import { chuanHoaEmail, laEmailHopLe } from "@/lib/email";
 import { chuanHoaSoDienThoai } from "@/server/services/hv/hv-05-dang-ky-du-thi";
 import { khoaDaPheDuyetKetQua } from "@/server/services/kq/dung-chung";
 import { ghiThaoTac, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
@@ -60,12 +61,13 @@ export async function dieuChinhThongTinThiSinh(dangKyId: string, input: DieuChin
 
   const hoTen = input.hoTen.trim().replace(/\s+/g, " ");
   if (!hoTen) throw loi("họ tên không được để trống");
-  const soCCCD = chuanHoaCCCD(input.soCCCD.trim());
-  if (!soCCCD) throw loi("số CCCD không hợp lệ (12 số hoặc CMND 9 số)");
+  // (sửa 07/10/2026) nhận cả số hộ chiếu của thí sinh nước ngoài
+  const soCCCD = chuanHoaSoDinhDanh(input.soCCCD);
+  if (!soCCCD) throw loi("chưa nhập số CCCD/hộ chiếu");
   const ngaySinh = input.ngaySinh?.trim() || null;
   if (ngaySinh && Number.isNaN(Date.parse(ngaySinh))) throw loi("ngày sinh không hợp lệ");
-  const email = input.email?.trim() || null;
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw loi("email không hợp lệ");
+  const email = chuanHoaEmail(input.email) || null;
+  if (email && !laEmailHopLe(email)) throw loi("email chưa đúng định dạng (ví dụ: ten@gmail.com)");
   let soDienThoaiXacThuc = dangKy.soDienThoaiXacThuc;
   if (laDuThi) {
     soDienThoaiXacThuc = chuanHoaSoDienThoai(input.soDienThoaiXacThuc);

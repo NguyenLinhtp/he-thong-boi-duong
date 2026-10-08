@@ -37,6 +37,11 @@ const SAC_THAI: Record<string, SacThai> = {
   MIEN_GIAM: "tot",
   CHO_THANH_LY_HOP_DONG: "dang-xu-ly",
   DA_HOAN_TAT: "tot",
+  // giao dịch ngân hàng (HP-02, bổ sung 08/10/2026)
+  DA_GHI_NHAN: "tot",
+  THUA_TIEN: "can-chu-y",
+  CAN_XU_LY: "loi",
+  DA_XU_LY: "trung-tinh",
   // hợp đồng / đơn vị liên kết
   DANG_TRIEN_KHAI: "dang-xu-ly",
   DA_THANH_LY: "tot",

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
+import { OChon } from "@/components/chung/chon-nhieu";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
   CHUA_NOP: "Chưa nộp",
@@ -38,12 +39,15 @@ export function HangHocPhi({
   choPhepThanhToan,
   choPhepCongNo,
   choPhepBoQua,
+  coChon = false,
 }: {
   khoaId: string;
   hocPhi: HocPhiDong;
   choPhepThanhToan: boolean;
   choPhepCongNo: boolean;
   choPhepBoQua: boolean;
+  // (bổ sung 07/10/2026) cột chọn nhiều để thao tác hàng loạt
+  coChon?: boolean;
 }) {
   const [moThanhToan, setMoThanhToan] = useState(false);
   const [moHanNop, setMoHanNop] = useState(false);
@@ -58,10 +62,16 @@ export function HangHocPhi({
 
   const quaDvlk = hocPhi.trangThai === "CHO_THANH_LY_HOP_DONG" || hocPhi.trangThai === "DA_HOAN_TAT";
   const conNo = hocPhi.trangThai === "CHUA_NOP" || hocPhi.trangThai === "CON_NO";
+  const soCot = coChon ? 7 : 6;
 
   return (
     <>
       <TableRow>
+        {coChon && (
+          <TableCell className="w-8">
+            <OChon id={hocPhi.id} nhan={hocPhi.hoTen} />
+          </TableCell>
+        )}
         <TableCell>{hocPhi.hoTen}</TableCell>
         <TableCell>{hocPhi.soTienPhaiNop.toLocaleString("vi-VN")}đ</TableCell>
         <TableCell>{hocPhi.soTienDaNop.toLocaleString("vi-VN")}đ</TableCell>
@@ -110,14 +120,14 @@ export function HangHocPhi({
       </TableRow>
       {(loiThanhToan || loiHanNop || loiBoQua) && (
         <TableRow>
-          <TableCell colSpan={6} className="text-xs text-destructive">
+          <TableCell colSpan={soCot} className="text-xs text-destructive">
             {loiThanhToan || loiHanNop || loiBoQua}
           </TableCell>
         </TableRow>
       )}
       {moThanhToan && (
         <TableRow>
-          <TableCell colSpan={6}>
+          <TableCell colSpan={soCot}>
             <form action={thanhToanAction} className="flex flex-wrap items-end gap-2 py-2">
               <input type="hidden" name="hocPhiId" value={hocPhi.id} />
               <input type="hidden" name="khoaId" value={khoaId} />
@@ -136,7 +146,7 @@ export function HangHocPhi({
       )}
       {moHanNop && (
         <TableRow>
-          <TableCell colSpan={6}>
+          <TableCell colSpan={soCot}>
             <form action={hanNopAction} className="flex flex-wrap items-end gap-2 py-2">
               <input type="hidden" name="hocPhiId" value={hocPhi.id} />
               <input type="hidden" name="khoaId" value={khoaId} />
@@ -150,7 +160,7 @@ export function HangHocPhi({
       )}
       {moBoQua && (
         <TableRow>
-          <TableCell colSpan={6}>
+          <TableCell colSpan={soCot}>
             <form
               action={boQuaAction}
               className="flex flex-wrap items-end gap-2 py-2"

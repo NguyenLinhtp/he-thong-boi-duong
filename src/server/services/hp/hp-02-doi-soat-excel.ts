@@ -2,7 +2,7 @@ import ExcelJS from "exceljs";
 import { prisma } from "@/lib/db/prisma";
 import { MA_TEP_NOP_PHI } from "@/lib/form-dang-ky";
 import { khopTuKhoa } from "@/lib/tim-kiem";
-import { dsThanhPhanLePhi, ghiNhanThanhPhan } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
+import { dsThanhPhanLePhi, ghiNhanCacThanhPhan } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
 import { lePhiDaXacNhan } from "@/server/services/hp/thanh-phan-le-phi-chung";
 import { dieuKienChiemCho } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { xacNhanThanhToan } from "@/server/services/hp/hp-02-thanh-toan";
@@ -294,12 +294,16 @@ async function nhapTheoThanhPhan(
   if (loi.length > 0) throw new DuLieuImportLoiError(loi);
 
   const hinhThuc = `Chuyển khoản (đối soát Excel ${tenTep})`.slice(0, 120);
-  for (const { d, dongTp, ten } of canGhi) {
+  // (sửa 07/10/2026) các phần Đã đóng của cùng 1 thí sinh trong tệp -> 1 biên lai chung
+  const theoThiSinh = new Map<string, typeof canGhi>();
+  for (const c of canGhi) theoThiSinh.set(c.d.hocPhi!.id, [...(theoThiSinh.get(c.d.hocPhi!.id) ?? []), c]);
+  for (const [hocPhiId, ds] of theoThiSinh) {
+    const { d } = ds[0];
     const { phieuThu } = await prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, `HP02:${d.hocPhi!.id}`);
-      return ghiNhanThanhPhan(tx, dongTp.id, null, hinhThuc, nguoi);
+      await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, `HP02:${hocPhiId}`);
+      return ghiNhanCacThanhPhan(tx, ds.map((c) => ({ hocPhiThanhPhanId: c.dongTp.id, soTien: null })), hinhThuc, nguoi);
     });
-    kq.daGhiNhan.push({ maHoSo: d.hocVien.maHocVien, hoTen: `${d.hocVien.hoTen} - ${ten}`, soTien: Number(phieuThu.soTien), soPhieu: phieuThu.soPhieu });
+    kq.daGhiNhan.push({ maHoSo: d.hocVien.maHocVien, hoTen: `${d.hocVien.hoTen} - ${ds.map((c) => c.ten).join(", ")}`, soTien: Number(phieuThu.soTien), soPhieu: phieuThu.soPhieu });
   }
   return kq;
 }

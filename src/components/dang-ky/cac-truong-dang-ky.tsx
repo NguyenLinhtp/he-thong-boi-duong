@@ -3,7 +3,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChonTep } from "@/components/chung/chon-tep";
-import { DUOI_MINH_CHUNG, tenInput, type TruongForm } from "@/lib/form-dang-ky";
+import { DUOI_MINH_CHUNG, laTruongEmail, tenInput, type TruongForm } from "@/lib/form-dang-ky";
+import { OEmail } from "@/components/chung/o-email";
 import { cn } from "@/lib/utils";
 
 export type GiaTriBanDau = Record<string, string>;
@@ -98,6 +99,9 @@ export function CacTruongDangKy({
                 ))}
               </select>
             );
+          } else if (laTruongEmail(t) && !t.coDinh) {
+            // (bổ sung 08/10/2026) báo lỗi ngay tại ô khi email chưa đúng định dạng
+            o = <OEmail id={id} name={ten} required={t.batBuoc} defaultValue={banDau} />;
           } else {
             o = (
               <Input

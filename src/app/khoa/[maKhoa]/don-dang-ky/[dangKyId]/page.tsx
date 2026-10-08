@@ -2,13 +2,15 @@ import { notFound } from "next/navigation";
 import { layDangKy } from "@/server/services/hv/hv-01-dang-ky-truc-tuyen";
 import { hoSoBoSung } from "@/server/services/hv/form-dang-ky";
 import { thongTinLePhiDuThi } from "@/server/services/hv/hv-05-dang-ky-du-thi";
-import { layThamSo } from "@/server/services/qt/qt-05-tham-so";
 import { MA_TEP_NOP_PHI } from "@/lib/form-dang-ky";
-import { dinhDangNgay, dinhDangTien } from "@/lib/dinh-dang";
+import { dinhDangTien } from "@/lib/dinh-dang";
 import { NutIn } from "./nut-in";
 import { FormMinhChungLePhi } from "./form-minh-chung";
+import { TuCapNhatLePhi } from "./tu-cap-nhat-le-phi";
 import { FormDoiThanhPhan } from "./form-doi-thanh-phan";
 import { prisma } from "@/lib/db/prisma";
+import { bienCuaKhoa, mauDonHieuLuc } from "@/server/services/chung/mau-in";
+import { BanInDonDangKy, type DuLieuDonDangKy } from "@/components/mau-in/ban-in-don-dang-ky";
 
 export default async function TrangDonDangKy({
   params,
@@ -36,33 +38,59 @@ export default async function TrangDonDangKy({
   const laDuThi = dangKy.khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
   const hv = dangKy.hocVien;
 
-  const thongTinBoSung = (
-    <>
-      {boSung.thongTin.map((m) => (
-        <p key={m.ma}>
-          {m.nhan}: {m.kieu === "NGAY" ? new Date(m.giaTri).toLocaleDateString("vi-VN") : m.giaTri}
-        </p>
-      ))}
-      {tepHoSo.length > 0 && (
-        <div className="mt-2">
-          <p>Minh chứng đã nộp kèm:</p>
-          <ul className="list-disc pl-5">
-            {tepHoSo.map((t) => (
-              <li key={t.id}>
-                {t.nhan}: {t.tenFile}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </>
+  // (bổ sung 07/10/2026) đơn in theo mẫu đơn của khóa/chương trình
+  const [mauDon, lePhi] = await Promise.all([mauDonHieuLuc(dangKy.khoaId), laDuThi ? thongTinLePhiDuThi(dangKy.id) : Promise.resolve(null)]);
+  const bien = await bienCuaKhoa(mauDon.khoa);
+  const ngay = (d: Date | string | null) => (d ? new Date(d).toLocaleDateString("vi-VN") : "");
+  const bangPhi: DuLieuDonDangKy["bangPhi"] = dangKy.hopDongLienKet
+    ? null // hồ sơ qua đơn vị liên kết: không in học phí cá nhân
+    : laDuThi
+      ? lePhi
+        ? lePhi.thanhPhan
+          ? lePhi.thanhPhan.ds.filter((t) => t.daChon).map((t) => ({ noiDung: t.ten, soTien: t.muc }))
+          : [{ noiDung: "Lệ phí thi", soTien: lePhi.soTienPhaiNop }]
+        : null
+      : dangKy.khoa.mucHocPhi
+        ? [{ noiDung: "Học phí khóa bồi dưỡng", soTien: Number(dangKy.khoa.mucHocPhi) }]
+        : null;
+  const duLieuDon: DuLieuDonDangKy = {
+    laDuThi,
+    thongTin: [
+      { nhan: "Họ và tên", giaTri: hv.hoTen, rong: true },
+      { nhan: "Ngày sinh", giaTri: ngay(hv.ngaySinh) },
+      { nhan: "Số CCCD", giaTri: hv.soCCCD ?? "" },
+      ...(laDuThi
+        ? hv.maSinhVien
+          ? [
+              { nhan: "Mã sinh viên", giaTri: hv.maSinhVien },
+              { nhan: "Lớp sinh hoạt", giaTri: hv.lopSinhHoat ?? "" },
+            ]
+          : [{ nhan: "Đối tượng", giaTri: "Thí sinh tự do" }]
+        : []),
+      { nhan: "Điện thoại", giaTri: hv.soDienThoai ?? "" },
+      { nhan: "Email", giaTri: hv.email ?? "" },
+      ...(!laDuThi ? [{ nhan: "Đơn vị công tác", giaTri: hv.donViCongTac ?? "", rong: true }] : []),
+      ...(chucDanh ? [{ nhan: "Chức danh, học hàm/học vị", giaTri: chucDanh.ten, rong: true }] : []),
+      ...boSung.thongTin.map((m) => ({ nhan: m.nhan, giaTri: m.kieu === "NGAY" ? ngay(m.giaTri) : m.giaTri })),
+    ],
+    tepMinhChung: tepHoSo.map((t) => ({ nhan: t.nhan, tenFile: t.tenFile })),
+    bangPhi,
+    donViLienKet: dangKy.hopDongLienKet
+      ? `${dangKy.hopDongLienKet.donViLienKet.ten}${dangKy.hopDongLienKet.donViLienKet.diaChi ? ` (${dangKy.hopDongLienKet.donViLienKet.diaChi})` : ""}`
+      : null,
+    maHoSo: hv.maHocVien,
+    ngayDangKy: ngay(dangKy.ngayDangKy),
+    hoTen: hv.hoTen,
+  };
+  const banIn = (
+    <div className="rounded-lg border print:border-0">
+      <BanInDonDangKy mau={mauDon.mau} bien={bien} duLieu={duLieuDon} />
+    </div>
   );
 
   if (laDuThi) {
-    const [lePhi, tenCoQuan] = await Promise.all([thongTinLePhiDuThi(dangKy.id), layThamSo("CC_TEN_CO_QUAN_CAP")]);
-    const homNay = new Date();
     return (
-      <main className="mx-auto flex max-w-2xl flex-col gap-4 p-6">
+      <main className="mx-auto flex max-w-3xl flex-col gap-4 p-6 print:max-w-none print:p-0">
         <div className="flex flex-col gap-4 print:hidden">
           <p className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
             {daDangKy
@@ -100,6 +128,14 @@ export default async function TrangDonDangKy({
                       ))}
                   </ul>
                 ))}
+              {lePhi.giaoDichGanNhat && (
+                <p className="text-sm">
+                  Đã nhận chuyển khoản {dinhDangTien(lePhi.giaoDichGanNhat.soTien)} lúc{" "}
+                  {lePhi.giaoDichGanNhat.luc.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })} - biên lai số{" "}
+                  <b>{lePhi.giaoDichGanNhat.soPhieuThu}</b>.
+                  {lePhi.giaoDichGanNhat.thua && " Bạn đã chuyển thừa so với lệ phí - nhà trường sẽ liên hệ hoàn trả phần thừa."}
+                </p>
+              )}
               {lePhi.daXong ? (
                 <p className="rounded-lg bg-success/10 p-3 text-sm text-success">Nhà trường đã xác nhận bạn đã nộp lệ phí thi.</p>
               ) : (
@@ -133,10 +169,22 @@ export default async function TrangDonDangKy({
                       khoản ghi nội dung: <b className="font-mono">{lePhi.noiDung}</b>
                     </p>
                   )}
-                  <p className="text-sm text-muted-foreground">
-                    Quét mã QR bằng ứng dụng ngân hàng (tự điền số tài khoản, số tiền, nội dung). Sau khi chuyển khoản, tải lên
-                    ảnh chụp/biên lai giao dịch để nhà trường đối soát. Danh sách chính thức chỉ gồm thí sinh đã được xác nhận lệ phí.
-                  </p>
+                  {lePhi.tuDongDoiSoat && lePhi.nganHang ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Quét mã QR bằng ứng dụng ngân hàng (tự điền số tài khoản, số tiền, nội dung) và giữ nguyên nội dung chuyển
+                        khoản: hệ thống tự xác nhận lệ phí và lập biên lai trong vài phút sau khi tiền về tài khoản nhà trường, không
+                        cần nộp minh chứng. Chỉ khi quá 30 phút chưa được xác nhận (hoặc đã chuyển sai nội dung) mới cần tải lên
+                        ảnh chụp giao dịch bên dưới. Danh sách chính thức chỉ gồm thí sinh đã được xác nhận lệ phí.
+                      </p>
+                      <TuCapNhatLePhi />
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Quét mã QR bằng ứng dụng ngân hàng (tự điền số tài khoản, số tiền, nội dung). Sau khi chuyển khoản, tải lên
+                      ảnh chụp/biên lai giao dịch để nhà trường đối soát. Danh sách chính thức chỉ gồm thí sinh đã được xác nhận lệ phí.
+                    </p>
+                  )}
                   {lePhi.minhChung && (
                     <p className="text-sm">
                       Đã nộp minh chứng: <b>{lePhi.minhChung.tenFile}</b> lúc {lePhi.minhChung.taiLenLuc.toLocaleString("vi-VN")} - đang
@@ -151,111 +199,23 @@ export default async function TrangDonDangKy({
           <NutIn />
         </div>
 
-        <article className="rounded-lg border bg-white p-8 text-sm leading-relaxed text-black">
-          <div className="grid grid-cols-2 gap-4 text-center text-xs">
-            <p className="font-bold uppercase">{tenCoQuan ?? "Cơ sở đào tạo, bồi dưỡng"}</p>
-            <p>
-              <b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b>
-              <br />
-              <span className="underline underline-offset-4">Độc lập - Tự do - Hạnh phúc</span>
-            </p>
-          </div>
-          <h1 className="mt-6 text-center text-lg font-bold uppercase">Đơn đăng ký dự thi</h1>
-          <p className="text-center font-semibold uppercase">{dangKy.khoa.tenKhoa ?? dangKy.khoa.chuongTrinh.ten}</p>
-          <p className="mt-4">Kính gửi: {tenCoQuan ?? "Phòng/Trung tâm bồi dưỡng"}</p>
-          <div className="mt-2 grid grid-cols-2 gap-x-4">
-            <p>Họ và tên: <b>{hv.hoTen}</b></p>
-            {hv.maSinhVien ? <p>Mã sinh viên: {hv.maSinhVien}</p> : <p>Đối tượng: Thí sinh tự do</p>}
-            <p>Số CCCD: {hv.soCCCD ?? "—"}</p>
-            {hv.maSinhVien && <p>Lớp sinh hoạt: {hv.lopSinhHoat ?? "—"}</p>}
-            {hv.ngaySinh && <p>Ngày sinh: {dinhDangNgay(hv.ngaySinh)}</p>}
-            {hv.soDienThoai && <p>Điện thoại: {hv.soDienThoai}</p>}
-            {hv.email && <p className="col-span-2">Email: {hv.email}</p>}
-          </div>
-          {thongTinBoSung}
-          <p className="mt-3">
-            Đăng ký dự thi: <b>{dangKy.khoa.tenKhoa ?? dangKy.khoa.chuongTrinh.ten}</b> - đợt thi <b>{dangKy.khoa.maKhoa}</b>
-            {dangKy.khoa.thoiGianKhaiGiang && <>, ngày thi dự kiến {dinhDangNgay(dangKy.khoa.thoiGianKhaiGiang)}</>}.
-          </p>
-          {lePhi && (
-            <p>
-              Lệ phí thi: {dinhDangTien(lePhi.soTienPhaiNop)}
-              {lePhi.thanhPhan &&
-                ` (${lePhi.thanhPhan.ds
-                  .filter((t) => t.daChon)
-                  .map((t) => `${t.ten}: ${dinhDangTien(t.muc)}`)
-                  .join("; ")})`}
-              .
-            </p>
-          )}
-          <p>Mã hồ sơ: {hv.maHocVien} · Ngày đăng ký: {dinhDangNgay(dangKy.ngayDangKy)}</p>
-          <p className="mt-3">
-            Tôi xin cam đoan những thông tin trên là đúng sự thật và chấp hành nghiêm túc quy chế thi của nhà trường.
-          </p>
-          <div className="mt-6 grid grid-cols-2 text-center">
-            <span />
-            <div>
-              <p className="italic">
-                ......, ngày {homNay.getDate()} tháng {homNay.getMonth() + 1} năm {homNay.getFullYear()}
-              </p>
-              <p className="font-bold">Người làm đơn</p>
-              <p className="italic">(Ký và ghi rõ họ tên)</p>
-              <p className="mt-16 font-semibold">{hv.hoTen}</p>
-            </div>
-          </div>
-        </article>
+        {banIn}
       </main>
     );
   }
 
   return (
-    <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+    <main className="mx-auto flex max-w-3xl flex-col gap-4 p-6 print:max-w-none print:p-0">
       <div className="print:hidden">
         <p className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
-          Đăng ký thành công! Vui lòng in đơn này, ký tên và nộp bản giấy về trung tâm/phòng bồi
-          dưỡng theo thời hạn quy định.
+          Đăng ký thành công! Vui lòng in đơn này, ký tên và nộp bản giấy về{" "}
+          {dangKy.hopDongLienKet ? `đơn vị liên kết ${dangKy.hopDongLienKet.donViLienKet.ten}` : "trung tâm/phòng bồi dưỡng"} theo thời hạn
+          quy định.
         </p>
         <NutIn />
       </div>
 
-      <article className="rounded-lg border p-6 text-sm">
-        <h1 className="text-center text-lg font-semibold uppercase">Đơn đăng ký khóa bồi dưỡng</h1>
-        <p className="mt-4">Kính gửi: Phòng/Trung tâm bồi dưỡng</p>
-        <p className="mt-2">Tôi tên là: {hv.hoTen}</p>
-        <p>Số CCCD: {hv.soCCCD ?? "—"}</p>
-        <p>
-          Ngày sinh:{" "}
-          {hv.ngaySinh
-            ? new Date(hv.ngaySinh).toLocaleDateString("vi-VN")
-            : "—"}
-        </p>
-        <p>Số điện thoại: {hv.soDienThoai ?? "—"}</p>
-        <p>Email: {hv.email ?? "—"}</p>
-        <p>Đơn vị công tác: {hv.donViCongTac ?? "—"}</p>
-        {chucDanh && <p>Chức danh, học hàm/học vị: {chucDanh.ten}</p>}
-        {thongTinBoSung}
-        <p className="mt-4">
-          Đăng ký tham gia khóa bồi dưỡng: <strong>{dangKy.khoa.tenKhoa ?? dangKy.khoa.chuongTrinh.ten}</strong>
-        </p>
-        <p>Mã khóa: {dangKy.khoa.maKhoa}</p>
-        <p>Mã học viên: {hv.maHocVien}</p>
-        <p>Ngày đăng ký: {new Date(dangKy.ngayDangKy).toLocaleDateString("vi-VN")}</p>
-        {dangKy.hopDongLienKet && (
-          <p className="mt-2">
-            Đơn vị liên kết thu hồ sơ: <strong>{dangKy.hopDongLienKet.donViLienKet.ten}</strong>
-            {dangKy.hopDongLienKet.donViLienKet.diaChi &&
-              ` (${dangKy.hopDongLienKet.donViLienKet.diaChi})`}
-          </p>
-        )}
-        <p className="mt-4 italic">
-          Trạng thái: Đã đăng ký online - chờ nộp bản giấy về{" "}
-          {dangKy.hopDongLienKet
-            ? `đơn vị liên kết ${dangKy.hopDongLienKet.donViLienKet.ten}`
-            : "trung tâm/phòng bồi dưỡng"}
-          .
-        </p>
-        <p className="mt-8 text-right">Người đăng ký ký tên</p>
-      </article>
+      {banIn}
     </main>
   );
 }

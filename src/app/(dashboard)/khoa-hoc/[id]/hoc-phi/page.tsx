@@ -34,6 +34,8 @@ import { dsThanhPhanLePhi } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
 import { dinhDangTien } from "@/lib/dinh-dang";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { KhungChonNhieu, OChon, OChonTatCa, type HanhDongLo } from "@/components/chung/chon-nhieu";
+import { boQuaDieuKienLoAction, chuyenLePhiLoAction, datHanNopLoAction, mienGiamLoAction, nhacNoLoAction } from "./actions-lo";
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -68,13 +70,14 @@ export default async function HocPhiKhoaPage({
 
   const laDuThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
   const theoDoiTuong = await apDungLePhiTuDo(khoa.id);
-  const [dsHocPhi, dsPhieuThu, choPhepThanhToan, choPhepCongNo, choPhepXetDuyet, bangLePhi] = await Promise.all([
+  const [dsHocPhi, dsPhieuThu, choPhepThanhToan, choPhepCongNo, choPhepXetDuyet, bangLePhi, choPhepInPhieu] = await Promise.all([
     hocPhiCuaKhoa(id),
     danhSachPhieuThu(id),
     coQuyen("HP-02"),
     coQuyen("HP-03"),
     coQuyen("HV-07"),
     laDuThi ? bangDoiSoatLePhi(id) : Promise.resolve([]),
+    coQuyen("HP-04"),
   ]);
   // (bổ sung 06/10/2026) thành phần lệ phí của khóa dự thi (vd. ôn thi, thi)
   const dsThanhPhan = laDuThi ? await dsThanhPhanLePhi(id) : [];
@@ -110,6 +113,68 @@ export default async function HocPhiKhoaPage({
   ].filter((t) => t.hien);
   const muc = dsTab.find((t) => t.ma === thamSo.muc)?.ma ?? dsTab[0].ma;
 
+  // (bổ sung 07/10/2026) chọn nhiều thí sinh/khoản + thao tác hàng loạt
+  const chonPhan = dsThanhPhan.length > 0
+    ? [{ ten: "thanhPhanId", nhan: "Phần lệ phí", loai: "select" as const, ds: [{ gt: "", nhan: "Tất cả phần thí sinh đã đăng ký" }, ...dsThanhPhan.map((t) => ({ gt: t.id, nhan: t.ten }))] }]
+    : [];
+  const hdDoiSoat: HanhDongLo[] = choPhepThanhToan
+    ? [
+        {
+          ma: "da-dong",
+          nhan: "Xác nhận Đã đóng",
+          truong: chonPhan.length > 0 ? chonPhan : undefined,
+          xacNhan: "Ghi nhận Đã đóng (lập phiếu thu cho số còn thiếu) cho các thí sinh đã chọn?",
+          thucHien: chuyenLePhiLoAction.bind(null, khoa.id, "DA_DONG"),
+        },
+        {
+          ma: "chua-dong",
+          nhan: "Chuyển Chưa đóng",
+          nguyHiem: true,
+          truong: [...chonPhan, { ten: "lyDo", nhan: "Lý do hủy ghi nhận", loai: "text", batBuoc: true }],
+          xacNhan: "Hủy ghi nhận đã đóng? Phiếu thu đã lập chuyển Đã hủy; thí sinh Chính thức có thể trả về Hợp lệ.",
+          thucHien: chuyenLePhiLoAction.bind(null, khoa.id, "CHUA_DONG"),
+        },
+      ]
+    : [];
+  const hdCongNo: HanhDongLo[] = [
+    ...(choPhepThanhToan
+      ? [
+          {
+            ma: "mien-giam",
+            nhan: "Miễn giảm",
+            truong: [{ ten: "lyDo", nhan: "Lý do", loai: "text" as const, goiY: "Mặc định: miễn giảm theo chính sách khóa" }],
+            xacNhan: "Xác nhận miễn giảm cho các khoản đã chọn?",
+            thucHien: mienGiamLoAction.bind(null, khoa.id),
+          },
+        ]
+      : []),
+    ...(choPhepCongNo
+      ? [
+          {
+            ma: "han-nop",
+            nhan: "Đặt hạn nộp",
+            truong: [{ ten: "hanNop", nhan: "Hạn nộp", loai: "date" as const, batBuoc: true }],
+            thucHien: datHanNopLoAction.bind(null, khoa.id),
+          },
+          { ma: "nhac-no", nhan: "Gửi nhắc nợ", xacNhan: "Gửi thông báo nhắc nộp cho các học viên đã chọn?", thucHien: nhacNoLoAction.bind(null, khoa.id) },
+        ]
+      : []),
+    ...(choPhepBoQua
+      ? [
+          {
+            ma: "bo-qua",
+            nhan: "Bỏ qua điều kiện",
+            nguyHiem: true,
+            truong: [{ ten: "lyDo", nhan: "Lý do (lãnh đạo phê duyệt)", loai: "text" as const, batBuoc: true }],
+            xacNhan: "Bỏ qua điều kiện học phí cho các học viên đã chọn?",
+            thucHien: boQuaDieuKienLoAction.bind(null, khoa.id),
+          },
+        ]
+      : []),
+  ];
+  const hdPhieuThu: HanhDongLo[] = choPhepInPhieu ? [{ ma: "in", nhan: "In các phiếu đã chọn", lienKet: "/hoc-phi/phieu-thu/in?ids=" }] : [];
+  const idHocPhi = (ds: typeof bangLePhi) => ds.flatMap((d) => (d.hocPhi ? [d.hocPhi.id] : []));
+
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
       <DauTrangKhoa khoa={khoa} dangChon="hoc-phi" />
@@ -143,10 +208,12 @@ export default async function HocPhiKhoaPage({
           </div>
           {trangLePhi.tuKhoa && trangLePhi.tongDong === 0 && <KhongKhop tuKhoa={trangLePhi.tuKhoa} />}
           {trangLePhi.tongDong > 0 && (
+            <KhungChonNhieu dsIdTrang={idHocPhi(trangLePhi.dsTrang)} dsIdTatCa={idHocPhi(trangLePhi.dsLoc)} hanhDong={hdDoiSoat}>
             <div className="overflow-x-auto rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {hdDoiSoat.length > 0 && <TableHead className="w-8"><OChonTatCa /></TableHead>}
                     <TableHead>Mã sinh viên</TableHead>
                     <TableHead>Họ tên</TableHead>
                     <TableHead>Lớp</TableHead>
@@ -170,6 +237,7 @@ export default async function HocPhiKhoaPage({
                 <TableBody>
                   {trangLePhi.dsTrang.map((d) => (
                     <TableRow key={d.dangKy.id}>
+                      {hdDoiSoat.length > 0 && <TableCell className="w-8">{d.hocPhi && <OChon id={d.hocPhi.id} nhan={d.hocVien.hoTen} />}</TableCell>}
                       <TableCell className="font-mono">{d.hocVien.maSinhVien ?? d.hocVien.maHocVien}</TableCell>
                       <TableCell>{d.hocVien.hoTen}</TableCell>
                       <TableCell>{d.hocVien.lopSinhHoat ?? "—"}</TableCell>
@@ -244,6 +312,7 @@ export default async function HocPhiKhoaPage({
                 </TableBody>
               </Table>
             </div>
+            </KhungChonNhieu>
           )}
           {thanhPhanTrang(trangLePhi)}
           {choPhepThanhToan && <FormDoiSoat khoaId={khoa.id} />}
@@ -334,9 +403,11 @@ export default async function HocPhiKhoaPage({
             {dsHocPhi.length > 0 && oTim(trangCongNo)}
           </div>
           {trangCongNo.tuKhoa && trangCongNo.tongDong === 0 && <KhongKhop tuKhoa={trangCongNo.tuKhoa} />}
+          <KhungChonNhieu dsIdTrang={trangCongNo.dsTrang.map((hp) => hp.id)} dsIdTatCa={trangCongNo.dsLoc.map((hp) => hp.id)} hanhDong={hdCongNo} donVi="học viên">
           <Table>
             <TableHeader>
               <TableRow>
+                {hdCongNo.length > 0 && <TableHead className="w-8"><OChonTatCa /></TableHead>}
                 <TableHead>Học viên</TableHead>
                 <TableHead>Phải nộp</TableHead>
                 <TableHead>Đã nộp</TableHead>
@@ -362,10 +433,12 @@ export default async function HocPhiKhoaPage({
                   choPhepThanhToan={choPhepThanhToan}
                   choPhepCongNo={choPhepCongNo}
                   choPhepBoQua={choPhepBoQua}
+                  coChon={hdCongNo.length > 0}
                 />
               ))}
             </TableBody>
           </Table>
+          </KhungChonNhieu>
           {thanhPhanTrang(trangCongNo)}
           {dsHocPhi.length === 0 && (
             <p className="text-sm text-muted-foreground">
@@ -384,9 +457,11 @@ export default async function HocPhiKhoaPage({
             {dsPhieuThu.length > 0 && oTim(trangPhieuThu, "Số phiếu / họ tên / mã SV / CCCD")}
           </div>
           {trangPhieuThu.tuKhoa && trangPhieuThu.tongDong === 0 && <KhongKhop tuKhoa={trangPhieuThu.tuKhoa} />}
+          <KhungChonNhieu dsIdTrang={trangPhieuThu.dsTrang.map((pt) => pt.id)} dsIdTatCa={trangPhieuThu.dsLoc.map((pt) => pt.id)} hanhDong={hdPhieuThu} donVi="phiếu">
           <Table>
             <TableHeader>
               <TableRow>
+                {hdPhieuThu.length > 0 && <TableHead className="w-8"><OChonTatCa /></TableHead>}
                 <TableHead>Số phiếu</TableHead>
                 <TableHead>Học viên</TableHead>
                 <TableHead>Số tiền</TableHead>
@@ -397,6 +472,7 @@ export default async function HocPhiKhoaPage({
             <TableBody>
               {trangPhieuThu.dsTrang.map((pt) => (
                 <TableRow key={pt.id} className={pt.daHuy ? "text-muted-foreground line-through" : undefined}>
+                  {hdPhieuThu.length > 0 && <TableCell className="w-8"><OChon id={pt.id} nhan={pt.soPhieu} /></TableCell>}
                   <TableCell className="font-mono">
                     {pt.soPhieu}
                     {pt.daHuy && <span className="ml-1 inline-block text-xs text-destructive no-underline">(Đã hủy)</span>}
@@ -413,6 +489,7 @@ export default async function HocPhiKhoaPage({
               ))}
             </TableBody>
           </Table>
+          </KhungChonNhieu>
           {thanhPhanTrang(trangPhieuThu)}
         </section>
       )}

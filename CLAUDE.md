@@ -34,6 +34,14 @@ Kế hoạch triển khai tổng thể (giai đoạn 0-4, quy trình lặp) nằ
 - Học viên đã có điểm/chứng chỉ không được xóa khỏi khóa (HV-09); không sửa điểm sau khi đã phê duyệt trừ khi có quyết định phúc khảo (KQ-04).
 - Cán bộ đơn vị liên kết không xem được học phí cá nhân học viên hay dữ liệu khóa/đơn vị khác.
 
+## Nhóm chương trình chỉ đăng ký dự thi (Phương thức 3) — đã chốt (08/10/2026)
+
+Toàn bộ luồng dự thi (CT-07 PT3, HV-03 danh sách sinh viên, HV-05, HV-06/HV-07 theo khóa dự thi, HP-01/HP-02/HP-04 lệ phí thi + thành phần lệ phí + biên lai, mẫu đơn dự thi, KQ-06) đã chốt ở tag git `du-thi-v1`. Khi phát triển nhóm chương trình có đào tạo bồi dưỡng (PT1, PT2, PT4):
+
+- Không đổi hành vi của khóa `CHI_DU_THI`; code dùng chung (form đăng ký, học phí, mẫu in, thao tác hàng loạt) phải rẽ nhánh theo phương thức thay vì sửa chung.
+- Chạy `npm run test:du-thi` trước khi commit — phải pass toàn bộ, không sửa test dự thi để cho pass (trừ khi người dùng yêu cầu đổi nghiệp vụ dự thi).
+- Thanh toán online (webhook ngân hàng HP-02) để hoàn thiện khi triển khai thật.
+
 ## 6 vai trò (RBAC)
 
 Quản trị hệ thống (Admin) · Cán bộ quản lý đào tạo · Cán bộ tài chính · Giảng viên · Học viên · Cán bộ đơn vị liên kết. Chi tiết quyền hạn: mục 3.3 `dac-ta-nghiep-vu.docx`. Middleware kiểm tra quyền phải tập trung 1 chỗ, áp dụng mọi route/API — không kiểm tra rải rác trong từng handler.

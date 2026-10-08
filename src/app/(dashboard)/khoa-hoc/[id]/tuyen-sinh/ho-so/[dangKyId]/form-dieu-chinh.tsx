@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { dieuChinhThongTinAction } from "../../actions";
+import { OEmail } from "@/components/chung/o-email";
 
 type TruongSua = { ma: string; nhan: string; kieu: string; batBuoc: boolean; luaChon: string[]; coDinh: boolean; giaTri: string };
 
@@ -47,7 +48,7 @@ export function FormDieuChinhThongTin({
         <Input id="soDienThoai" name="soDienThoai" type="tel" defaultValue={giaTri.soDienThoai} />
       </O>
       <O id="email" nhan="Email">
-        <Input id="email" name="email" type="email" defaultValue={giaTri.email} />
+        <OEmail id="email" name="email" defaultValue={giaTri.email} />
       </O>
       <O id="donViCongTac" nhan="Đơn vị công tác">
         <Input id="donViCongTac" name="donViCongTac" defaultValue={giaTri.donViCongTac} />

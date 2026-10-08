@@ -268,9 +268,57 @@ export async function doiThanhPhanDaChon(dangKyId: string, dsChon: string[], ngu
 }
 
 /**
- * Ghi nhận 1 khoản nộp cho 1 thành phần (mặc định = số còn thiếu) - lập phiếu thu gắn thành
- * phần, cập nhật khoản chung, ghi nhật ký. Dùng trong transaction của người gọi nếu có.
+ * (sửa 07/10/2026) Ghi nhận 1 lần nộp cho 1 hoặc nhiều thành phần của cùng thí sinh: lập ĐÚNG 1
+ * biên lai (HP-04) có mỗi thành phần 1 dòng chi tiết, cập nhật khoản chung, ghi nhật ký.
+ * soTien null = số còn thiếu của thành phần đó. Dùng trong transaction của người gọi.
  */
+export async function ghiNhanCacThanhPhan(
+  tx: Prisma.TransactionClient,
+  dsNhap: { hocPhiThanhPhanId: string; soTien: number | null }[],
+  hinhThucNop: string,
+  nguoi: NguoiThucHien,
+) {
+  if (dsNhap.length === 0) throw new ThanhPhanLePhiKhongHopLeError("chưa chọn thành phần lệ phí");
+  const dsMuc: { hocPhiThanhPhanId: string; noiDung: string; soTien: number; trangThai: string }[] = [];
+  let hocPhiId: string | null = null;
+  for (const { hocPhiThanhPhanId, soTien } of dsNhap) {
+    const d = await tx.hocPhiThanhPhan.findUniqueOrThrow({ where: { id: hocPhiThanhPhanId }, include: { thanhPhan: true } });
+    if (hocPhiId && d.hocPhiId !== hocPhiId) throw new ThanhPhanLePhiKhongHopLeError("các thành phần phải cùng 1 khoản lệ phí");
+    hocPhiId = d.hocPhiId;
+    const conThieu = Number(d.soTienPhaiNop) - Number(d.soTienDaNop);
+    const nop = soTien ?? conThieu;
+    if (!(nop > 0)) throw new ThanhPhanLePhiKhongHopLeError(`"${d.thanhPhan.ten}" không còn số phải thu`);
+    const daNop = Number(d.soTienDaNop) + nop;
+    const trangThai = trangThaiTheoSoTien(Number(d.soTienPhaiNop), daNop);
+    await tx.hocPhiThanhPhan.update({ where: { id: d.id }, data: { soTienDaNop: daNop, trangThai } });
+    dsMuc.push({ hocPhiThanhPhanId: d.id, noiDung: d.thanhPhan.ten, soTien: nop, trangThai });
+  }
+  const tong = dsMuc.reduce((t, m) => t + m.soTien, 0);
+  const phieuThu = await lapPhieuThu(
+    {
+      hocPhiId: hocPhiId!,
+      soTien: tong,
+      hinhThucNop,
+      nguoiLapId: nguoi.nguoiThucHienId,
+      nguoiLapTen: nguoi.nguoiThucHienTen,
+      dsMuc: dsMuc.map(({ hocPhiThanhPhanId, noiDung, soTien }) => ({ hocPhiThanhPhanId, noiDung, soTien })),
+    },
+    tx,
+  );
+  const hocPhi = await capNhatTongHocPhi(tx, hocPhiId!);
+  await tx.hocPhi.update({ where: { id: hocPhiId! }, data: { ngayNop: new Date(), hinhThucNop, nguoiXacNhanId: nguoi.nguoiThucHienId ?? null } });
+  await ghiThaoTac(
+    nguoi,
+    "XAC_NHAN_THANH_TOAN",
+    "HocPhi",
+    hocPhiId!,
+    `${dsMuc.map((m) => `${m.noiDung}: nộp ${tien(m.soTien)} -> ${m.trangThai}`).join("; ")} (${hinhThucNop}), biên lai ${phieuThu.soPhieu}, khoản chung -> ${hocPhi?.trangThai}`,
+    tx,
+  );
+  return { phieuThu, hocPhi };
+}
+
+/** Ghi nhận 1 thành phần (1 biên lai). */
 export async function ghiNhanThanhPhan(
   tx: Prisma.TransactionClient,
   hocPhiThanhPhanId: string,
@@ -278,34 +326,13 @@ export async function ghiNhanThanhPhan(
   hinhThucNop: string,
   nguoi: NguoiThucHien,
 ) {
-  const d = await tx.hocPhiThanhPhan.findUniqueOrThrow({ where: { id: hocPhiThanhPhanId }, include: { thanhPhan: true } });
-  const conThieu = Number(d.soTienPhaiNop) - Number(d.soTienDaNop);
-  const nop = soTien ?? conThieu;
-  if (!(nop > 0)) throw new ThanhPhanLePhiKhongHopLeError(`"${d.thanhPhan.ten}" không còn số phải thu`);
-  const daNop = Number(d.soTienDaNop) + nop;
-  const trangThai = trangThaiTheoSoTien(Number(d.soTienPhaiNop), daNop);
-  await tx.hocPhiThanhPhan.update({ where: { id: d.id }, data: { soTienDaNop: daNop, trangThai } });
-  const phieuThu = await lapPhieuThu(
-    { hocPhiId: d.hocPhiId, hocPhiThanhPhanId: d.id, soTien: nop, hinhThucNop, nguoiLapId: nguoi.nguoiThucHienId, nguoiLapTen: nguoi.nguoiThucHienTen },
-    tx,
-  );
-  const hocPhi = await capNhatTongHocPhi(tx, d.hocPhiId);
-  await tx.hocPhi.update({ where: { id: d.hocPhiId }, data: { ngayNop: new Date(), hinhThucNop, nguoiXacNhanId: nguoi.nguoiThucHienId ?? null } });
-  await ghiThaoTac(
-    nguoi,
-    "XAC_NHAN_THANH_TOAN",
-    "HocPhi",
-    d.hocPhiId,
-    `${d.thanhPhan.ten}: nộp ${tien(nop)} (${hinhThucNop}), phiếu ${phieuThu.soPhieu}, thành phần -> ${trangThai}, khoản chung -> ${hocPhi?.trangThai}`,
-    tx,
-  );
-  return { phieuThu, hocPhi };
+  return ghiNhanCacThanhPhan(tx, [{ hocPhiThanhPhanId, soTien }], hinhThucNop, nguoi);
 }
 
 /**
  * Ghi nhận theo khoản chung cho khóa có thành phần (HP-02 "Ghi thanh toán", Excel "Đã đóng"):
  * phân bổ lần lượt vào thành phần bắt buộc trước rồi tùy chọn, theo thứ tự cấu hình.
- * soTien null = đóng đủ mọi phần còn thiếu.
+ * soTien null = đóng đủ mọi phần còn thiếu. (sửa 07/10/2026) cả lần nộp lập chung 1 biên lai.
  */
 export async function phanBoThanhToan(tx: Prisma.TransactionClient, hocPhiId: string, soTien: number | null, hinhThucNop: string, nguoi: NguoiThucHien) {
   const dsDong = await tx.hocPhiThanhPhan.findMany({ where: { hocPhiId }, include: { thanhPhan: true } });
@@ -313,32 +340,62 @@ export async function phanBoThanhToan(tx: Prisma.TransactionClient, hocPhiId: st
     .filter((d) => !DA_XONG.includes(d.trangThai) && Number(d.soTienPhaiNop) > Number(d.soTienDaNop))
     .sort((a, b) => Number(b.thanhPhan.batBuoc) - Number(a.thanhPhan.batBuoc) || a.thanhPhan.thuTu - b.thanhPhan.thuTu);
   let conLai = soTien ?? Infinity;
-  const dsPhieu = [];
-  let hocPhi = null;
+  const dsNhap: { hocPhiThanhPhanId: string; soTien: number }[] = [];
   for (const d of thuTu) {
     if (conLai <= 0) break;
     const nop = Math.min(conLai, Number(d.soTienPhaiNop) - Number(d.soTienDaNop));
-    const kq = await ghiNhanThanhPhan(tx, d.id, nop, hinhThucNop, nguoi);
-    dsPhieu.push(kq.phieuThu);
-    hocPhi = kq.hocPhi;
+    dsNhap.push({ hocPhiThanhPhanId: d.id, soTien: nop });
     conLai -= nop;
   }
-  if (dsPhieu.length === 0) throw new ThanhPhanLePhiKhongHopLeError("khoản lệ phí không còn số phải thu");
+  if (dsNhap.length === 0) throw new ThanhPhanLePhiKhongHopLeError("khoản lệ phí không còn số phải thu");
   if (Number.isFinite(conLai) && conLai > 0) throw new ThanhPhanLePhiKhongHopLeError(`số tiền vượt số còn phải nộp ${tien((soTien ?? 0) - conLai)}`);
-  return { hocPhi: hocPhi!, phieuThu: dsPhieu[dsPhieu.length - 1], dsPhieuThu: dsPhieu };
+  const kq = await ghiNhanCacThanhPhan(tx, dsNhap, hinhThucNop, nguoi);
+  return { hocPhi: kq.hocPhi!, phieuThu: kq.phieuThu, dsPhieuThu: [kq.phieuThu] };
 }
 
-/** Hủy ghi nhận 1 thành phần: phiếu thu của phần đó chuyển Đã hủy, số đã nộp về 0. */
-export async function huyGhiNhanThanhPhan(tx: Prisma.TransactionClient, hocPhiThanhPhanId: string, lyDo: string, nguoi: NguoiThucHien) {
-  const d = await tx.hocPhiThanhPhan.findUniqueOrThrow({ where: { id: hocPhiThanhPhanId }, include: { thanhPhan: true } });
-  const dsPhieu = await tx.phieuThu.findMany({ where: { hocPhiThanhPhanId: d.id, daHuy: false }, orderBy: { soPhieu: "asc" } });
+/**
+ * Hủy ghi nhận 1 hoặc nhiều thành phần của cùng thí sinh: số đã nộp về 0. (sửa 07/10/2026) biên
+ * lai là chứng từ không sửa được: mọi biên lai có dòng của các thành phần bị hủy chuyển Đã hủy
+ * (giữ số); dòng của thành phần KHÔNG bị hủy trên biên lai đó được lập lại thành biên lai mới
+ * (ghi "lập thay cho biên lai số ...").
+ */
+export async function huyGhiNhanCacThanhPhan(tx: Prisma.TransactionClient, dsId: string[], lyDo: string, nguoi: NguoiThucHien) {
+  const dsDong = await tx.hocPhiThanhPhan.findMany({ where: { id: { in: dsId } }, include: { thanhPhan: true } });
+  if (dsDong.length === 0) throw new ThanhPhanLePhiKhongHopLeError("chưa chọn thành phần lệ phí");
+  const hocPhiId = dsDong[0].hocPhiId;
+  if (dsDong.some((d) => d.hocPhiId !== hocPhiId)) throw new ThanhPhanLePhiKhongHopLeError("các thành phần phải cùng 1 khoản lệ phí");
+  const huy = new Set(dsDong.map((d) => d.id));
+  const dsPhieu = await tx.phieuThu.findMany({
+    where: { hocPhiId, daHuy: false, chiTiets: { some: { hocPhiThanhPhanId: { in: [...huy] } } } },
+    include: { chiTiets: true },
+    orderBy: { soPhieu: "asc" },
+  });
   await tx.phieuThu.updateMany({
     where: { id: { in: dsPhieu.map((p) => p.id) } },
     data: { daHuy: true, lyDoHuy: lyDo, huyLuc: new Date(), nguoiHuyTen: nguoi.nguoiThucHienTen },
   });
-  await tx.hocPhiThanhPhan.update({ where: { id: d.id }, data: { soTienDaNop: 0, trangThai: "CHUA_NOP" } });
-  const hocPhi = await capNhatTongHocPhi(tx, d.hocPhiId);
-  return { thanhPhan: d.thanhPhan, phieuDaHuy: dsPhieu.map((p) => p.soPhieu), tongHuy: dsPhieu.reduce((t, p) => t + Number(p.soTien), 0), hocPhi };
+  const phieuThayThe: string[] = [];
+  for (const p of dsPhieu) {
+    const giuLai = p.chiTiets.filter((c) => !huy.has(c.hocPhiThanhPhanId));
+    if (giuLai.length === 0) continue;
+    const moi = await lapPhieuThu(
+      {
+        hocPhiId,
+        soTien: giuLai.reduce((t, c) => t + Number(c.soTien), 0),
+        hinhThucNop: p.hinhThucNop,
+        nguoiLapId: nguoi.nguoiThucHienId,
+        nguoiLapTen: nguoi.nguoiThucHienTen,
+        dsMuc: giuLai.map((c) => ({ hocPhiThanhPhanId: c.hocPhiThanhPhanId, noiDung: c.noiDung, soTien: Number(c.soTien) })),
+        thayChoSoPhieu: p.soPhieu,
+      },
+      tx,
+    );
+    phieuThayThe.push(`${moi.soPhieu} (thay ${p.soPhieu})`);
+  }
+  const tongHuy = dsPhieu.flatMap((p) => p.chiTiets).filter((c) => huy.has(c.hocPhiThanhPhanId)).reduce((t, c) => t + Number(c.soTien), 0);
+  await tx.hocPhiThanhPhan.updateMany({ where: { id: { in: [...huy] } }, data: { soTienDaNop: 0, trangThai: "CHUA_NOP" } });
+  const hocPhi = await capNhatTongHocPhi(tx, hocPhiId);
+  return { dsThanhPhan: dsDong.map((d) => d.thanhPhan), phieuDaHuy: dsPhieu.map((p) => p.soPhieu), phieuThayThe, tongHuy, hocPhi };
 }
 
 /** Miễn giảm khoản chung có thành phần: mọi thành phần chưa xong -> Miễn giảm. */

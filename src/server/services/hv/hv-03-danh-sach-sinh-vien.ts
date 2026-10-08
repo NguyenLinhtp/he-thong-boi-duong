@@ -39,6 +39,20 @@ export function chuanHoaCCCD(tho: string): string | null {
   return /^(\d{9}|\d{12})$/.test(so) ? so : null;
 }
 
+export const SO_DINH_DANH_TOI_DA = 30;
+
+/**
+ * (bổ sung 07/10/2026 - HV-03/HV-05/HV-06) Số định danh thí sinh: CCCD/CMND của người Việt Nam hoặc
+ * số hộ chiếu/giấy tờ của người nước ngoài - chỉ cần có dữ liệu. Bỏ khoảng trắng, viết hoa
+ * (vd. "p 3304738" -> "P3304738"); toàn số 11 chữ số (Excel mất số 0 đầu của CCCD) thì bù số 0.
+ * null = trống hoặc dài quá 30 ký tự.
+ */
+export function chuanHoaSoDinhDanh(tho: string | null | undefined): string | null {
+  const so = (tho ?? "").replace(/\s+/g, "").toUpperCase();
+  if (!so || so.length > SO_DINH_DANH_TOI_DA) return null;
+  return /^\d{11}$/.test(so) ? `0${so}` : so;
+}
+
 // ---- cột bổ sung của file mẫu (bổ sung 05/10/2026) ----
 
 export type CotBoSungSinhVien = { ma: string; nhan: string; batBuoc: boolean };
@@ -157,8 +171,9 @@ async function phanTichTepSinhVien(noiDung: Buffer, tenTep: string) {
     else if (thieu.length > 0) loi.push({ dong: soDong, loi: `Thiếu ${thieu.map((c) => `"${c.nhan}"`).join(", ")}` });
     else if (daiQua) loi.push({ dong: soDong, loi: `"${daiQua.nhan}" quá dài (tối đa 500 ký tự)` });
     else {
-      const soCCCD = chuanHoaCCCD(cccdTho);
-      if (!soCCCD) loi.push({ dong: soDong, loi: `Số CCCD "${cccdTho}" không hợp lệ (12 số hoặc CMND 9 số)` });
+      // (sửa 07/10/2026) người nước ngoài: số hộ chiếu khác định dạng CCCD - chỉ cần có dữ liệu
+      const soCCCD = chuanHoaSoDinhDanh(cccdTho);
+      if (!soCCCD) loi.push({ dong: soDong, loi: cccdTho.trim() ? `Số CCCD/hộ chiếu "${cccdTho}" dài quá ${SO_DINH_DANH_TOI_DA} ký tự` : "Thiếu số CCCD/hộ chiếu" });
       else if (gapMa.has(maSinhVien)) loi.push({ dong: soDong, loi: `Trùng mã sinh viên với dòng ${gapMa.get(maSinhVien)}` });
       else if (gapCCCD.has(soCCCD)) loi.push({ dong: soDong, loi: `Trùng số CCCD với dòng ${gapCCCD.get(soCCCD)}` });
       else {

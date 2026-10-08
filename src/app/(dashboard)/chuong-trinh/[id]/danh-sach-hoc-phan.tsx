@@ -16,12 +16,15 @@ export function DanhSachHocPhan({
   tongTiet,
   tongThoiLuong,
   choPhepSua,
+  canLyDo = false,
 }: {
   chuongTrinhId: string;
   dsHocPhan: HocPhan[];
   tongTiet: number;
   tongThoiLuong: number | null;
   choPhepSua: boolean;
+  // (bổ sung 07/10/2026) chương trình đã ban hành: thêm/sửa/xóa học phần phải ghi lý do
+  canLyDo?: boolean;
 }) {
   const [loi, formAction, dangXuLy] = useActionState(themHocPhanAction, undefined);
   const khop = tongThoiLuong != null && tongTiet === tongThoiLuong;
@@ -32,8 +35,14 @@ export function DanhSachHocPhan({
       <p className={`text-sm ${khop ? "text-green-600" : "text-muted-foreground"}`}>
         Tổng số tiết học phần: {tongTiet}
         {tongThoiLuong != null && ` / ${tongThoiLuong} (tổng thời lượng chương trình)`}
-        {tongThoiLuong != null && !khop && " — chưa khớp, cần khớp trước khi trình duyệt"}
+        {tongThoiLuong != null && !khop && (canLyDo ? " — chưa khớp tổng thời lượng chương trình" : " — chưa khớp, cần khớp trước khi trình duyệt")}
       </p>
+      {choPhepSua && canLyDo && (
+        <p className="text-sm text-warning">
+          Chương trình đã ban hành: thêm/sửa/xóa học phần phải ghi lý do và được ghi nhật ký. Không xóa được học phần đã có buổi học, phân
+          công giảng viên, tài liệu, kết quả hoặc bài làm ở khóa nào; không đổi số tiết học phần đã có kết quả học tập.
+        </p>
+      )}
 
       <Table>
         <TableHeader>
@@ -53,6 +62,7 @@ export function DanhSachHocPhan({
                 hocPhan={hp}
                 laDauTien={idx === 0}
                 laCuoiCung={idx === dsHocPhan.length - 1}
+                canLyDo={canLyDo}
               />
             ) : (
               <TableRow key={hp.id}>
@@ -76,6 +86,12 @@ export function DanhSachHocPhan({
             <Label htmlFor="soTiet">Số tiết</Label>
             <Input id="soTiet" name="soTiet" type="number" min={1} required className="w-28" />
           </div>
+          {canLyDo && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="lyDoThemHp">Lý do thêm</Label>
+              <Input id="lyDoThemHp" name="lyDo" required className="w-72" placeholder="Bắt buộc với chương trình đã ban hành" />
+            </div>
+          )}
           {loi && <p className="text-sm text-destructive">{loi}</p>}
           <Button type="submit" disabled={dangXuLy}>
             {dangXuLy ? "Đang thêm..." : "Thêm học phần"}

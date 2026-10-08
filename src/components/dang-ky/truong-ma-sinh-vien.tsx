@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export type KetQuaTraCuuSinhVien = { maSinhVien: string; hoTen: string; lopSinhHoat: string | null } | { loi: string };
+export type KetQuaTraCuuSinhVien =
+  | { maSinhVien: string; hoTen: string; lopSinhHoat: string | null; soCCCD?: string; dienForm?: Record<string, string> }
+  | { loi: string };
 
 const Sao = () => (
   <span className="text-destructive" aria-hidden>
@@ -17,9 +19,11 @@ const Sao = () => (
 /**
  * (bổ sung 01/10/2026 - HV-05) Định danh bằng mã sinh viên: gõ mã -> hệ thống
  * tra danh sách sinh viên đã import, hiện họ tên + lớp để thí sinh kiểm tra
- * (máy chủ lấy họ tên/CCCD/lớp từ danh sách, không tin dữ liệu hiển thị ở đây);
  * (sửa 05/10/2026) xác thực bằng trường "Số điện thoại" bắt buộc của form dự thi,
  * thay 4 số cuối CCCD. traCuu = undefined: chế độ xem trước.
+ * (sửa 07/10/2026) họ tên, lớp, số CCCD/hộ chiếu (đầy đủ) và các cột bổ sung của danh sách (ngày sinh,
+ * nơi sinh... - điền vào ô cùng tên của form) tự điền nhưng thí sinh sửa lại được - phần sửa họ tên/lớp/
+ * CCCD được lưu kèm hồ sơ để cán bộ đối chiếu (HV-06).
  */
 export function TruongMaSinhVien({ traCuu }: { traCuu?: (ma: string) => Promise<KetQuaTraCuuSinhVien> }) {
   const [kq, setKq] = useState<KetQuaTraCuuSinhVien | null>(null);
@@ -33,10 +37,22 @@ export function TruongMaSinhVien({ traCuu }: { traCuu?: (ma: string) => Promise<
     batDau(async () => setKq(await traCuu(m)));
   };
   const sv = kq && !("loi" in kq) ? kq : null;
+  const goc = useRef<HTMLDivElement>(null);
+  // điền các ô khác của form (ngày sinh, nơi sinh...) theo danh sách; ô cố định thì giữ nguyên
+  useEffect(() => {
+    const form = goc.current?.closest("form");
+    if (!form || !sv?.dienForm) return;
+    for (const [ten, giaTri] of Object.entries(sv.dienForm)) {
+      const o = form.elements.namedItem(ten);
+      if ((o instanceof HTMLInputElement && !o.readOnly) || (o instanceof HTMLSelectElement && !o.getAttribute("aria-readonly"))) o.value = giaTri;
+    }
+  }, [sv]);
+  // key theo mã đã tra: tra mã khác thì điền lại giá trị mới của danh sách
+  const khoaO = sv?.maSinhVien ?? "trong";
 
   return (
     <>
-      <div className="flex flex-col gap-1.5 sm:col-span-2">
+      <div ref={goc} className="flex flex-col gap-1.5 sm:col-span-2">
         <Label htmlFor="maSinhVien">
           Mã sinh viên <Sao />
         </Label>
@@ -73,11 +89,31 @@ export function TruongMaSinhVien({ traCuu }: { traCuu?: (ma: string) => Promise<
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="hoTenSv">Họ tên</Label>
-        <Input id="hoTenSv" readOnly tabIndex={-1} value={sv?.hoTen ?? ""} placeholder="Tự điền theo mã sinh viên" />
+        <Input key={`ht-${khoaO}`} id="hoTenSv" name="hoTen" defaultValue={sv?.hoTen ?? ""} readOnly={!sv} maxLength={200} placeholder="Tự điền theo mã sinh viên" />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="lopSv">Lớp sinh hoạt</Label>
-        <Input id="lopSv" readOnly tabIndex={-1} value={sv ? (sv.lopSinhHoat ?? "—") : ""} placeholder="Tự điền theo mã sinh viên" />
+        <Input key={`lop-${khoaO}`} id="lopSv" name="lopSinhHoat" defaultValue={sv?.lopSinhHoat ?? ""} readOnly={!sv} maxLength={50} placeholder="Tự điền theo mã sinh viên" />
+      </div>
+      <div className="flex flex-col gap-1.5 sm:col-span-2">
+        <Label htmlFor="cccdSv">Số CCCD/hộ chiếu</Label>
+        <Input
+          key={`cccd-${khoaO}`}
+          id="cccdSv"
+          name="soCCCD"
+          defaultValue={sv?.soCCCD ?? ""}
+          readOnly={!sv}
+          maxLength={30}
+          autoComplete="off"
+          className="max-w-xs"
+          placeholder="Tự điền theo mã sinh viên"
+        />
+        {sv && (
+          <p className="text-xs text-muted-foreground">
+            Thông tin tự điền theo danh sách của nhà trường. Nếu sai, sửa lại trực tiếp trên form - thông tin sửa được nhà trường kiểm tra khi
+            thẩm định hồ sơ.
+          </p>
+        )}
       </div>
     </>
   );

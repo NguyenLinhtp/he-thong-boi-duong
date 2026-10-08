@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { khoiTaoKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { chuyenTrangThaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { luuCauHinhChuongTrinh } from "@/server/services/hv/form-dang-ky";
-import { importDanhSachSinhVien } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
+import { importDanhSachSinhVien, layCotBoSungSinhVien } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
 import { dangKyDuThi, thongTinLePhiDuThi } from "@/server/services/hv/hv-05-dang-ky-du-thi";
 import { thietLapHocPhi } from "@/server/services/hp/hp-01-thiet-lap";
 import {
@@ -15,7 +15,7 @@ import {
   type ThanhPhanNhap,
 } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
 import { xacNhanThanhToan } from "@/server/services/hp/hp-02-thanh-toan";
-import { chuyenTrangThaiLePhi } from "@/server/services/hp/hp-02-chuyen-trang-thai-le-phi";
+import { chuyenTrangThaiLePhi, xacNhanCacThanhPhan } from "@/server/services/hp/hp-02-chuyen-trang-thai-le-phi";
 import { baoCaoDoanhThu } from "@/server/services/hp/hp-05-bao-cao";
 import { nhapExcelDoiSoat, tieuDeCotThanhPhan, xuatExcelDoiSoat } from "@/server/services/hp/hp-02-doi-soat-excel";
 import { DuLieuImportLoiError } from "@/server/services/hv/loi-hoc-vien";
@@ -23,6 +23,7 @@ import { daHoanTatNghiaVuTaiChinh } from "@/server/services/hp/hp-06-dieu-kien";
 import { xetDuyetDanhSachChinhThuc } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
 import { ThanhPhanLePhiKhongHopLeError, LePhiTuDoKhongApDungError } from "@/server/services/hp/loi-hoc-phi";
 import { ChuaXacNhanLePhiKhiXetDuyetError } from "@/server/services/hv/loi-hoc-vien";
+import { chuyenLePhiLo } from "@/server/services/hp/hp-thao-tac-lo";
 
 // (bổ sung 06/10/2026) thành phần lệ phí động của khóa dự thi: ôn thi (tùy chọn) + thi (bắt buộc)
 
@@ -85,8 +86,10 @@ async function sinhVienMoi() {
   maSvTao.push(sv.ma);
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("A");
-  ws.addRow(["Mã sinh viên", "Số CCCD", "Họ tên sinh viên", "Lớp sinh hoạt"]);
-  ws.addRow([sv.ma, sv.cccd, "Sinh Viên Thành Phần", "22SGT"]);
+  // cột bổ sung do cán bộ khai báo (HV-03, dùng chung toàn trường) - điền đủ để tệp hợp lệ
+  const cotThem = await layCotBoSungSinhVien();
+  ws.addRow(["Mã sinh viên", "Số CCCD", "Họ tên sinh viên", "Lớp sinh hoạt", ...cotThem.map((c) => c.nhan)]);
+  ws.addRow([sv.ma, sv.cccd, "Sinh Viên Thành Phần", "22SGT", ...cotThem.map(() => "01/01/2004")]);
   await importDanhSachSinhVien(Buffer.from(await wb.xlsx.writeBuffer()), "sv.xlsx", NGUOI);
   return sv;
 }
@@ -214,7 +217,9 @@ describe("HP-02 xác nhận từng phần, HV-07 danh sách theo thành phần",
 
     await expect(xetDuyetDanhSachChinhThuc(khoa.id, [dk.id], NGUOI)).rejects.toThrow(ChuaXacNhanLePhiKhiXetDuyetError);
     const kq = await chuyenTrangThaiLePhi(hp.id, "DA_DONG", null, NGUOI, dongThi.id);
-    expect("phieuThu" in kq && kq.phieuThu.hocPhiThanhPhanId).toBe(dongThi.id);
+    expect("phieuThu" in kq).toBe(true);
+    const phieuThi = "phieuThu" in kq ? kq.phieuThu : null;
+    expect(await prisma.phieuThuChiTiet.findMany({ where: { phieuThuId: phieuThi!.id } })).toMatchObject([{ hocPhiThanhPhanId: dongThi.id, noiDung: "Đăng ký thi" }]);
     hp = await layHocPhi(dk);
     expect(hp.trangThai).toBe("CON_NO");
     expect(await daHoanTatNghiaVuTaiChinh(dk.hocVienId, khoa.id)).toBe(true);
@@ -237,7 +242,7 @@ describe("HP-02 xác nhận từng phần, HV-07 danh sách theo thành phần",
     expect(await prisma.phieuThu.count({ where: { hocPhiId: hp.id, daHuy: true } })).toBe(2);
   });
 
-  it("ghi thanh toán theo khoản chung: phân bổ vào phần bắt buộc trước, mỗi phần 1 phiếu thu; vượt số còn nợ thì chặn", async () => {
+  it("ghi thanh toán theo khoản chung: phân bổ vào phần bắt buộc trước, cả lần nộp 1 biên lai nhiều dòng; vượt số còn nợ thì chặn", async () => {
     const { khoa, onThi, thi } = await khoaHaiPhan();
     const dk = await dangKySv(khoa.id, [onThi.id]);
     const hp = await layHocPhi(dk);
@@ -247,6 +252,41 @@ describe("HP-02 xác nhận từng phần, HV-07 danh sách theo thành phần",
     const theo = Object.fromEntries(sau.thanhPhans.map((d) => [d.thanhPhanId, [d.trangThai, Number(d.soTienDaNop)]]));
     expect(theo[thi.id]).toEqual(["DA_NOP_DU", 450_000]);
     expect(theo[onThi.id]).toEqual(["CON_NO", 50_000]);
+    // (sửa 07/10/2026) 1 lần nộp = 1 biên lai, mỗi thành phần 1 dòng
+    const dsPhieu = await prisma.phieuThu.findMany({ where: { hocPhiId: hp.id }, include: { chiTiets: true } });
+    expect(dsPhieu).toHaveLength(1);
+    expect(Number(dsPhieu[0].soTien)).toBe(500_000);
+    expect(dsPhieu[0].chiTiets.map((c) => [c.noiDung, Number(c.soTien)]).sort()).toEqual([["Đăng ký thi", 450_000], ["Đăng ký ôn thi", 50_000]].sort());
+  });
+
+  it("(07/10/2026) hủy 1 phần của biên lai chung: hủy cả biên lai (giữ số), lập biên lai thay thế cho phần còn lại; doanh thu đúng", async () => {
+    const { khoa, onThi, thi } = await khoaHaiPhan();
+    const dk = await dangKySv(khoa.id, [onThi.id]);
+    const hp = await layHocPhi(dk);
+    const kq = await xacNhanCacThanhPhan(hp.id, hp.thanhPhans.map((d) => d.id), NGUOI);
+    expect(Number(kq.phieuThu.soTien)).toBe(750_000);
+    expect(await prisma.phieuThu.count({ where: { hocPhiId: hp.id } })).toBe(1);
+    await expect(xacNhanCacThanhPhan(hp.id, hp.thanhPhans.map((d) => d.id), NGUOI)).rejects.toThrow(/đã đóng đủ/);
+
+    const dongOn = hp.thanhPhans.find((d) => d.thanhPhanId === onThi.id)!;
+    const huy = await chuyenTrangThaiLePhi(hp.id, "CHUA_DONG", "Không mở lớp ôn", NGUOI, dongOn.id);
+    expect("phieuDaHuy" in huy && huy.phieuDaHuy).toEqual([kq.phieuThu.soPhieu]);
+    const cu = await prisma.phieuThu.findUniqueOrThrow({ where: { id: kq.phieuThu.id } });
+    expect(cu.daHuy).toBe(true);
+    const thay = await prisma.phieuThu.findFirstOrThrow({ where: { hocPhiId: hp.id, daHuy: false }, include: { chiTiets: true } });
+    expect(thay.thayChoSoPhieu).toBe(kq.phieuThu.soPhieu);
+    expect(thay.soPhieu).not.toBe(kq.phieuThu.soPhieu);
+    expect(Number(thay.soTien)).toBe(450_000);
+    expect(thay.chiTiets.map((c) => c.hocPhiThanhPhanId)).toEqual([hp.thanhPhans.find((d) => d.thanhPhanId === thi.id)!.id]);
+    expect((await baoCaoDoanhThu({ khoaId: khoa.id })).tongDoanhThu).toBe(450_000);
+    const sau = await layHocPhi(dk);
+    expect(sau.thanhPhans.find((d) => d.thanhPhanId === thi.id)?.trangThai).toBe("DA_NOP_DU");
+    expect(sau.thanhPhans.find((d) => d.thanhPhanId === onThi.id)?.trangThai).toBe("CHUA_NOP");
+
+    // hủy cả khoản: biên lai thay thế bị hủy, không lập thêm biên lai nào
+    const huyHet = await chuyenTrangThaiLePhi(hp.id, "CHUA_DONG", "Ghi nhận nhầm", NGUOI);
+    expect("phieuThayThe" in huyHet && huyHet.phieuThayThe).toEqual([]);
+    expect(await prisma.phieuThu.count({ where: { hocPhiId: hp.id, daHuy: false } })).toBe(0);
     expect(await prisma.phieuThu.count({ where: { hocPhiId: hp.id } })).toBe(2);
   });
 
@@ -301,4 +341,32 @@ describe("HP-02 đối soát Excel theo thành phần", () => {
     const kq2 = await nhapExcelDoiSoat(khoa.id, lan2.noiDung, "ds.xlsx", NGUOI);
     expect([kq2.daGhiNhan.length, kq2.daCoTruoc]).toEqual([0, 2]);
   });
+});
+
+describe("HP-02 thao tác hàng loạt theo thành phần (bổ sung 07/10/2026)", () => {
+  it("chọn nhiều thí sinh xác nhận riêng phần thi; người không chọn ôn thi bị báo khi xác nhận phần ôn thi; hủy cả khoản cần lý do", async () => {
+    const { khoa, onThi, thi } = await khoaHaiPhan();
+    const ca2 = await dangKySv(khoa.id, [onThi.id]);
+    const chiThi = await dangKySv(khoa.id, []);
+    const [hpCa2, hpChiThi] = [await layHocPhi(ca2), await layHocPhi(chiThi)];
+
+    const kqThi = await chuyenLePhiLo(khoa.id, [hpCa2.id, hpChiThi.id], "DA_DONG", thi.id, null, NGUOI);
+    expect(kqThi).toMatchObject({ thanhCong: 2, loi: [] });
+    const sauCa2 = await layHocPhi(ca2);
+    expect(sauCa2.thanhPhans.find((d) => d.thanhPhanId === thi.id)?.trangThai).toBe("DA_NOP_DU");
+    expect(sauCa2.thanhPhans.find((d) => d.thanhPhanId === onThi.id)?.trangThai).toBe("CHUA_NOP");
+
+    const kqOn = await chuyenLePhiLo(khoa.id, [hpCa2.id, hpChiThi.id], "DA_DONG", onThi.id, null, NGUOI);
+    expect(kqOn.thanhCong).toBe(1);
+    expect(kqOn.loi).toEqual([{ ten: expect.any(String), loi: "thí sinh không đăng ký thành phần này" }]);
+    // cả khoản: đã đóng đủ mọi phần -> báo lại, không lập phiếu trùng
+    const kqTatCa = await chuyenLePhiLo(khoa.id, [hpCa2.id], "DA_DONG", null, null, NGUOI);
+    expect(kqTatCa.loi[0].loi).toMatch(/đã đóng đủ/);
+    expect(await prisma.phieuThu.count({ where: { hocPhiId: hpCa2.id, daHuy: false } })).toBe(2);
+
+    await expect(chuyenLePhiLo(khoa.id, [hpCa2.id], "CHUA_DONG", null, " ", NGUOI)).rejects.toThrow(/lý do/);
+    const huy = await chuyenLePhiLo(khoa.id, [hpCa2.id], "CHUA_DONG", null, "Ghi nhận nhầm", NGUOI);
+    expect(huy.thanhCong).toBe(1);
+    expect(await prisma.phieuThu.count({ where: { hocPhiId: hpCa2.id, daHuy: false } })).toBe(0);
+  }, 60_000);
 });

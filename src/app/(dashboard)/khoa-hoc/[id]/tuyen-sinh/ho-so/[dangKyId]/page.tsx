@@ -6,6 +6,7 @@ import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { thongTinDieuChinh } from "@/server/services/hv/hv-06-dieu-chinh-thong-tin";
 import { KhongTimThayDangKyError } from "@/server/services/hv/loi-hoc-vien";
 import { FormDieuChinhThongTin } from "./form-dieu-chinh";
+import { SuaThongTinDanhSach } from "@/components/dang-ky/sua-thong-tin-danh-sach";
 
 // (bổ sung 05/10/2026 - HV-06) cán bộ đào tạo điều chỉnh thông tin thí sinh của 1 hồ sơ đăng ký
 export default async function DieuChinhThongTinPage({ params }: { params: Promise<{ id: string; dangKyId: string }> }) {
@@ -51,6 +52,8 @@ export default async function DieuChinhThongTinPage({ params }: { params: Promis
         <p className="text-sm text-muted-foreground">
           Họ tên, CCCD, ngày sinh, liên hệ thuộc hồ sơ học viên dùng chung mọi khóa - sửa ở đây áp dụng cho cả các khóa khác của học viên.
         </p>
+        {/* (bổ sung 07/10/2026) thí sinh sửa thông tin tự điền từ danh sách sinh viên khi đăng ký */}
+        <SuaThongTinDanhSach sua={dangKy.suaThongTinDanhSach} className="mt-2 max-w-xl text-sm" />
       </div>
       {daPheDuyet ? (
         <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">

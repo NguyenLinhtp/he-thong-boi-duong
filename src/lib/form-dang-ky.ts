@@ -9,6 +9,8 @@
  * - Trường tùy chỉnh (lưu kèm hồ sơ đăng ký): chữ, số, ngày, danh sách chọn, tệp minh chứng.
  */
 
+import { chuanHoaEmail, laEmailHopLe, laNhanEmail } from "@/lib/email";
+
 export type KieuTruong = "VAN_BAN" | "SO" | "NGAY" | "LUA_CHON" | "TEP";
 
 export const NHAN_KIEU_TRUONG: Record<KieuTruong, string> = {
@@ -188,7 +190,9 @@ export type KetQuaKiemTra = {
   tep: { ma: string; nhan: string; tep: TepGui }[];
 };
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// (sửa 08/10/2026) kiểm tra email chặt hơn, dùng chung (src/lib/email.ts)
+export const laTruongEmail = (t: Pick<TruongForm, "ma" | "coSan" | "kieu" | "nhan">) =>
+  t.ma === "email" || (!t.coSan && t.kieu === "VAN_BAN" && laNhanEmail(t.nhan));
 
 /**
  * Kiểm tra dữ liệu học viên gửi theo cấu hình hiệu lực. hienCo: giá trị hồ sơ
@@ -217,7 +221,8 @@ export function kiemTraDuLieu(
       ketQua.tep.push({ ma: t.ma, nhan: t.nhan, tep });
       continue;
     }
-    const gui = (duLieu.giaTri[ten] ?? "").trim();
+    // email lưu dạng viết thường, bỏ khoảng trắng 2 đầu
+    const gui = laTruongEmail(t) ? chuanHoaEmail(duLieu.giaTri[ten]) : (duLieu.giaTri[ten] ?? "").trim();
     const giaTri = t.coDinh && t.macDinh ? t.macDinh : gui;
     if (!giaTri) {
       const daCo = t.coSan ? tuyChon.hienCo?.[t.ma as MaTruongCoSan] : null;
@@ -227,7 +232,7 @@ export function kiemTraDuLieu(
     if (giaTri.length > 500) return { loi: `"${t.nhan}": quá dài` };
     if (t.kieu === "SO" && !Number.isFinite(Number(giaTri.replace(",", ".")))) return { loi: `"${t.nhan}" phải là số` };
     if (t.kieu === "NGAY" && Number.isNaN(Date.parse(giaTri))) return { loi: `"${t.nhan}" không phải ngày hợp lệ` };
-    if (t.ma === "email" && !EMAIL.test(giaTri)) return { loi: "Email không hợp lệ" };
+    if (laTruongEmail(t) && !laEmailHopLe(giaTri)) return { loi: `"${t.nhan}" chưa đúng định dạng email (ví dụ: ten@gmail.com)` };
     if (t.ma === "chucDanhHocViId" && tuyChon.dsChucDanhId && !tuyChon.dsChucDanhId.includes(giaTri))
       return { loi: `"${t.nhan}" không hợp lệ` };
     if (t.luaChon.length > 0 && !t.luaChon.includes(giaTri)) return { loi: `"${t.nhan}": giá trị không thuộc danh sách chọn` };

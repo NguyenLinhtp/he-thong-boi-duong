@@ -11,6 +11,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:du-thi": "vitest run tests/unit/ct-07.test.ts tests/unit/dang-ky-cong-khai.test.ts tests/unit/du-thi-ma-sinh-vien.test.ts tests/unit/form-dang-ky.test.ts tests/unit/gd-04.test.ts tests/unit/hoc-lieu-khung.test.ts tests/unit/hp-02-chuyen-trang-thai-le-phi.test.ts tests/unit/hp-02-giao-dich-ngan-hang.test.ts tests/unit/hp-thanh-phan-le-phi.test.ts tests/unit/hv-05.test.ts tests/unit/hv-06-07-tep-danh-sach.test.ts tests/unit/hv-06.test.ts tests/unit/hv-07.test.ts tests/unit/hv-08.test.ts tests/unit/hv-12.test.ts tests/unit/kh-02.test.ts tests/unit/kh-03.test.ts tests/unit/kh-07.test.ts tests/unit/kq-module.test.ts tests/unit/mau-in.test.ts tests/unit/thao-tac-lo.test.ts",
     "test:e2e": "playwright test",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

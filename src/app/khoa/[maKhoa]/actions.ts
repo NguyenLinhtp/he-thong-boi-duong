@@ -117,6 +117,8 @@ export async function dangKyDuThiAction(
       hoTen: String(formData.get("hoTen") ?? ""),
       soCCCD: String(formData.get("soCCCD") ?? ""),
       maSinhVien: String(formData.get("maSinhVien") ?? ""),
+      // (bổ sung 07/10/2026) sinh viên sửa lớp tự điền từ danh sách
+      lopSinhHoat: formData.get("doiTuong") === "TU_DO" ? null : String(formData.get("lopSinhHoat") ?? ""),
       laThiSinhTuDo: formData.get("doiTuong") === "TU_DO",
       // (bổ sung 06/10/2026) thành phần lệ phí tùy chọn thí sinh tick
       dsThanhPhan: formData.getAll("thanhPhan").map(String),

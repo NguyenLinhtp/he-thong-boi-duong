@@ -8,6 +8,7 @@ import { guiGiuDuLieu } from "@/components/dang-ky/gui-giu-du-lieu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OEmail } from "@/components/chung/o-email";
 
 const Sao = () => <span className="text-destructive">*</span>;
 
@@ -43,7 +44,7 @@ export function FormDangKyTaiKhoan() {
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" />
+        <OEmail id="email" name="email" />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="matKhau">

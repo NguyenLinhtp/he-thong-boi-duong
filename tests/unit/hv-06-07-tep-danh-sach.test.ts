@@ -284,7 +284,8 @@ describe("HV-06 bổ sung 05/10/2026 - điều chỉnh thông tin thí sinh", ()
     const dk = await dangKy(khoa.id, "Thí Sinh Gốc");
     const khac = await dangKy(khoa.id, "Người Khác");
     await expect(dieuChinhThongTinThiSinh(dk.id, nhap({ lyDo: " " }), NGUOI)).rejects.toThrow(/lý do/);
-    await expect(dieuChinhThongTinThiSinh(dk.id, nhap({ soCCCD: "123" }), NGUOI)).rejects.toThrow(DieuChinhThongTinKhongHopLeError);
+    // (sửa 07/10/2026) không bắt định dạng 12 số (nhận số hộ chiếu) - chỉ chặn khi bỏ trống
+    await expect(dieuChinhThongTinThiSinh(dk.id, nhap({ soCCCD: " " }), NGUOI)).rejects.toThrow(DieuChinhThongTinKhongHopLeError);
     await expect(dieuChinhThongTinThiSinh(dk.id, nhap({ soCCCD: khac.hocVien.soCCCD }), NGUOI)).rejects.toThrow(CccdTrungError);
     await expect(dieuChinhThongTinThiSinh(dk.id, nhap({ soDienThoaiXacThuc: "12345" }), NGUOI)).rejects.toThrow(/số điện thoại xác thực/);
     await expect(dieuChinhThongTinThiSinh(dk.id, nhap({ boSung: { doiTuong: "Z" } }), NGUOI)).rejects.toThrow(/danh sách chọn/);

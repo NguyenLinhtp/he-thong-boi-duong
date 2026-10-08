@@ -19,7 +19,7 @@ export async function timKiemChuongTrinh(filter: TimKiemChuongTrinhFilter = {}) 
       ...(filter.loaiHinhBoiDuongId ? { loaiHinhBoiDuongId: filter.loaiHinhBoiDuongId } : {}),
       ...(filter.trangThai ? { trangThai: filter.trangThai } : {}),
     },
-    include: { loaiHinhBoiDuong: true },
+    include: { loaiHinhBoiDuong: true, _count: { select: { khoas: true } } },
     orderBy: { createdAt: "desc" },
   });
 }

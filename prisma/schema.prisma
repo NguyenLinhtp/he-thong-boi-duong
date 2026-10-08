@@ -301,6 +301,10 @@ model ChuongTrinh {
   // HV-01/04/05/11/12 (bổ sung 30/09/2026): cấu hình form đăng ký của chương trình
   // (trường có sẵn bật/tắt/bắt buộc + trường tùy chỉnh) - null = form mặc định
   cauHinhFormDangKy  Json?
+  // (bổ sung 07/10/2026 - HV-01/HV-05/HP-04) mẫu in: đơn đăng ký (khóa sửa riêng được) và biên lai
+  // thu tiền C45-BB của chương trình - null = mẫu mặc định (src/lib/mau-in.ts)
+  mauDonDangKy       Json?
+  mauBienLai         Json?
   // CT-01 (bổ sung): chương trình cấp CHỨNG CHỈ hay GIẤY CHỨNG NHẬN khi học
   // viên hoàn thành - quyết định tiêu đề in, dãy số hiệu và sổ cấp (CC-02/04).
   loaiVanBang        LoaiVanBang          @default(CHUNG_CHI)
@@ -384,6 +388,8 @@ model Khoa {
   hinhThucGiangDay    HinhThucGiangDay @default(TRUC_TIEP)
   // (bổ sung 30/09/2026) form đăng ký riêng của khóa - null = dùng form của chương trình
   cauHinhFormDangKy   Json?
+  // (bổ sung 07/10/2026) mẫu đơn đăng ký riêng của khóa - null = dùng mẫu của chương trình
+  mauDonDangKy        Json?
   mucHocPhi           Decimal?         @db.Decimal(12, 2)
   // (bổ sung 01/10/2026) khóa dự thi (PT3) định danh bằng mã sinh viên: lệ phí riêng cho thí sinh
   // tự do (không phải sinh viên ĐHSP-ĐHĐN); mucHocPhi áp cho sinh viên. null = như sinh viên
@@ -566,6 +572,9 @@ model DangKyHoc {
   // SV/CCCD làm khóa mở lại đơn (thay 4 số cuối CCCD); lưu theo hồ sơ vì hồ sơ học
   // viên cũ không bị ghi đè số điện thoại
   soDienThoaiXacThuc String?
+  // (bổ sung 07/10/2026 - HV-05) thí sinh sửa thông tin tự điền từ danh sách sinh viên (họ tên, số
+  // CCCD/hộ chiếu, lớp): { truong: { cu, moi } } - để cán bộ đối chiếu khi thẩm định (HV-06)
+  suaThongTinDanhSach Json?
 
   lichSuChuyenLops LichSuChuyenLop[]
   tepHoSos         TepHoSoDangKy[]
@@ -795,6 +804,8 @@ model HocPhi {
   lyDoBoQua      String?
 
   phieuThus PhieuThu[]
+  // (bổ sung 08/10/2026 - HP-02) giao dịch chuyển khoản ngân hàng đã khớp vào khoản này
+  giaoDichNganHangs GiaoDichNganHang[]
   // (bổ sung 06/10/2026) khóa có thành phần lệ phí: các thành phần thí sinh đã chọn;
   // soTienPhaiNop/soTienDaNop/trangThai của HocPhi = tổng hợp các thành phần
   thanhPhans HocPhiThanhPhan[]
@@ -816,9 +827,14 @@ model PhieuThu {
   ngayLap     DateTime @default(now())
   nguoiLapId  String?
   nguoiLapTen String?
-  // (bổ sung 06/10/2026 - HP-02) phiếu thu của 1 thành phần lệ phí (null = khoản chung)
-  hocPhiThanhPhanId String?
-  hocPhiThanhPhan   HocPhiThanhPhan? @relation(fields: [hocPhiThanhPhanId], references: [id])
+  // (sửa 07/10/2026 - HP-02/HP-04) 1 lần thu = 1 biên lai; khóa có thành phần lệ phí: mỗi thành
+  // phần thu trong lần đó là 1 dòng chi tiết (thay cho liên kết 1 phiếu - 1 thành phần trước đây)
+  chiTiets    PhieuThuChiTiet[]
+  // (bổ sung 07/10/2026 - HP-04) nội dung in đã chốt khi lập (đơn vị, quyển số, nội dung thu...) -
+  // in lại luôn đúng như lúc phát hành dù mẫu biên lai đổi sau đó; null = phiếu cũ, in theo mẫu hiện hành
+  noiDungIn   Json?
+  // biên lai lập thay cho biên lai đã hủy (hủy 1 phần của biên lai nhiều phần)
+  thayChoSoPhieu String?
   // (bổ sung 06/10/2026 - HP-02/HP-04) hủy ghi nhận thanh toán: phiếu giữ số,
   // không xóa, không cấp lại số; không tính vào doanh thu/đối soát
   daHuy       Boolean   @default(false)
@@ -827,6 +843,61 @@ model PhieuThu {
   nguoiHuyTen String?
 
   @@map("phieu_thu")
+}
+
+// (bổ sung 08/10/2026 - HP-02) kết quả xử lý 1 giao dịch chuyển khoản đến tài khoản nhận lệ phí
+enum TrangThaiGiaoDichNganHang {
+  // khớp đúng 1 khoản, đã ghi nhận toàn bộ số tiền + lập biên lai tự động
+  DA_GHI_NHAN
+  // khớp được khoản nhưng chuyển thừa: đã ghi nhận phần còn phải nộp, phần thừa chờ cán bộ tài chính xử lý
+  THUA_TIEN
+  // không ghi nhận tự động (không khớp/khớp nhiều hồ sơ/khoản đã xong/hồ sơ đã hủy...) - chờ xử lý thủ công
+  CAN_XU_LY
+  // cán bộ tài chính đã xử lý thủ công (gán vào hồ sơ hoặc ghi chú hoàn tiền/bỏ qua)
+  DA_XU_LY
+}
+
+// (bổ sung 08/10/2026 - HP-02) giao dịch ngân hàng nhận qua webhook dịch vụ theo dõi tài khoản
+// (SePay/Casso) hoặc giao dịch thử nghiệm; mỗi giao dịch của 1 nguồn chỉ xử lý 1 lần
+model GiaoDichNganHang {
+  id               String                    @id @default(cuid())
+  nguon            String
+  maGiaoDichNguon  String
+  soTaiKhoan       String?
+  soTien           Decimal                   @db.Decimal(12, 2)
+  noiDung          String
+  maThamChieu      String?
+  thoiGianGiaoDich DateTime
+  nhanLuc          DateTime                  @default(now())
+  trangThai        TrangThaiGiaoDichNganHang
+  // lý do không ghi nhận tự động / ghi chú khi xử lý
+  ghiChu           String?
+  hocPhiId         String?
+  hocPhi           HocPhi?                   @relation(fields: [hocPhiId], references: [id])
+  soTienGhiNhan    Decimal                   @default(0) @db.Decimal(12, 2)
+  soPhieuThu       String?
+  duLieuGoc        Json?
+  xuLyBoiTen       String?
+  xuLyLuc          DateTime?
+
+  @@unique([nguon, maGiaoDichNguon])
+  @@index([trangThai])
+  @@index([hocPhiId])
+  @@map("giao_dich_ngan_hang")
+}
+
+// (bổ sung 07/10/2026 - HP-02/HP-04) dòng chi tiết của biên lai: 1 thành phần lệ phí thu trong lần đó
+model PhieuThuChiTiet {
+  id                String          @id @default(cuid())
+  phieuThuId        String
+  phieuThu          PhieuThu        @relation(fields: [phieuThuId], references: [id], onDelete: Cascade)
+  hocPhiThanhPhanId String
+  hocPhiThanhPhan   HocPhiThanhPhan @relation(fields: [hocPhiThanhPhanId], references: [id])
+  noiDung           String
+  soTien            Decimal         @db.Decimal(12, 2)
+
+  @@index([hocPhiThanhPhanId])
+  @@map("phieu_thu_chi_tiet")
 }
 
 // (bổ sung 06/10/2026 - HP-01) thành phần lệ phí cấu hình động của khóa dự thi (PT3):
@@ -858,7 +929,7 @@ model HocPhiThanhPhan {
   soTienDaNop   Decimal         @default(0) @db.Decimal(12, 2)
   trangThai     TrangThaiHocPhi @default(CHUA_NOP)
 
-  phieuThus PhieuThu[]
+  phieuThuChiTiets PhieuThuChiTiet[]
 
   @@unique([hocPhiId, thanhPhanId])
   @@map("hoc_phi_thanh_phan")

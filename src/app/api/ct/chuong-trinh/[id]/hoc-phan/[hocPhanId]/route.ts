@@ -20,12 +20,13 @@ export const PATCH = apiRoute(async (req: Request, { params }: Params) => {
   }
 });
 
-export const DELETE = apiRoute(async (_req: Request, { params }: Params) => {
+export const DELETE = apiRoute(async (req: Request, { params }: Params) => {
   await requirePermission("CT-02");
   const { hocPhanId } = await params;
 
   try {
-    await xoaHocPhan(hocPhanId);
+    // (bổ sung 07/10/2026) chương trình đã ban hành: lý do xóa qua tham số ?lyDo=
+    await xoaHocPhan(hocPhanId, new URL(req.url).searchParams.get("lyDo"));
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof SaiTrangThaiChuongTrinhError) {

@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { khoiTaoKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { chuyenTrangThaiKhoa, coTheNhanDangKy, datHanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
@@ -7,6 +7,7 @@ import {
   importDanhSachSinhVien,
   kiemTraImportSinhVien,
   chuanHoaCCCD,
+  chuanHoaSoDinhDanh,
   layCotBoSungSinhVien,
   luuCotBoSungSinhVien,
   mauExcelSinhVien,
@@ -57,7 +58,22 @@ const taoSv = () => {
   return sv;
 };
 
+// cột bổ sung danh sách sinh viên là cấu hình dùng chung toàn trường (cán bộ có thể đã khai báo cột
+// bắt buộc trên giao diện) - các tệp mẫu trong test chỉ có 4 cột cố định: tạm bỏ cấu hình, trả lại sau khi chạy
+let cotBoSungBanDau: string | null = null;
+beforeAll(async () => {
+  cotBoSungBanDau = (await prisma.thamSoHeThong.findUnique({ where: { ma: THAM_SO_COT_BO_SUNG } }))?.giaTri ?? null;
+  await prisma.thamSoHeThong.deleteMany({ where: { ma: THAM_SO_COT_BO_SUNG } });
+});
+
 afterAll(async () => {
+  if (cotBoSungBanDau !== null) {
+    await prisma.thamSoHeThong.upsert({
+      where: { ma: THAM_SO_COT_BO_SUNG },
+      create: { ma: THAM_SO_COT_BO_SUNG, giaTri: cotBoSungBanDau },
+      update: { giaTri: cotBoSungBanDau },
+    });
+  }
   const tep = await prisma.tepHoSoDangKy.findMany({ where: { dangKy: { khoaId: { in: khoaIds } } } });
   for (const t of tep) await xoaTep(t.khoaLuuTru);
   const dk = await prisma.dangKyHoc.findMany({ where: { khoaId: { in: khoaIds } } });
@@ -114,8 +130,9 @@ async function napSv(...ds: { ma: string; cccd: string }[]) {
 const dangKy = (khoaId: string, sv: { ma: string; cccd: string }, them: Record<string, unknown> = {}) =>
   dangKyDuThi({
     khoaId,
-    hoTen: "Tên gõ tay bị bỏ qua",
-    soCCCD: "000000000000",
+    // (sửa 07/10/2026) form gửi họ tên/CCCD trống khi thí sinh không sửa thông tin tự điền
+    hoTen: "",
+    soCCCD: "",
     maSinhVien: sv.ma,
     duLieuForm: { giaTri: { soDienThoai: "0905000111" }, tep: {} },
     ...them,
@@ -199,7 +216,7 @@ describe("HV-03 bổ sung - import danh sách sinh viên", () => {
     expect(await prisma.sinhVien.findUnique({ where: { maSinhVien: moi.ma } })).toMatchObject({ hoTen: "Mới Tinh" });
   });
 
-  it("chặn cả tệp khi có dòng lỗi: trùng mã, CCCD sai, thiếu tên, CCCD đã thuộc mã khác, thiếu tiêu đề", async () => {
+  it("chặn cả tệp khi có dòng lỗi: trùng mã, thiếu CCCD, thiếu tên, CCCD đã thuộc mã khác, thiếu tiêu đề", async () => {
     const a = taoSv();
     await napSv(a);
     const moi = taoSv();
@@ -208,7 +225,7 @@ describe("HV-03 bổ sung - import danh sách sinh viên", () => {
         ["Mã sinh viên", "Số CCCD", "Họ tên"],
         [moi.ma, moi.cccd, "Hợp lệ"],
         [moi.ma, `0${so(11)}`, "Trùng mã"],
-        [taoSv().ma, "12ab", "CCCD sai"],
+        [taoSv().ma, "", "Thiếu CCCD"],
         [taoSv().ma, `0${so(11)}`, ""],
         [taoSv().ma, a.cccd, "CCCD của người khác"],
       ]),
@@ -221,7 +238,7 @@ describe("HV-03 bổ sung - import danh sách sinh viên", () => {
     await expect(importDanhSachSinhVien(await xlsx([["A", "B"], ["1", "2"]]), "x.xlsx", NGUOI)).rejects.toThrow(DuLieuImportLoiError);
     await expect(importDanhSachSinhVien(Buffer.from("x"), "x.txt", NGUOI)).rejects.toThrow(/chỉ nhận tệp/);
     // bước kiểm tra cũng báo dòng lỗi
-    await expect(kiemTraImportSinhVien(await xlsx([["Mã sinh viên", "Số CCCD", "Họ tên"], [taoSv().ma, "12ab", "X"]]), "x.xlsx")).rejects.toThrow(
+    await expect(kiemTraImportSinhVien(await xlsx([["Mã sinh viên", "Số CCCD", "Họ tên"], [taoSv().ma, "x".repeat(31), "X"]]), "x.xlsx")).rejects.toThrow(
       DuLieuImportLoiError,
     );
   });
@@ -283,13 +300,13 @@ describe("HV-05 bổ sung - đăng ký dự thi bằng mã sinh viên + lệ ph�
     await expect(luuCauHinhChuongTrinh(ct.id, { dinhDanh: "MA_SINH_VIEN", truong: [] }, NGUOI)).rejects.toThrow(CauHinhFormKhongHopLeError);
   });
 
-  it("tra cứu không lộ CCCD; chặn mã không có trong danh sách, thiếu/sai định dạng số điện thoại xác thực", async () => {
+  it("tra cứu trả họ tên, lớp, số CCCD đầy đủ (sửa 07/10/2026); chặn mã không có trong danh sách, thiếu/sai định dạng số điện thoại xác thực", async () => {
     const { khoa } = await taoKhoaDuThi();
     const sv = taoSv();
     await napSv(sv);
     const tra = await traCuuSinhVienDuThi(khoa.id, sv.ma.toLowerCase());
-    expect(tra).toEqual({ maSinhVien: sv.ma, hoTen: "Sinh Viên 0", lopSinhHoat: "22SGT" });
-    expect(JSON.stringify(tra)).not.toContain(sv.cccd);
+    // (sửa 07/10/2026) hiện đầy đủ số CCCD để thí sinh kiểm tra/sửa trên form
+    expect(tra).toEqual({ maSinhVien: sv.ma, hoTen: "Sinh Viên 0", lopSinhHoat: "22SGT", soCCCD: sv.cccd, dienForm: {} });
     await expect(traCuuSinhVienDuThi(khoa.id, "KHONGCO123")).rejects.toThrow(SinhVienKhongCoTrongDanhSachError);
     await expect(dangKy(khoa.id, { ma: "KHONGCO123", cccd: sv.cccd })).rejects.toThrow(SinhVienKhongCoTrongDanhSachError);
     await expect(dangKy(khoa.id, sv, { duLieuForm: { giaTri: { soDienThoai: "" }, tep: {} } })).rejects.toThrow(SoDienThoaiXacThucKhongHopLeError);
@@ -333,9 +350,9 @@ describe("HV-05 bổ sung - đăng ký dự thi bằng mã sinh viên + lệ ph�
         duLieuForm: { giaTri: { soDienThoai: "0905000222" }, tep: {} },
         ...them,
       });
-    // chặn: thiếu họ tên, CCCD sai
+    // chặn: thiếu họ tên, thiếu số CCCD/hộ chiếu (sửa 07/10/2026: không bắt định dạng 12 số - nhận hộ chiếu)
     await expect(tuDo({ hoTen: " " })).rejects.toThrow(ThongTinDangKyKhongHopLeError);
-    await expect(tuDo({ soCCCD: "12345" })).rejects.toThrow(/CCCD không hợp lệ/);
+    await expect(tuDo({ soCCCD: " " })).rejects.toThrow(/số CCCD\/hộ chiếu/);
     // chặn: CCCD thuộc sinh viên trong danh sách -> phải đăng ký theo diện sinh viên
     const sv = taoSv();
     await napSv(sv);
@@ -475,5 +492,104 @@ describe("HP-02 bổ sung - đối soát lệ phí qua Excel + HV-07 chốt danh
   it("chốt chặn khóa không phải Phương thức 3", async () => {
     const { khoa } = await taoKhoaDuThi("TRUC_TUYEN_NOP_GIAY");
     await expect(chotDanhSachDuThi(khoa.id, NGUOI)).rejects.toThrow(/Phương thức 3/);
+  });
+});
+
+describe("(bổ sung 07/10/2026) số hộ chiếu người nước ngoài; thí sinh sửa thông tin tự điền từ danh sách", () => {
+  it("nạp danh sách nhận số hộ chiếu (bỏ khoảng trắng, viết hoa); chỉ chặn khi trống/quá 30 ký tự", async () => {
+    expect(chuanHoaSoDinhDanh("p 3304738")).toBe("P3304738");
+    expect(chuanHoaSoDinhDanh("48203000001")).toBe("048203000001");
+    expect(chuanHoaSoDinhDanh("  ")).toBeNull();
+    const nn = { ma: taoSv().ma, cccd: `P ${so(7)}` };
+    await napSv(nn);
+    expect((await prisma.sinhVien.findUnique({ where: { maSinhVien: nn.ma } }))?.soCCCD).toBe(nn.cccd.replace(" ", ""));
+  });
+
+  it("sinh viên sửa họ tên/lớp/CCCD tự điền: hồ sơ mới dùng thông tin đã sửa, lưu chênh lệch + nhật ký; CCCD của người khác bị chặn", async () => {
+    const { khoa } = await taoKhoaDuThi();
+    const [sv, khac] = [taoSv(), taoSv()];
+    await napSv(sv, khac);
+    // CCCD sửa trùng sinh viên khác -> chặn, không tạo hồ sơ
+    await expect(dangKy(khoa.id, sv, { soCCCD: khac.cccd })).rejects.toThrow(/đã gắn với thí sinh khác/);
+    expect(await prisma.dangKyHoc.count({ where: { khoaId: khoa.id } })).toBe(0);
+
+    const hoChieu = `C${so(8)}`;
+    const dk = await dangKy(khoa.id, sv, { hoTen: "Sinh  Viên Đã Sửa", soCCCD: hoChieu.toLowerCase(), lopSinhHoat: "22SGT" });
+    expect(dk.hocVien).toMatchObject({ hoTen: "Sinh Viên Đã Sửa", soCCCD: hoChieu, maSinhVien: sv.ma, lopSinhHoat: "22SGT" });
+    expect(dk.suaThongTinDanhSach).toEqual({ hoTen: { cu: "Sinh Viên 0", moi: "Sinh Viên Đã Sửa" }, soCCCD: { cu: sv.cccd, moi: hoChieu } });
+    const nk = await prisma.nhatKyThaoTac.findFirst({ where: { doiTuongId: dk.id, hanhDong: "THI_SINH_SUA_THONG_TIN_DANH_SACH" } });
+    expect(nk?.chiTiet).toContain(hoChieu);
+    // danh sách sinh viên của trường không bị đổi
+    expect((await prisma.sinhVien.findUnique({ where: { maSinhVien: sv.ma } }))?.soCCCD).toBe(sv.cccd);
+    // không sửa gì -> không lưu chênh lệch
+    const { khoa: khoa2 } = await taoKhoaDuThi();
+    const dk2 = await dangKy(khoa2.id, khac);
+    expect(dk2.suaThongTinDanhSach).toBeNull();
+  });
+
+  it("hồ sơ học viên đã có từ trước không bị ghi đè bởi thông tin thí sinh sửa (cán bộ áp dụng ở HV-06)", async () => {
+    const [{ khoa: k1 }, { khoa: k2 }] = [await taoKhoaDuThi(), await taoKhoaDuThi()];
+    const sv = taoSv();
+    await napSv(sv);
+    const dk1 = await dangKy(k1.id, sv);
+    const dk2 = await dangKy(k2.id, sv, { hoTen: "Người Khác Gõ Tên" });
+    expect(dk2.hocVienId).toBe(dk1.hocVienId);
+    expect(dk2.hocVien.hoTen).toBe("Sinh Viên 0");
+    expect(dk2.suaThongTinDanhSach).toEqual({ hoTen: { cu: "Sinh Viên 0", moi: "Người Khác Gõ Tên" } });
+    const nk = await prisma.nhatKyThaoTac.findFirst({ where: { doiTuongId: dk2.id, hanhDong: "THI_SINH_SUA_THONG_TIN_DANH_SACH" } });
+    expect(nk?.chiTiet).toContain("chưa áp dụng");
+  });
+
+  it("thí sinh tự do người nước ngoài đăng ký bằng số hộ chiếu, mở lại đơn bằng số hộ chiếu + SĐT", async () => {
+    const { khoa } = await taoKhoaDuThi();
+    const hoChieu = `P${so(7)}`;
+    const dk = await dangKyDuThi({
+      khoaId: khoa.id,
+      hoTen: "John Smith",
+      soCCCD: `${hoChieu.slice(0, 1).toLowerCase()} ${hoChieu.slice(1)}`,
+      laThiSinhTuDo: true,
+      duLieuForm: { giaTri: { soDienThoai: "0905000333" }, tep: {} },
+    });
+    expect(dk.hocVien.soCCCD).toBe(hoChieu);
+    expect(await timLaiDonDuThi(khoa.id, { soCCCD: hoChieu, soDienThoai: "0905000333" })).toBe(dk.id);
+  });
+});
+
+describe("(bổ sung 07/10/2026) tra mã sinh viên điền sẵn các cột bổ sung của danh sách vào form đăng ký", () => {
+  it("ghép theo tên (bỏ ghi chú trong ngoặc, không phân biệt hoa thường); ô ngày đổi về yyyy-mm-dd; danh sách chọn chỉ điền khi khớp; trường cố định không điền", async () => {
+    const cu = await prisma.thamSoHeThong.findUnique({ where: { ma: THAM_SO_COT_BO_SUNG } });
+    try {
+      await luuCotBoSungSinhVien([{ nhan: "Nơi sinh" }, { nhan: "Ngày sinh" }, { nhan: "Giới tính" }, { nhan: "Dân tộc" }], NGUOI);
+      const { ct, khoa } = await taoKhoaDuThi();
+      await luuCauHinhChuongTrinh(
+        ct.id,
+        {
+          dinhDanh: "MA_SINH_VIEN",
+          truong: [
+            { ma: "soDienThoai", hien: true, batBuoc: true },
+            { ma: "ngaySinh", hien: true },
+            { ma: "noiSinh", nhan: "Nơi sinh (tỉnh/thành phố)", kieu: "VAN_BAN", hien: true },
+            { ma: "gioiTinh", nhan: "GIỚI TÍNH", kieu: "LUA_CHON", luaChon: ["Nam", "Nữ"], hien: true },
+            { ma: "danToc", nhan: "Dân tộc", kieu: "VAN_BAN", hien: true, coDinh: true, macDinh: "Kinh" },
+          ],
+        },
+        NGUOI,
+      );
+      const sv = taoSv();
+      await importDanhSachSinhVien(
+        await xlsx([
+          ["Mã sinh viên", "Số CCCD", "Họ tên sinh viên", "Lớp sinh hoạt", "Nơi sinh", "Ngày sinh", "Giới tính", "Dân tộc"],
+          [sv.ma, sv.cccd, "Sinh Viên Có Nơi Sinh", "22SGT", "Đà Nẵng", "26-2-2008", "nữ", "Tày"],
+        ]),
+        "ds.xlsx",
+        NGUOI,
+      );
+      const tra = await traCuuSinhVienDuThi(khoa.id, sv.ma);
+      expect(tra.soCCCD).toBe(sv.cccd);
+      expect(tra.dienForm).toEqual({ ngaySinh: "2008-02-26", bs_noiSinh: "Đà Nẵng", bs_gioiTinh: "Nữ" });
+    } finally {
+      if (cu) await prisma.thamSoHeThong.update({ where: { ma: THAM_SO_COT_BO_SUNG }, data: { giaTri: cu.giaTri } });
+      else await prisma.thamSoHeThong.deleteMany({ where: { ma: THAM_SO_COT_BO_SUNG } });
+    }
   });
 });

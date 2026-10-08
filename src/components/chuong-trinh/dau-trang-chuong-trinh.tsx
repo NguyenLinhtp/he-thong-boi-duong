@@ -13,9 +13,10 @@ const TAB = [
   { ma: "thong-tin", nhan: "Khung chương trình", duoi: "" },
   { ma: "hoc-lieu", nhan: "Học liệu & đánh giá", duoi: "/hoc-lieu" },
   { ma: "form-dang-ky", nhan: "Form đăng ký", duoi: "/form-dang-ky" },
+  { ma: "mau-in", nhan: "Mẫu in", duoi: "/mau-in" },
 ] as const;
 
-/** Đầu trang chương trình: đường dẫn, tiêu đề + trạng thái, tab khung chương trình / học liệu / form đăng ký. */
+/** Đầu trang chương trình: đường dẫn, tiêu đề + trạng thái, tab khung chương trình / học liệu / form đăng ký / mẫu in. */
 export function DauTrangChuongTrinh({
   chuongTrinh,
   dangChon,
