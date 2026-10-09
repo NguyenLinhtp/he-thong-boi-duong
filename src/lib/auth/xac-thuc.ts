@@ -13,6 +13,8 @@ export async function xacThucDangNhap(
   dinhDanh: string,
   matKhau: string,
 ): Promise<DanhTinhToiThieu | null> {
+  // bỏ khoảng trắng gõ/dán thừa ở ô định danh (vd. "HV20260098 ")
+  dinhDanh = dinhDanh.trim();
   const nguoiDung = await prisma.nguoiDung.findFirst({
     where: {
       OR: [{ tenDangNhap: dinhDanh }, { soCCCD: dinhDanh }, { maSoHocVien: dinhDanh }],

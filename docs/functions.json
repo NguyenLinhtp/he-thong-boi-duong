@@ -699,11 +699,11 @@
     "ma_cn": "QT-01",
     "nhom_chuc_nang": "10. Quản trị hệ thống",
     "ten_chuc_nang": "Quản lý tài khoản người dùng",
-    "mo_ta_chi_tiet": "Tạo/khóa/xóa tài khoản, đặt lại mật khẩu cho cán bộ, giảng viên, học viên; (bổ sung 01/10/2026) học viên tự đăng ký tài khoản trên trang công khai (họ tên, CCCD, ngày sinh, số điện thoại, email, mật khẩu) để đăng ký khóa bồi dưỡng",
+    "mo_ta_chi_tiet": "Tạo/khóa/xóa tài khoản, đặt lại mật khẩu cho cán bộ, giảng viên, học viên; (bổ sung 01/10/2026) học viên tự đăng ký tài khoản trên trang công khai (họ tên, CCCD, ngày sinh, số điện thoại, email, mật khẩu) để đăng ký khóa bồi dưỡng; (bổ sung 09/10/2026) màn hình Quản trị -> Tài khoản chia 2 tab: Giảng viên / Cán bộ và Học viên (kèm số tài khoản mỗi tab), có ô tìm kiếm (tên đăng nhập, họ tên, email, số CCCD, mã học viên) và phân trang, nhập được số dòng mỗi trang (1-500, mặc định 20)",
     "actor": "Quản trị hệ thống",
     "input": "Thông tin tài khoản, vai trò",
     "output": "Tài khoản người dùng",
-    "quy_tac_nghiep_vu": "Mật khẩu tuân thủ chính sách bảo mật tối thiểu; (bổ sung 01/10/2026) tài khoản tự đăng ký: tên đăng nhập = số CCCD, vai trò Học viên, gắn hồ sơ học viên theo CCCD; CCCD đã có tài khoản thì không đăng ký lại; hồ sơ học viên đã có chỉ được nhận khi họ tên và (nếu hồ sơ có) ngày sinh khớp, chỉ bổ sung chỗ trống; ghi nhật ký",
+    "quy_tac_nghiep_vu": "Mật khẩu tuân thủ chính sách bảo mật tối thiểu; (bổ sung 01/10/2026) tài khoản tự đăng ký: tên đăng nhập = số CCCD, vai trò Học viên, gắn hồ sơ học viên theo CCCD; CCCD đã có tài khoản thì không đăng ký lại; hồ sơ học viên đã có chỉ được nhận khi họ tên và (nếu hồ sơ có) ngày sinh khớp, chỉ bổ sung chỗ trống; ghi nhật ký; (bổ sung 09/10/2026) tab Học viên gồm tài khoản chỉ có vai trò Học viên, tài khoản có thêm vai trò khác ở tab Giảng viên / Cán bộ; tìm kiếm không phân biệt hoa thường; đổi tab giữ từ khóa và số dòng/trang, về trang 1; đăng nhập bỏ khoảng trắng thừa ở ô tên đăng nhập/CCCD/mã số",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 1"
   },

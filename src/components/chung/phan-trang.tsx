@@ -79,7 +79,7 @@ export function OTimKiem({
       ))}
       <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input name={ten.q} defaultValue={tuKhoa} placeholder={goiY} aria-label={goiY} className="pl-8" />
+        <Input key={tuKhoa} name={ten.q} defaultValue={tuKhoa} placeholder={goiY} aria-label={goiY} className="pl-8" />
       </div>
       <Button type="submit" size="sm" variant="secondary">
         Tìm

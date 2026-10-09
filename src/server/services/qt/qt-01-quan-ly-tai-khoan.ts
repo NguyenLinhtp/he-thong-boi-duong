@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
-import type { VaiTro } from "@/generated/prisma/client";
+import type { Prisma, VaiTro } from "@/generated/prisma/client";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 
 export class TenDangNhapTrungError extends Error {
@@ -144,5 +144,47 @@ export async function danhSachTaiKhoan() {
   return prisma.nguoiDung.findMany({
     include: { vaiTros: { include: { vaiTro: true } } },
     orderBy: { createdAt: "desc" },
+  });
+}
+
+// (bổ sung 09/10/2026) màn hình Quản trị -> Tài khoản chia 2 tab, tìm kiếm, phân trang trong CSDL
+export type NhomTaiKhoan = "hoc-vien" | "can-bo";
+
+/** Tab Học viên: tài khoản chỉ có vai trò Học viên; mọi tài khoản khác (kể cả vừa là học viên vừa là cán bộ) ở tab Giảng viên / Cán bộ. */
+function dieuKienNhomTaiKhoan(nhom: NhomTaiKhoan): Prisma.NguoiDungWhereInput {
+  const laHocVienThuan: Prisma.NguoiDungWhereInput = {
+    vaiTros: { some: { vaiTro: { ma: "HOC_VIEN" } }, every: { vaiTro: { ma: "HOC_VIEN" } } },
+  };
+  return nhom === "hoc-vien" ? laHocVienThuan : { NOT: laHocVienThuan };
+}
+
+function dieuKienTimTaiKhoan(nhom: NhomTaiKhoan, tuKhoa?: string): Prisma.NguoiDungWhereInput {
+  const q = tuKhoa?.trim();
+  if (!q) return dieuKienNhomTaiKhoan(nhom);
+  const chua = { contains: q, mode: "insensitive" as const };
+  return {
+    AND: [
+      dieuKienNhomTaiKhoan(nhom),
+      { OR: [{ tenDangNhap: chua }, { hoTen: chua }, { email: chua }, { soCCCD: chua }, { maSoHocVien: chua }] },
+    ],
+  };
+}
+
+/** Số tài khoản mỗi tab (theo từ khóa đang tìm). */
+export async function demTaiKhoanTheoNhom(tuKhoa?: string) {
+  const [hocVien, canBo] = [
+    await prisma.nguoiDung.count({ where: dieuKienTimTaiKhoan("hoc-vien", tuKhoa) }),
+    await prisma.nguoiDung.count({ where: dieuKienTimTaiKhoan("can-bo", tuKhoa) }),
+  ];
+  return { "hoc-vien": hocVien, "can-bo": canBo } satisfies Record<NhomTaiKhoan, number>;
+}
+
+export async function trangTaiKhoan(nhom: NhomTaiKhoan, tuKhoa: string | undefined, boQua: number, soDong: number) {
+  return prisma.nguoiDung.findMany({
+    where: dieuKienTimTaiKhoan(nhom, tuKhoa),
+    include: { vaiTros: { include: { vaiTro: true } } },
+    orderBy: [{ createdAt: "desc" }, { tenDangNhap: "asc" }],
+    skip: boQua,
+    take: soDong,
   });
 }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requirePermission } from "@/lib/auth/guard";
+import { ChuaDangNhapError, requirePermission } from "@/lib/auth/guard";
 import {
   capNhatHoSoHocVien,
   capTaiKhoanHocVien,
@@ -91,8 +91,21 @@ export async function xoaHocVienAction(id: string): Promise<string | undefined> 
 
 export type TrangThaiMatKhau = { loi?: string; ok?: string } | undefined;
 
+const HET_PHIEN = "Phiên đăng nhập đã hết hoặc đã đăng xuất - tải lại trang và đăng nhập để tiếp tục.";
+
+/** Form mật khẩu hay để mở lâu: hết phiên thì báo trong form thay vì lỗi trang. */
+async function phienMatKhau(maCN: string) {
+  try {
+    return await requirePermission(maCN);
+  } catch (error) {
+    if (error instanceof ChuaDangNhapError) return null;
+    throw error;
+  }
+}
+
 export async function matKhauHocVienAction(_prevState: TrangThaiMatKhau, formData: FormData): Promise<TrangThaiMatKhau> {
-  const phien = await requirePermission("HV-08");
+  const phien = await phienMatKhau("HV-08");
+  if (!phien) return { loi: HET_PHIEN };
   const id = chu(formData, "id");
   const matKhau = chu(formData, "matKhau");
   if (matKhau !== chu(formData, "nhapLai")) return { loi: "Mật khẩu nhập lại không khớp" };
@@ -109,7 +122,8 @@ export async function matKhauHocVienAction(_prevState: TrangThaiMatKhau, formDat
 
 /** Học viên tự đổi mật khẩu của mình. */
 export async function doiMatKhauAction(_prevState: TrangThaiMatKhau, formData: FormData): Promise<TrangThaiMatKhau> {
-  const phien = await requirePermission("HV-08");
+  const phien = await phienMatKhau("HV-08");
+  if (!phien) return { loi: HET_PHIEN };
   const moi = chu(formData, "matKhauMoi");
   if (moi !== chu(formData, "nhapLai")) return { loi: "Mật khẩu nhập lại không khớp" };
   const loi = await chay(() => doiMatKhauCuaToi(phien.userId, chu(formData, "matKhauCu"), moi));
