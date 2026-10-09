@@ -297,7 +297,9 @@ model ChuongTrinh {
   loaiHinhBoiDuong   LoaiHinhBoiDuong     @relation(fields: [loaiHinhBoiDuongId], references: [id])
   // CT-07: mỗi chương trình gắn đúng 1 trong 4 phương thức đăng ký;
   // mọi khóa mở theo chương trình kế thừa phương thức này.
-  phuongThucDangKy   PhuongThucDangKy?
+  // (sửa 08/10/2026 - CT-07) 1 chương trình chọn được nhiều phương thức đào tạo (PT1, PT2, PT4);
+  // PT3 (CHI_DU_THI) luôn đứng riêng. Mọi khóa của chương trình dùng theo danh sách này.
+  phuongThucDangKys  PhuongThucDangKy[] @default([])
   // HV-01/04/05/11/12 (bổ sung 30/09/2026): cấu hình form đăng ký của chương trình
   // (trường có sẵn bật/tắt/bắt buộc + trường tùy chỉnh) - null = form mặc định
   cauHinhFormDangKy  Json?

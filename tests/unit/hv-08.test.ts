@@ -63,7 +63,7 @@ describe("HV-08 quản lý hồ sơ học viên", () => {
         trangThai: "DA_BAN_HANH",
         soQuyetDinh: "QD",
         ngayBanHanh: new Date(),
-        phuongThucDangKy: "CHI_DU_THI",
+        phuongThucDangKys: ["CHI_DU_THI"],
       },
     });
     chuongTrinhTaoTrongTest.push(ct.id);

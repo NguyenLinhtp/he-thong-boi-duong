@@ -63,7 +63,7 @@ async function taoKhoaHoc() {
   const lh = await prisma.loaiHinhBoiDuong.create({ data: { ma: `LH_HT_${uid()}`, ten: "LH" } });
   ids.loaiHinh.push(lh.id);
   const ct = await prisma.chuongTrinh.create({
-    data: { maCT: `CT_HT_${uid()}`, ten: "CT học tập", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY" },
+    data: { maCT: `CT_HT_${uid()}`, ten: "CT học tập", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKys: ["TRUC_TUYEN_NOP_GIAY"] },
   });
   ids.chuongTrinh.push(ct.id);
   const cd1 = await prisma.hocPhan.create({ data: { chuongTrinhId: ct.id, ten: "Chuyên đề 1", soTiet: 10, thuTu: 1 } });

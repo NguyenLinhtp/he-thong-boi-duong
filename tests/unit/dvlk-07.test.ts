@@ -28,7 +28,7 @@ async function taoKhoa() {
       ten: "CT DVLK-07",
       loaiHinhBoiDuongId: lh.id,
       trangThai: "DA_BAN_HANH",
-      phuongThucDangKy: "QUA_DON_VI_LIEN_KET",
+      phuongThucDangKys: ["QUA_DON_VI_LIEN_KET"],
     },
   });
   ids.chuongTrinh.push(ct.id);

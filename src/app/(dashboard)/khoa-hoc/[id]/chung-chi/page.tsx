@@ -7,7 +7,7 @@ import { hopDongChoBanGiao } from "@/server/services/cc/cc-04-so-cap";
 import { danhSachQuyetDinhCuaKhoa, soVanBangChoQuyetDinh } from "@/server/services/cc/cc-03-ky-duyet";
 import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
 import { ChuaPheDuyetKetQuaError } from "@/server/services/cc/loi-chung-chi";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { TableHeader, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
@@ -20,6 +20,7 @@ import {
   FormBanGiaoLo,
 } from "./cac-form";
 import { NHAN_TRANG_THAI_CHUNG_CHI, NHAN_KENH_NHAN, NHAN_LOAI_VAN_BANG } from "./nhan";
+import { BangPhanTrang } from "@/components/chung/bang-phan-trang";
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -116,40 +117,41 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
                 Tải Excel
               </button>
             </form>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Học viên</TableHead>
-                  <TableHead>Điểm tổng kết</TableHead>
-                  <TableHead>Xét đề nghị</TableHead>
+            <BangPhanTrang
+              dauBang={
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Học viên</TableHead>
+                    <TableHead>Điểm tổng kết</TableHead>
+                    <TableHead>Xét đề nghị</TableHead>
+                  </TableRow>
+                </TableHeader>
+              }
+            >
+              {xet.duDieuKien.map((kq) => (
+                <TableRow key={kq.id}>
+                  <TableCell>{kq.hocVien.hoTen}</TableCell>
+                  <TableCell>{kq.diemTongKet?.toString() ?? "—"}</TableCell>
+                  <TableCell>Đủ điều kiện</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {xet.duDieuKien.map((kq) => (
-                  <TableRow key={kq.id}>
-                    <TableCell>{kq.hocVien.hoTen}</TableCell>
-                    <TableCell>{kq.diemTongKet?.toString() ?? "—"}</TableCell>
-                    <TableCell>Đủ điều kiện</TableCell>
-                  </TableRow>
-                ))}
-                {xet.khongDuDieuKien.map((kq) => (
-                  <TableRow key={kq.id}>
-                    <TableCell>{kq.hocVien.hoTen}</TableCell>
-                    <TableCell>{kq.diemTongKet?.toString() ?? "—"}</TableCell>
-                    <TableCell className="text-destructive">{kq.lyDo}</TableCell>
-                  </TableRow>
-                ))}
-                {xet.daCoChungChi.map((kq) => (
-                  <TableRow key={kq.id}>
-                    <TableCell>{kq.hocVien.hoTen}</TableCell>
-                    <TableCell>{kq.diemTongKet?.toString() ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      Đã có: {NHAN_TRANG_THAI_CHUNG_CHI[kq.trangThaiChungChi]}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              ))}
+              {xet.khongDuDieuKien.map((kq) => (
+                <TableRow key={kq.id}>
+                  <TableCell>{kq.hocVien.hoTen}</TableCell>
+                  <TableCell>{kq.diemTongKet?.toString() ?? "—"}</TableCell>
+                  <TableCell className="text-destructive">{kq.lyDo}</TableCell>
+                </TableRow>
+              ))}
+              {xet.daCoChungChi.map((kq) => (
+                <TableRow key={kq.id}>
+                  <TableCell>{kq.hocVien.hoTen}</TableCell>
+                  <TableCell>{kq.diemTongKet?.toString() ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    Đã có: {NHAN_TRANG_THAI_CHUNG_CHI[kq.trangThaiChungChi]}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </BangPhanTrang>
           </>
         )}
       </section>
@@ -188,30 +190,31 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
             />
           )}
           {dsQuyetDinh.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Số quyết định</TableHead>
-                  <TableHead>Ngày ký</TableHead>
-                  <TableHead>Người ký</TableHead>
-                  <TableHead>Phạm vi</TableHead>
-                  <TableHead>Số văn bằng</TableHead>
-                  <TableHead>Người nhập</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dsQuyetDinh.map((qd) => (
-                  <TableRow key={qd.id}>
-                    <TableCell className="font-medium">{qd.soQuyetDinh}</TableCell>
-                    <TableCell>{qd.ngayKy.toLocaleDateString("vi-VN")}</TableCell>
-                    <TableCell>{qd.nguoiKy}</TableCell>
-                    <TableCell>{qd.lop ? `Lớp ${qd.lop.maLop} · ${qd.lop.ten}` : "Cả khóa"}</TableCell>
-                    <TableCell>{qd._count.chungChis}</TableCell>
-                    <TableCell>{qd.nguoiNhap}</TableCell>
+            <BangPhanTrang
+              dauBang={
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Số quyết định</TableHead>
+                    <TableHead>Ngày ký</TableHead>
+                    <TableHead>Người ký</TableHead>
+                    <TableHead>Phạm vi</TableHead>
+                    <TableHead>Số văn bằng</TableHead>
+                    <TableHead>Người nhập</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+              }
+            >
+              {dsQuyetDinh.map((qd) => (
+                <TableRow key={qd.id}>
+                  <TableCell className="font-medium">{qd.soQuyetDinh}</TableCell>
+                  <TableCell>{qd.ngayKy.toLocaleDateString("vi-VN")}</TableCell>
+                  <TableCell>{qd.nguoiKy}</TableCell>
+                  <TableCell>{qd.lop ? `Lớp ${qd.lop.maLop} · ${qd.lop.ten}` : "Cả khóa"}</TableCell>
+                  <TableCell>{qd._count.chungChis}</TableCell>
+                  <TableCell>{qd.nguoiNhap}</TableCell>
+                </TableRow>
+              ))}
+            </BangPhanTrang>
           )}
         </section>
       )}
@@ -223,39 +226,40 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
             Chứng chỉ của học viên do đơn vị liên kết tuyển sinh chỉ được bàn giao theo lô, sau khi
             hợp đồng liên kết đã thanh lý. Học viên tự đăng ký nhận trực tiếp ở bảng dưới.
           </p>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Hợp đồng</TableHead>
-                <TableHead>Đơn vị liên kết</TableHead>
-                <TableHead>Các lô đã giao</TableHead>
-                <TableHead>Bàn giao</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dsHopDong.map((hd) => (
-                <TableRow key={hd.id}>
-                  <TableCell className="font-mono">{hd.maHopDong}</TableCell>
-                  <TableCell>{hd.donViLienKet.ten}</TableCell>
-                  <TableCell className="text-xs">
-                    {hd.banGiaos.length === 0
-                      ? "—"
-                      : hd.banGiaos
-                          .map((lo) => `${lo.maLo} (${[lo.ngayBanGiao.toLocaleDateString("vi-VN"), lo.nguoiDaiDienNhan].filter(Boolean).join(", ")})`)
-                          .join("; ")}
-                  </TableCell>
-                  <TableCell>
-                    <FormBanGiaoLo
-                      khoaId={khoa.id}
-                      hopDongLienKetId={hd.id}
-                      soChoBanGiao={hd.soChoBanGiao}
-                      daThanhLy={hd.trangThai === "DA_THANH_LY"}
-                    />
-                  </TableCell>
+          <BangPhanTrang
+            dauBang={
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Hợp đồng</TableHead>
+                  <TableHead>Đơn vị liên kết</TableHead>
+                  <TableHead>Các lô đã giao</TableHead>
+                  <TableHead>Bàn giao</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+            }
+          >
+            {dsHopDong.map((hd) => (
+              <TableRow key={hd.id}>
+                <TableCell className="font-mono">{hd.maHopDong}</TableCell>
+                <TableCell>{hd.donViLienKet.ten}</TableCell>
+                <TableCell className="text-xs">
+                  {hd.banGiaos.length === 0
+                    ? "—"
+                    : hd.banGiaos
+                        .map((lo) => `${lo.maLo} (${[lo.ngayBanGiao.toLocaleDateString("vi-VN"), lo.nguoiDaiDienNhan].filter(Boolean).join(", ")})`)
+                        .join("; ")}
+                </TableCell>
+                <TableCell>
+                  <FormBanGiaoLo
+                    khoaId={khoa.id}
+                    hopDongLienKetId={hd.id}
+                    soChoBanGiao={hd.soChoBanGiao}
+                    daThanhLy={hd.trangThai === "DA_THANH_LY"}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </BangPhanTrang>
         </section>
       )}
 
@@ -268,61 +272,62 @@ export default async function ChungChiKhoaPage({ params }: { params: Promise<{ i
             </a>
           )}
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Số hiệu</TableHead>
-              <TableHead>Học viên</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Thao tác</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dsChungChi.map((cc) => (
-              <TableRow key={cc.id}>
-                <TableCell className="font-mono">{cc.soHieu ?? "—"}</TableCell>
-                <TableCell>{cc.hocVien.hoTen}</TableCell>
-                <TableCell>
-                  <NhanTrangThai ma={cc.trangThai}>{NHAN_TRANG_THAI_CHUNG_CHI[cc.trangThai] ?? cc.trangThai}</NhanTrangThai>
-                  {cc.soQuyetDinh && (
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      (QĐ {cc.soQuyetDinh}, {cc.nguoiKy})
-                    </span>
-                  )}
-                  {cc.trangThai === "DA_CAP" && (
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      - sổ {cc.soVaoSo}, {cc.kenhNhan ? NHAN_KENH_NHAN[cc.kenhNhan] : ""}
-                      {cc.banGiao ? ` lô ${cc.banGiao.maLo}` : ""}, {cc.ngayNhan?.toLocaleDateString("vi-VN")}
-                    </span>
-                  )}
-                  {cc.trangThai === "DA_HUY" && (
-                    <span className="ml-1 text-xs text-muted-foreground">({cc.lyDoHuy})</span>
-                  )}
-                </TableCell>
-                <TableCell className="flex flex-wrap gap-1.5">
-                  {cc.soHieu && cc.trangThai !== "DA_HUY" && (
-                    <a href={`/khoa-hoc/${khoa.id}/chung-chi/in?ids=${cc.id}`} target="_blank" className="text-sm underline">
-                      In
-                    </a>
-                  )}
-                  {choPhepCC04 && cc.trangThai === "DA_KY_DUYET" && !hocVienQuaDvlk.has(cc.hocVienId) && (
-                    <NutTraTrucTiep khoaId={khoa.id} chungChiId={cc.id} hoTen={cc.hocVien.hoTen} />
-                  )}
-                  {choPhepCC02 && TRANG_THAI_HUY_DUOC.includes(cc.trangThai) && (
-                    <NutHuyChungChi khoaId={khoa.id} chungChiId={cc.id} soHieu={cc.soHieu} />
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {dsChungChi.length === 0 && (
+        <BangPhanTrang
+          dauBang={
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                  Chưa có chứng chỉ nào
-                </TableCell>
+                <TableHead>Số hiệu</TableHead>
+                <TableHead>Học viên</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Thao tác</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+          }
+          rong={
+            <TableRow>
+              <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                Chưa có chứng chỉ nào
+              </TableCell>
+            </TableRow>
+          }
+        >
+          {dsChungChi.map((cc) => (
+            <TableRow key={cc.id}>
+              <TableCell className="font-mono">{cc.soHieu ?? "—"}</TableCell>
+              <TableCell>{cc.hocVien.hoTen}</TableCell>
+              <TableCell>
+                <NhanTrangThai ma={cc.trangThai}>{NHAN_TRANG_THAI_CHUNG_CHI[cc.trangThai] ?? cc.trangThai}</NhanTrangThai>
+                {cc.soQuyetDinh && (
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    (QĐ {cc.soQuyetDinh}, {cc.nguoiKy})
+                  </span>
+                )}
+                {cc.trangThai === "DA_CAP" && (
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    - sổ {cc.soVaoSo}, {cc.kenhNhan ? NHAN_KENH_NHAN[cc.kenhNhan] : ""}
+                    {cc.banGiao ? ` lô ${cc.banGiao.maLo}` : ""}, {cc.ngayNhan?.toLocaleDateString("vi-VN")}
+                  </span>
+                )}
+                {cc.trangThai === "DA_HUY" && (
+                  <span className="ml-1 text-xs text-muted-foreground">({cc.lyDoHuy})</span>
+                )}
+              </TableCell>
+              <TableCell className="flex flex-wrap gap-1.5">
+                {cc.soHieu && cc.trangThai !== "DA_HUY" && (
+                  <a href={`/khoa-hoc/${khoa.id}/chung-chi/in?ids=${cc.id}`} target="_blank" className="text-sm underline">
+                    In
+                  </a>
+                )}
+                {choPhepCC04 && cc.trangThai === "DA_KY_DUYET" && !hocVienQuaDvlk.has(cc.hocVienId) && (
+                  <NutTraTrucTiep khoaId={khoa.id} chungChiId={cc.id} hoTen={cc.hocVien.hoTen} />
+                )}
+                {choPhepCC02 && TRANG_THAI_HUY_DUOC.includes(cc.trangThai) && (
+                  <NutHuyChungChi khoaId={khoa.id} chungChiId={cc.id} soHieu={cc.soHieu} />
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </BangPhanTrang>
       </section>
     </main>
   );

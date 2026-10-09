@@ -100,6 +100,42 @@ type NoiDungSaoLuu = {
   duLieu: Record<TenBang, DongDuLieu[]>;
 };
 
+/**
+ * Bản sao lưu lập trước khi đổi cấu trúc dữ liệu vẫn phục hồi được - chuyển dòng cũ sang cấu trúc
+ * hiện hành (giống các migration tương ứng):
+ * - (07/10/2026) phiếu thu gắn 1 thành phần lệ phí (phieuThu.hocPhiThanhPhanId) -> dòng chi tiết
+ *   phieuThuChiTiet (nội dung = tên thành phần, số tiền = số tiền phiếu)
+ * - (08/10/2026) chuongTrinh.phuongThucDangKy (1 giá trị) -> phuongThucDangKys (danh sách)
+ */
+export function chuanHoaDuLieuCu(duLieu: Partial<Record<TenBang, DongDuLieu[]>>) {
+  const kq = { ...duLieu } as Record<TenBang, DongDuLieu[]>;
+  kq.chuongTrinh = (duLieu.chuongTrinh ?? []).map((dong) => {
+    if (!("phuongThucDangKy" in dong)) return dong;
+    const { phuongThucDangKy, ...con } = dong;
+    return { ...con, phuongThucDangKys: con.phuongThucDangKys ?? (phuongThucDangKy ? [phuongThucDangKy] : []) };
+  });
+  const tenThanhPhan = new Map((duLieu.thanhPhanLePhi ?? []).map((t) => [t.id as string, t.ten as string]));
+  const thanhPhanCuaDong = new Map((duLieu.hocPhiThanhPhan ?? []).map((d) => [d.id as string, d.thanhPhanId as string]));
+  const daCoChiTiet = new Set((duLieu.phieuThuChiTiet ?? []).map((c) => c.phieuThuId as string));
+  const chiTietThem: DongDuLieu[] = [];
+  kq.phieuThu = (duLieu.phieuThu ?? []).map((dong) => {
+    if (!("hocPhiThanhPhanId" in dong)) return dong;
+    const { hocPhiThanhPhanId, ...con } = dong;
+    if (hocPhiThanhPhanId && !daCoChiTiet.has(con.id as string)) {
+      chiTietThem.push({
+        id: `ptct_${con.id}`,
+        phieuThuId: con.id,
+        hocPhiThanhPhanId,
+        noiDung: tenThanhPhan.get(thanhPhanCuaDong.get(hocPhiThanhPhanId as string) ?? "") ?? "Lệ phí",
+        soTien: con.soTien,
+      });
+    }
+    return con;
+  });
+  kq.phieuThuChiTiet = [...(duLieu.phieuThuChiTiet ?? []), ...chiTietThem];
+  return kq;
+}
+
 export async function chayBackupNgay(
   nguoiKichHoat?: string,
   loaiKichHoat: "THU_CONG" | "TU_DONG" = "THU_CONG",
@@ -190,6 +226,7 @@ export async function phucHoiTuBanSaoLuu(saoLuuId: string, nguoi: NguoiThucHien 
       throw new Error("thiếu trường duLieu");
     }
     noiDung = parsed as NoiDungSaoLuu;
+    noiDung.duLieu = chuanHoaDuLieuCu(noiDung.duLieu);
   } catch {
     throw new TepSaoLuuKhongHopLeError();
   }

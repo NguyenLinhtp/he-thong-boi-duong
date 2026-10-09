@@ -90,8 +90,10 @@ describe("CT-04 cập nhật/chỉnh sửa chương trình đã ban hành", () =
     expect(daSua.tongThoiLuong).toBe(99);
   });
 
-  it("chặn đổi loại hình/tổng thời lượng khi chương trình đang có khóa hoạt động, vẫn cho sửa tên", async () => {
+  it("(sửa 08/10/2026) có khóa hoạt động: đổi loại hình/tổng thời lượng bắt buộc lý do, khóa dùng giá trị mới; sửa tên không cần lý do", async () => {
     const { ct, lh } = await taoChuongTrinhDaBanHanh();
+    const lhKhac = await prisma.loaiHinhBoiDuong.create({ data: { ma: `LH_CT04K_${crypto.randomUUID()}`, ten: "Loại hình khác" } });
+    loaiHinhTaoTrongTest.push(lhKhac.id);
     const khoa = await prisma.khoa.create({
       data: {
         maKhoa: `KH_CT04_${crypto.randomUUID()}`,
@@ -103,20 +105,23 @@ describe("CT-04 cập nhật/chỉnh sửa chương trình đã ban hành", () =
     khoaTaoTrongTest.push(khoa.id);
 
     await expect(
-      suaChuongTrinhDaBanHanh(ct.id, {
-        ten: "Tên mới vẫn được đổi",
-        loaiHinhBoiDuongId: lh.id,
-        tongThoiLuong: 999,
-      }),
+      suaChuongTrinhDaBanHanh(ct.id, { ten: "Tên mới", loaiHinhBoiDuongId: lhKhac.id, tongThoiLuong: 10 }),
     ).rejects.toThrow(SuaTruongAnhHuongKhoaDangChayError);
+    await expect(
+      suaChuongTrinhDaBanHanh(ct.id, { ten: "Tên mới", loaiHinhBoiDuongId: lh.id, tongThoiLuong: 10, lyDoSua: "  " }),
+    ).resolves.toBeTruthy(); // không đổi loại hình/thời lượng -> không cần lý do
 
     const daSua = await suaChuongTrinhDaBanHanh(ct.id, {
-      ten: "Tên mới vẫn được đổi",
-      loaiHinhBoiDuongId: lh.id,
+      ten: "Tên mới",
+      loaiHinhBoiDuongId: lhKhac.id,
       tongThoiLuong: 10,
+      lyDoSua: "Quyết định điều chỉnh loại hình",
     });
-    expect(daSua.ten).toBe("Tên mới vẫn được đổi");
-    expect(daSua.tongThoiLuong).toBe(10);
+    expect(daSua.loaiHinhBoiDuongId).toBe(lhKhac.id);
+    const khoaSau = await prisma.khoa.findUniqueOrThrow({ where: { id: khoa.id }, include: { chuongTrinh: true } });
+    expect(khoaSau.chuongTrinh.loaiHinhBoiDuongId).toBe(lhKhac.id);
+    const nk = await prisma.nhatKyThaoTac.findFirst({ where: { hanhDong: "SUA_CHUONG_TRINH_DA_BAN_HANH", doiTuongId: ct.id }, orderBy: { thoiGian: "desc" } });
+    expect(nk?.chiTiet).toContain("áp dụng cho các khóa đang hoạt động");
   });
 
   it("chặn đổi tổng thời lượng lệch tổng số tiết học phần (CT-02) - học phần đã khóa sau ban hành", async () => {

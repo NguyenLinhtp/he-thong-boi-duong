@@ -23,7 +23,7 @@ const LY_DO_KHONG_NOP = "Không nộp lệ phí thi trước hạn đăng ký";
 async function khoaDuThi(khoaId: string) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  if (khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") throw new ChotDanhSachDuThiError("chỉ áp dụng cho khóa dự thi (Phương thức 3)");
+  if (!khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) throw new ChotDanhSachDuThiError("chỉ áp dụng cho khóa dự thi (Phương thức 3)");
   return khoa;
 }
 

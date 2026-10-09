@@ -40,7 +40,7 @@ async function taoKhoaPt4() {
       ten: "Chương trình DVLK-04",
       loaiHinhBoiDuongId: lh.id,
       trangThai: "DA_BAN_HANH",
-      phuongThucDangKy: "QUA_DON_VI_LIEN_KET",
+      phuongThucDangKys: ["QUA_DON_VI_LIEN_KET"],
     },
   });
   chuongTrinhIds.push(ct.id);

@@ -80,7 +80,7 @@ export async function chuyenTrangThaiLePhi(
   // khóa dự thi: danh sách chính thức = thí sinh đã xác nhận lệ phí (HV-07) -
   // hủy ghi nhận thì hồ sơ Chính thức trả về Hợp lệ
   const dangKy = await prisma.dangKyHoc.findFirst({
-    where: { khoaId: hocPhi.khoaId, hocVienId: hocPhi.hocVienId, khoa: { chuongTrinh: { phuongThucDangKy: "CHI_DU_THI" } } },
+    where: { khoaId: hocPhi.khoaId, hocVienId: hocPhi.hocVienId, khoa: { chuongTrinh: { phuongThucDangKys: { has: "CHI_DU_THI" } } } },
   });
   if (dangKy?.trangThai === "HOAN_THANH") throw new ChuyenTrangThaiLePhiKhongHopLeError("thí sinh đã hoàn thành khóa");
   // thành phần tùy chọn (vd. ôn thi) không quyết định danh sách chính thức dự thi

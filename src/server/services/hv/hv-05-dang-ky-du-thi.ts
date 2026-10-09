@@ -43,7 +43,7 @@ async function khoaDuThiDangMo(khoaId: string) {
     include: { chuongTrinh: true },
   });
   if (!khoa) throw new KhongTimThayKhoaError();
-  if (khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") {
+  if (!khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
     throw new SaiPhuongThucDangKyError("Phương thức 3 (đăng ký dự thi, không qua học)");
   }
   if (!(await coTheNhanDangKy(khoa.id))) throw new KhoaKhongMoDangKyError();
@@ -193,7 +193,7 @@ export type ThongTinTimLaiDon = { maSinhVien?: string | null; soCCCD?: string | 
 export async function timLaiDonDuThi(khoaId: string, tt: ThongTinTimLaiDon) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  if (khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") throw new SaiPhuongThucDangKyError("Phương thức 3 (đăng ký dự thi, không qua học)");
+  if (!khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) throw new SaiPhuongThucDangKyError("Phương thức 3 (đăng ký dự thi, không qua học)");
   const { cauHinh } = await cauHinhHieuLuc(khoa.id);
   const soDienThoai = chuanHoaSoDienThoai(tt.soDienThoai);
   if (!soDienThoai) throw new SoDienThoaiXacThucKhongHopLeError();
@@ -347,7 +347,7 @@ export async function thongTinLePhiDuThi(dangKyId: string) {
     where: { id: dangKyId },
     include: { hocVien: true, khoa: { include: { chuongTrinh: true } }, tepHoSos: { where: { maTruong: MA_TEP_NOP_PHI } } },
   });
-  if (!dangKy || dangKy.khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") return null;
+  if (!dangKy || !dangKy.khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) return null;
   const hocPhi = await prisma.hocPhi.findUnique({ where: { hocVienId_khoaId: { hocVienId: dangKy.hocVienId, khoaId: dangKy.khoaId } } });
   if (!hocPhi || Number(hocPhi.soTienPhaiNop) <= 0) return null;
 
@@ -394,7 +394,7 @@ export async function thongTinLePhiDuThi(dangKyId: string) {
 export async function nopMinhChungLePhi(dangKyId: string, tep: TepGui) {
   const dangKy = await prisma.dangKyHoc.findUnique({ where: { id: dangKyId }, include: { khoa: { include: { chuongTrinh: true } } } });
   if (!dangKy) throw new KhongTimThayDangKyError();
-  if (dangKy.khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") throw new NopMinhChungLePhiError("khóa không thu lệ phí thi khi đăng ký");
+  if (!dangKy.khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) throw new NopMinhChungLePhiError("khóa không thu lệ phí thi khi đăng ký");
   if (["KHONG_HOP_LE", "THOI_HOC"].includes(dangKy.trangThai)) throw new NopMinhChungLePhiError("hồ sơ đã bị từ chối/hủy");
   const hocPhi = await prisma.hocPhi.findUnique({ where: { hocVienId_khoaId: { hocVienId: dangKy.hocVienId, khoaId: dangKy.khoaId } } });
   if (!hocPhi) throw new NopMinhChungLePhiError("đợt thi chưa thiết lập lệ phí");

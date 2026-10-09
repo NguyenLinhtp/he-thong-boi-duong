@@ -8,12 +8,13 @@ import { danhSachBuoiHoc, lichDayGiangVien } from "@/server/services/kh/kh-03-th
 import { danhSachPhongHoc } from "@/server/services/dm/dm-04-phong-hoc";
 import { buoiHocDaKetThuc } from "@/server/services/gd/gd-05-link-truc-tuyen";
 import { danhSachLop } from "@/server/services/kh/kh-07-lop-hoc";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { TableHeader, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { FormPhanCong } from "../form-phan-cong";
 import { FormBuoiHoc } from "../form-buoi-hoc";
 import { HangBuoiHoc } from "../hang-buoi-hoc";
+import { BangPhanTrang } from "@/components/chung/bang-phan-trang";
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -89,31 +90,32 @@ export default async function GiangDayKhoaPage({ params }: { params: Promise<{ i
           </p>
         )}
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Học phần</TableHead>
-              <TableHead>Phạm vi</TableHead>
-              <TableHead>Giảng viên</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dsPhanCong.map((pc) => (
-              <TableRow key={pc.id}>
-                <TableCell>{pc.hocPhan.ten}</TableCell>
-                <TableCell>{pc.lop ? `Lớp ${pc.lop.maLop}` : "Cả khóa"}</TableCell>
-                <TableCell>{pc.giangVien.hoTen}</TableCell>
-              </TableRow>
-            ))}
-            {dsPhanCong.length === 0 && (
+        <BangPhanTrang
+          dauBang={
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
-                  Chưa phân công giảng viên nào
-                </TableCell>
+                <TableHead>Học phần</TableHead>
+                <TableHead>Phạm vi</TableHead>
+                <TableHead>Giảng viên</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+          }
+          rong={
+            <TableRow>
+              <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
+                Chưa phân công giảng viên nào
+              </TableCell>
+            </TableRow>
+          }
+        >
+          {dsPhanCong.map((pc) => (
+            <TableRow key={pc.id}>
+              <TableCell>{pc.hocPhan.ten}</TableCell>
+              <TableCell>{pc.lop ? `Lớp ${pc.lop.maLop}` : "Cả khóa"}</TableCell>
+              <TableCell>{pc.giangVien.hoTen}</TableCell>
+            </TableRow>
+          ))}
+        </BangPhanTrang>
       </section>
 
       <section className="flex flex-col gap-3">
@@ -153,53 +155,54 @@ export default async function GiangDayKhoaPage({ params }: { params: Promise<{ i
           dsLop={dsLop}
         />
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ngày</TableHead>
-              <TableHead>Giờ</TableHead>
-              <TableHead>Học phần</TableHead>
-              <TableHead>Phòng / hình thức</TableHead>
-              <TableHead>Thao tác</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dsBuoiHoc.map((bh) => (
-              <HangBuoiHoc
-                key={bh.id}
-                khoaId={khoa.id}
-                buoiHoc={{
-                  id: bh.id,
-                  ngayHoc: bh.ngayHoc.toISOString(),
-                  gioBatDau: bh.gioBatDau,
-                  gioKetThuc: bh.gioKetThuc,
-                  hocPhanId: bh.hocPhanId,
-                  hocPhanTen: bh.hocPhan?.ten ?? null,
-                  maLop: bh.lop?.maLop ?? null,
-                  phongHocId: bh.phongHocId,
-                  phongHocTen: bh.phongHoc?.ten ?? null,
-                  linkTrucTuyen: bh.linkTrucTuyen,
-                  linkConHieuLuc: bh.linkTrucTuyen ? !bh.daHuy && !buoiHocDaKetThuc(bh) : false,
-                  daHuy: bh.daHuy,
-                  lyDoThayDoi: bh.lyDoThayDoi,
-                  noiDungDaGiang: bh.noiDungDaGiang,
-                  nhanXet: bh.nhanXet,
-                }}
-                dsHocPhan={khoa.chuongTrinh.hocPhans.map((hp) => ({ id: hp.id, ten: hp.ten }))}
-                dsPhongHoc={dsPhongHoc.map((ph) => ({ id: ph.id, ten: `${ph.ma} · ${ph.ten}` }))}
-                choPhepGD03={choPhepGD03}
-                choPhepGD05={choPhepGD05}
-              />
-            ))}
-            {dsBuoiHoc.length === 0 && (
+        <BangPhanTrang
+          dauBang={
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                  Chưa có buổi học nào trong thời khóa biểu
-                </TableCell>
+                <TableHead>Ngày</TableHead>
+                <TableHead>Giờ</TableHead>
+                <TableHead>Học phần</TableHead>
+                <TableHead>Phòng / hình thức</TableHead>
+                <TableHead>Thao tác</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+          }
+          rong={
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                Chưa có buổi học nào trong thời khóa biểu
+              </TableCell>
+            </TableRow>
+          }
+        >
+          {dsBuoiHoc.map((bh) => (
+            <HangBuoiHoc
+              key={bh.id}
+              khoaId={khoa.id}
+              buoiHoc={{
+                id: bh.id,
+                ngayHoc: bh.ngayHoc.toISOString(),
+                gioBatDau: bh.gioBatDau,
+                gioKetThuc: bh.gioKetThuc,
+                hocPhanId: bh.hocPhanId,
+                hocPhanTen: bh.hocPhan?.ten ?? null,
+                maLop: bh.lop?.maLop ?? null,
+                phongHocId: bh.phongHocId,
+                phongHocTen: bh.phongHoc?.ten ?? null,
+                linkTrucTuyen: bh.linkTrucTuyen,
+                linkConHieuLuc: bh.linkTrucTuyen ? !bh.daHuy && !buoiHocDaKetThuc(bh) : false,
+                daHuy: bh.daHuy,
+                lyDoThayDoi: bh.lyDoThayDoi,
+                noiDungDaGiang: bh.noiDungDaGiang,
+                nhanXet: bh.nhanXet,
+              }}
+              dsHocPhan={khoa.chuongTrinh.hocPhans.map((hp) => ({ id: hp.id, ten: hp.ten }))}
+              dsPhongHoc={dsPhongHoc.map((ph) => ({ id: ph.id, ten: `${ph.ma} · ${ph.ten}` }))}
+              choPhepGD03={choPhepGD03}
+              choPhepGD05={choPhepGD05}
+            />
+          ))}
+        </BangPhanTrang>
       </section>
     </main>
   );

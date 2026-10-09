@@ -51,7 +51,7 @@ async function kiemTraDuocLam(nguoiDungId: string, khoaId: string, hocPhanId: st
   });
   if (!dangKy || dangKy.trangThai !== "CHINH_THUC") throw new KhongDuocLamDanhGiaError("Chỉ học viên chính thức của khóa mới làm bài/nộp sản phẩm");
   const { khoa } = dangKy;
-  if (khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI") throw new KhongDuocLamDanhGiaError("Khóa chỉ dự thi (Phương thức 3) không áp dụng học liệu/đánh giá trực tuyến");
+  if (khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) throw new KhongDuocLamDanhGiaError("Khóa chỉ dự thi (Phương thức 3) không áp dụng học liệu/đánh giá trực tuyến");
   if (!(TRANG_THAI_KHOA_LAM_BAI as readonly string[]).includes(khoa.trangThai)) throw new KhongDuocLamDanhGiaError("Khóa chưa vào giai đoạn học");
   if (await ketQuaKhoaDaPheDuyet(khoaId)) throw new KhongDuocLamDanhGiaError("Kết quả khóa đã phê duyệt - không nhận bài làm/sản phẩm nữa");
   const hocPhan = await prisma.hocPhan.findUnique({ where: { id: hocPhanId } });
@@ -220,7 +220,7 @@ export async function hocTapCuaHocVien(nguoiDungId: string) {
     where: {
       hocVienId: hocVien.id,
       trangThai: { in: ["CHINH_THUC", "HOAN_THANH"] },
-      khoa: { chuongTrinh: { phuongThucDangKy: { not: "CHI_DU_THI" } } },
+      khoa: { chuongTrinh: { NOT: { phuongThucDangKys: { has: "CHI_DU_THI" } } } },
     },
     include: { khoa: { include: { chuongTrinh: true } }, lop: true },
     orderBy: { khoa: { thoiGianKhaiGiang: "desc" } },

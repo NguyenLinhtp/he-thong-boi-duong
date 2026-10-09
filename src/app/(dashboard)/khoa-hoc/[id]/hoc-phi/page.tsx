@@ -68,7 +68,7 @@ export default async function HocPhiKhoaPage({
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  const laDuThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  const laDuThi = khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
   const theoDoiTuong = await apDungLePhiTuDo(khoa.id);
   const [dsHocPhi, dsPhieuThu, choPhepThanhToan, choPhepCongNo, choPhepXetDuyet, bangLePhi, choPhepInPhieu] = await Promise.all([
     hocPhiCuaKhoa(id),
@@ -94,8 +94,8 @@ export default async function HocPhiKhoaPage({
   const trangChinhThuc = locVaPhanTrang(dsChinhThuc, sp, "ct", (d) => d.hocVien, lop);
   const trangCongNo = locVaPhanTrang(dsHocPhi, sp, "cn", (hp) => hp.hocVien);
   const trangPhieuThu = locVaPhanTrang(dsPhieuThu, sp, "pt", (pt) => pt.hocPhi.hocVien, (pt) => [pt.soPhieu]);
-  const thanhPhanTrang = (t: { ma: string; trang: number; tongTrang: number; tongDong: number }) => (
-    <PhanTrang duong={duong} thamSo={thamSo} ten={`${t.ma}_trang`} trang={t.trang} tongTrang={t.tongTrang} tongDong={t.tongDong} />
+  const thanhPhanTrang = (t: { ma: string; trang: number; tongTrang: number; tongDong: number; soDong: number }) => (
+    <PhanTrang duong={duong} thamSo={thamSo} ten={`${t.ma}_trang`} trang={t.trang} tongTrang={t.tongTrang} tongDong={t.tongDong} soDong={t.soDong} />
   );
   const oTim = (t: { ma: string; tuKhoa: string; tongDong: number }, goiY?: string) => (
     <OTimKiem duong={duong} thamSo={thamSo} ma={t.ma} tuKhoa={t.tuKhoa} ketQua={t.tongDong} goiY={goiY} />

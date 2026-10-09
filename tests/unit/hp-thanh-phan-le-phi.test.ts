@@ -59,7 +59,7 @@ async function taoKhoa(phuongThuc: "CHI_DU_THI" | "TRUC_TUYEN_NOP_GIAY" = "CHI_D
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD",
       ngayBanHanh: new Date(),
-      phuongThucDangKy: phuongThuc,
+      phuongThucDangKys: phuongThuc ? [phuongThuc] : [],
     },
   });
   chuongTrinh.push(ct.id);

@@ -56,7 +56,7 @@ async function taoKhoa(opts: { siSoToiDa?: number; phuongThuc?: "QUA_DON_VI_LIEN
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD-HV09",
       ngayBanHanh: new Date(),
-      phuongThucDangKy: opts.phuongThuc ?? null,
+      phuongThucDangKys: opts.phuongThuc ? [opts.phuongThuc] : [],
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);

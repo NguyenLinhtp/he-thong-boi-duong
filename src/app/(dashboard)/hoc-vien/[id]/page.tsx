@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
-import { layHoSoHocVien, phamViHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
+import { duLieuCuaHocVien, layHoSoHocVien, phamViHoSoHocVien, taiKhoanCuaHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
+import { FormDoiMatKhau, KhoiTaiKhoan, NutXoaHocVien } from "./quan-ly-hoc-vien";
 import { KhongTimThayHocVienError, NgoaiPhamViHoSoHocVienError } from "@/server/services/hv/loi-hoc-vien";
 import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
 import { danhSachThongBaoCuaHocVien } from "@/server/services/hv/hv-10-thong-bao";
@@ -83,9 +84,15 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
-      <h1 className="text-xl font-bold text-ued-blue-dam">
-        {hocVien.maHocVien} · {hocVien.hoTen}
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-ued-blue-dam">
+          {hocVien.maHocVien} · {hocVien.hoTen}
+        </h1>
+        {/* (bổ sung 08/10/2026) cán bộ xóa hồ sơ tạo sai/trùng - chỉ khi chưa có dữ liệu nghiệp vụ */}
+        {phamVi.toanBo && (
+          <NutXoaHocVien id={hocVien.id} ten={`${hocVien.maHocVien} - ${hocVien.hoTen}`} lyDoChan={await duLieuCuaHocVien(hocVien.id)} />
+        )}
+      </div>
 
       <FormSuaHoSo
         hocVien={{
@@ -101,6 +108,13 @@ export default async function ChiTietHocVienPage({ params }: { params: Promise<{
         hocVienTuCapNhat={!phamVi.toanBo}
         dsChucDanhHocVi={dsChucDanhHocVi.map((cd) => ({ id: cd.id, ten: cd.ten }))}
       />
+
+      {/* (bổ sung 08/10/2026) cán bộ cấp tài khoản/đặt lại mật khẩu; học viên tự đổi mật khẩu */}
+      {phamVi.toanBo ? (
+        <KhoiTaiKhoan hocVienId={hocVien.id} taiKhoan={await taiKhoanCuaHocVien(hocVien.id)} coCccd={!!hocVien.soCCCD} />
+      ) : (
+        <FormDoiMatKhau />
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-bold text-ued-blue-dam">Lịch sử các khóa/kỳ thi đã hoặc đang tham gia</h2>

@@ -4,10 +4,11 @@ import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { hocVienTinhKetQua, laKhoaChiDuThi } from "@/server/services/kq/dung-chung";
 import { bangDiemChiTietKhoa, bangTongHopKetQua } from "@/server/services/kq/kq-02-tong-hop";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { TableHeader, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { NutTongHop, NutXetHoanThanh, FormPheDuyet, FormKetQuaThi, FormPhucKhao } from "./cac-form";
+import { BangPhanTrang } from "@/components/chung/bang-phan-trang";
 
 async function coQuyen(maCN: string): Promise<boolean> {
   try {
@@ -100,100 +101,102 @@ export default async function KetQuaKhoaPage({ params }: { params: Promise<{ id:
       ) : (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-bold text-ued-blue-dam">KQ-01 · Bảng điểm học phần (giảng viên nhập)</h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Học viên</TableHead>
-                <TableHead>Học phần</TableHead>
-                <TableHead>TP</TableHead>
-                <TableHead>KT</TableHead>
-                <TableHead>Điểm HP</TableHead>
-                <TableHead>Phúc khảo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dsDiem.map((d) => (
-                <TableRow key={d.id}>
-                  <TableCell>{d.hocVien.hoTen}</TableCell>
-                  <TableCell>{d.hocPhan.ten}</TableCell>
-                  <TableCell>{d.diemThanhPhan?.toString() ?? "—"}</TableCell>
-                  <TableCell>{d.diemKetThuc?.toString() ?? "—"}</TableCell>
-                  <TableCell>{d.diemHocPhan?.toString() ?? "—"}</TableCell>
-                  <TableCell>
-                    {d.soQuyetDinhPhucKhao && (
-                      <span className="mr-1 text-xs text-muted-foreground">QĐ {d.soQuyetDinhPhucKhao}</span>
-                    )}
-                    {quyen.kq04 && d.daPheDuyet && (
-                      <FormPhucKhao khoaId={khoa.id} ketQuaId={d.id} loai="hocPhan" />
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {dsDiem.length === 0 && (
+          <BangPhanTrang
+            dauBang={
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                    Giảng viên chưa nhập điểm học phần nào
-                  </TableCell>
+                  <TableHead>Học viên</TableHead>
+                  <TableHead>Học phần</TableHead>
+                  <TableHead>TP</TableHead>
+                  <TableHead>KT</TableHead>
+                  <TableHead>Điểm HP</TableHead>
+                  <TableHead>Phúc khảo</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+            }
+            rong={
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                  Giảng viên chưa nhập điểm học phần nào
+                </TableCell>
+              </TableRow>
+            }
+          >
+            {dsDiem.map((d) => (
+              <TableRow key={d.id}>
+                <TableCell>{d.hocVien.hoTen}</TableCell>
+                <TableCell>{d.hocPhan.ten}</TableCell>
+                <TableCell>{d.diemThanhPhan?.toString() ?? "—"}</TableCell>
+                <TableCell>{d.diemKetThuc?.toString() ?? "—"}</TableCell>
+                <TableCell>{d.diemHocPhan?.toString() ?? "—"}</TableCell>
+                <TableCell>
+                  {d.soQuyetDinhPhucKhao && (
+                    <span className="mr-1 text-xs text-muted-foreground">QĐ {d.soQuyetDinhPhucKhao}</span>
+                  )}
+                  {quyen.kq04 && d.daPheDuyet && (
+                    <FormPhucKhao khoaId={khoa.id} ketQuaId={d.id} loai="hocPhan" />
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </BangPhanTrang>
           {quyen.kq02 && !daPheDuyet && <NutTongHop khoaId={khoa.id} />}
         </section>
       )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold text-ued-blue-dam">KQ-02/03 · Kết quả toàn khóa và điều kiện hoàn thành</h2>
-        <Table>
-          <TableHeader>
+        <BangPhanTrang
+          dauBang={
+            <TableHeader>
+              <TableRow>
+                <TableHead>Học viên</TableHead>
+                <TableHead>{chiDuThi ? "Điểm thi" : "Điểm tổng kết"}</TableHead>
+                {!chiDuThi && <TableHead>Chuyên cần</TableHead>}
+                <TableHead>Học tập</TableHead>
+                <TableHead>Học phí (HP-06)</TableHead>
+                <TableHead>Hoàn thành</TableHead>
+                <TableHead>Ghi chú</TableHead>
+                {chiDuThi && <TableHead>Phúc khảo</TableHead>}
+              </TableRow>
+            </TableHeader>
+          }
+          rong={
             <TableRow>
-              <TableHead>Học viên</TableHead>
-              <TableHead>{chiDuThi ? "Điểm thi" : "Điểm tổng kết"}</TableHead>
-              {!chiDuThi && <TableHead>Chuyên cần</TableHead>}
-              <TableHead>Học tập</TableHead>
-              <TableHead>Học phí (HP-06)</TableHead>
-              <TableHead>Hoàn thành</TableHead>
-              <TableHead>Ghi chú</TableHead>
-              {chiDuThi && <TableHead>Phúc khảo</TableHead>}
+              <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
+                Chưa có kết quả toàn khóa - {chiDuThi ? "nhập kết quả thi (KQ-06)" : "bấm tổng hợp (KQ-02)"} trước
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dsTongHop.map((kq) => (
-              <TableRow key={kq.id}>
+          }
+        >
+          {dsTongHop.map((kq) => (
+            <TableRow key={kq.id}>
+              <TableCell>
+                {kq.hocVien.hoTen}
+                {maLopTheoHocVien.get(kq.hocVienId) && (
+                  <span className="ml-1 text-xs text-muted-foreground">({maLopTheoHocVien.get(kq.hocVienId)})</span>
+                )}
+              </TableCell>
+              <TableCell>{kq.diemTongKet?.toString() ?? "—"}</TableCell>
+              {!chiDuThi && (
+                <TableCell>{kq.tyLeChuyenCan != null ? `${kq.tyLeChuyenCan.toString()}%` : "—"}</TableCell>
+              )}
+              <TableCell>{kq.datHocTap ? "Đạt" : "Không đạt"}</TableCell>
+              <TableCell>
+                {kq.duDieuKienHocPhi === null ? "Chưa xét" : kq.duDieuKienHocPhi ? "Hoàn tất" : "Chưa hoàn tất"}
+              </TableCell>
+              <TableCell>{nhanHoanThanh(kq.hoanThanh)}</TableCell>
+              <TableCell className="text-xs">{kq.ghiChu ?? ""}</TableCell>
+              {chiDuThi && (
                 <TableCell>
-                  {kq.hocVien.hoTen}
-                  {maLopTheoHocVien.get(kq.hocVienId) && (
-                    <span className="ml-1 text-xs text-muted-foreground">({maLopTheoHocVien.get(kq.hocVienId)})</span>
+                  {quyen.kq04 && kq.daPheDuyet && (
+                    <FormPhucKhao khoaId={khoa.id} ketQuaId={kq.id} loai="thi" />
                   )}
                 </TableCell>
-                <TableCell>{kq.diemTongKet?.toString() ?? "—"}</TableCell>
-                {!chiDuThi && (
-                  <TableCell>{kq.tyLeChuyenCan != null ? `${kq.tyLeChuyenCan.toString()}%` : "—"}</TableCell>
-                )}
-                <TableCell>{kq.datHocTap ? "Đạt" : "Không đạt"}</TableCell>
-                <TableCell>
-                  {kq.duDieuKienHocPhi === null ? "Chưa xét" : kq.duDieuKienHocPhi ? "Hoàn tất" : "Chưa hoàn tất"}
-                </TableCell>
-                <TableCell>{nhanHoanThanh(kq.hoanThanh)}</TableCell>
-                <TableCell className="text-xs">{kq.ghiChu ?? ""}</TableCell>
-                {chiDuThi && (
-                  <TableCell>
-                    {quyen.kq04 && kq.daPheDuyet && (
-                      <FormPhucKhao khoaId={khoa.id} ketQuaId={kq.id} loai="thi" />
-                    )}
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-            {dsTongHop.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
-                  Chưa có kết quả toàn khóa - {chiDuThi ? "nhập kết quả thi (KQ-06)" : "bấm tổng hợp (KQ-02)"} trước
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableRow>
+          ))}
+        </BangPhanTrang>
         {quyen.kq03 && !daPheDuyet && <NutXetHoanThanh khoaId={khoa.id} />}
       </section>
 

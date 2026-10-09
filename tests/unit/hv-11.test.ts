@@ -51,7 +51,7 @@ async function taoKhoaQuaDVLK(siSoToiDa = 2) {
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD-HV11",
       ngayBanHanh: new Date(),
-      phuongThucDangKy: "QUA_DON_VI_LIEN_KET",
+      phuongThucDangKys: ["QUA_DON_VI_LIEN_KET"],
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);
@@ -157,7 +157,7 @@ describe("HV-11 đăng ký học viên thay mặt đơn vị liên kết (Phươ
         trangThai: "DA_BAN_HANH",
         soQuyetDinh: "QD",
         ngayBanHanh: new Date(),
-        phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY",
+        phuongThucDangKys: ["TRUC_TUYEN_NOP_GIAY"],
       },
     });
     chuongTrinhTaoTrongTest.push(ct.id);

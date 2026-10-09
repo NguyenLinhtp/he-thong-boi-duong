@@ -44,7 +44,7 @@ const tien = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 export async function luuThanhPhanLePhi(khoaId: string, dsNhap: ThanhPhanNhap[], lyDo: string | null | undefined, nguoi: NguoiThucHien) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  if (khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") throw new ThanhPhanLePhiKhongHopLeError("chỉ áp dụng cho khóa dự thi (Phương thức 3)");
+  if (!khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) throw new ThanhPhanLePhiKhongHopLeError("chỉ áp dụng cho khóa dự thi (Phương thức 3)");
   const theoDoiTuong = await apDungLePhiTuDo(khoaId);
 
   const ds = dsNhap.map((t) => ({ ...t, ten: t.ten.trim(), mucTuDo: theoDoiTuong ? t.mucTuDo : null }));

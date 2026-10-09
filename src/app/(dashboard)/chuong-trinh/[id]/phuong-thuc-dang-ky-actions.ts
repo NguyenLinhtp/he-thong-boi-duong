@@ -12,15 +12,19 @@ export async function thietLapPhuongThucDangKyAction(
 ): Promise<string | undefined> {
   const phien = await requirePermission("CT-07");
   const id = String(formData.get("id"));
-  const phuongThucDangKy = String(formData.get("phuongThucDangKy")) as PhuongThucDangKy;
+  // (sửa 08/10/2026) chọn nhiều phương thức
+  const ds = formData.getAll("phuongThucDangKys").map(String) as PhuongThucDangKy[];
 
   try {
-    await thietLapPhuongThucDangKy(id, phuongThucDangKy, nguoiTuPhien(phien));
+    await thietLapPhuongThucDangKy(id, ds, (formData.get("lyDo") as string | null) ?? null, nguoiTuPhien(phien));
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;
   }
 
   revalidatePath(`/chuong-trinh/${id}`);
+  // các khóa của chương trình dùng theo phương thức mới
+  revalidatePath("/khoa-hoc", "layout");
+  revalidatePath("/khoa", "layout");
   return undefined;
 }

@@ -66,10 +66,11 @@ export default async function ChiTietChuongTrinhPage({
     (daBanHanh || chuongTrinh.trangThai === "NGUNG_HIEU_LUC") && (await coQuyen("CT-06"));
   // (bổ sung 05/10/2026 - HV-03) chương trình dự thi: nạp danh sách sinh viên ngay khi khởi tạo chương trình
   const choPhepNapSinhVien =
-    chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && chuongTrinh.trangThai !== "NGUNG_HIEU_LUC" && (await coQuyen("HV-03"));
+    chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") && chuongTrinh.trangThai !== "NGUNG_HIEU_LUC" && (await coQuyen("HV-03"));
   const dsCotSinhVien = choPhepNapSinhVien ? await layCotBoSungSinhVien() : [];
   // (bổ sung 07/10/2026 - CT-01) xóa chương trình tạo sai khi chưa mở khóa nào
-  const choPhepXoa = (await coQuyen("CT-01")) && (await prisma.khoa.count({ where: { chuongTrinhId: chuongTrinh.id } })) === 0;
+  const soKhoa = await prisma.khoa.count({ where: { chuongTrinhId: chuongTrinh.id } });
+  const choPhepXoa = (await coQuyen("CT-01")) && soKhoa === 0;
   const tongTiet = chuongTrinh.hocPhans.reduce((tong, hp) => tong + hp.soTiet, 0);
   const tongTietKhop = chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong;
 
@@ -144,7 +145,15 @@ export default async function ChiTietChuongTrinhPage({
       {choPhepPhuongThucDangKy && (
         <KhoiPhuongThucDangKy
           chuongTrinhId={chuongTrinh.id}
-          phuongThucHienTai={chuongTrinh.phuongThucDangKy}
+          phuongThucHienTai={chuongTrinh.phuongThucDangKys}
+          coKhoaHoatDong={await coKhoaDangHoatDong(chuongTrinh.id)}
+          khoaLoaiDuThi={
+            soKhoa === 0 || chuongTrinh.phuongThucDangKys.length === 0
+              ? null
+              : chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")
+                ? "DU_THI"
+                : "DAO_TAO"
+          }
         />
       )}
 

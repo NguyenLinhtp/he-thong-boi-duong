@@ -49,7 +49,7 @@ export function lopTaiNgay(
 async function layKhoaChoPhepChiaLop(khoaId: string) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  if (khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI") throw new KhoaChiDuThiKhongChiaLopError();
+  if (khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) throw new KhoaChiDuThiKhongChiaLopError();
   if (khoa.trangThai === "DA_KET_THUC" || khoa.trangThai === "HUY") throw new KhoaDaDongKhongChiaLopError();
   // KQ-04 phê duyệt theo khóa - sau khi duyệt không đổi cơ cấu lớp nữa
   const daPheDuyet = await prisma.ketQuaKhoa.count({ where: { khoaId, daPheDuyet: true } });

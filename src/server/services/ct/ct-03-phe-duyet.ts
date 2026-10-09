@@ -47,7 +47,7 @@ export async function trinhThamDinh(
   }
   // CT-07/KH-01: mọi khóa kế thừa phương thức của chương trình - chương trình
   // ban hành mà chưa có phương thức thì khóa mở ra không đăng ký được
-  if (!chuongTrinh.phuongThucDangKy) throw new ChuaChonPhuongThucDangKyError();
+  if (chuongTrinh.phuongThucDangKys.length === 0) throw new ChuaChonPhuongThucDangKyError();
 
   return prisma.$transaction(async (tx) => {
     const sau = await tx.chuongTrinh.update({

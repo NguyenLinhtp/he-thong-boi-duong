@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { TrangThaiRong } from "@/components/chung/trang-thai-rong";
-import { PhanTrang, catTrang, thamSoPhang, type ThamSoUrl } from "@/components/chung/phan-trang";
+import { PhanTrang, catTrang, soDongTuUrl, thamSoPhang, type ThamSoUrl } from "@/components/chung/phan-trang";
 import { dinhDangTien } from "@/lib/dinh-dang";
 import { FormGiaoDichThuNghiem, ThaoTacGiaoDich } from "./thao-tac-giao-dich";
 
@@ -46,7 +46,7 @@ export default async function GiaoDichNganHangPage({ searchParams }: { searchPar
     layThamSo("TT_TU_DONG_GHI_NHAN"),
   ]);
   const dem = (tt: string[]) => tatCa.filter((g) => tt.includes(g.trangThai)).length;
-  const trang = catTrang(ds, thamSo.trang);
+  const trang = catTrang(ds, thamSo.trang, soDongTuUrl(thamSo, "trang"));
   const coKhoa = !!process.env.NGAN_HANG_WEBHOOK_KEY;
 
   return (
@@ -173,7 +173,7 @@ export default async function GiaoDichNganHangPage({ searchParams }: { searchPar
               </TableBody>
             </Table>
           </div>
-          <PhanTrang duong={DUONG} thamSo={thamSo} ten="trang" trang={trang.trang} tongTrang={trang.tongTrang} tongDong={trang.tongDong} />
+          <PhanTrang duong={DUONG} thamSo={thamSo} ten="trang" trang={trang.trang} tongTrang={trang.tongTrang} tongDong={trang.tongDong} soDong={trang.soDong} />
         </>
       )}
     </main>

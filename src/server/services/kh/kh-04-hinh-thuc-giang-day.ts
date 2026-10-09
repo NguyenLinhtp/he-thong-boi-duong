@@ -58,7 +58,7 @@ export type TinhTrangLinkTrucTuyen =
 export async function tinhTrangLinkTrucTuyen(khoaId: string): Promise<TinhTrangLinkTrucTuyen> {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  if (khoa.hinhThucGiangDay !== "TRUC_TUYEN" || khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI") {
+  if (khoa.hinhThucGiangDay !== "TRUC_TUYEN" || khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
     return { apDung: false };
   }
 

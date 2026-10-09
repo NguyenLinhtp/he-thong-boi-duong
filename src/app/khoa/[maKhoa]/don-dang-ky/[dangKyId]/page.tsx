@@ -35,7 +35,7 @@ export default async function TrangDonDangKy({
   const chucDanh = dangKy.hocVien.chucDanhHocViId
     ? await prisma.chucDanhHocVi.findUnique({ where: { id: dangKy.hocVien.chucDanhHocViId } })
     : null;
-  const laDuThi = dangKy.khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  const laDuThi = dangKy.khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
   const hv = dangKy.hocVien;
 
   // (bổ sung 07/10/2026) đơn in theo mẫu đơn của khóa/chương trình

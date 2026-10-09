@@ -47,7 +47,7 @@ function nhanTheoTep(tenFile: string | null, duongLink: string | null, macDinh: 
  */
 async function nguoiTrongKhoa(nguoiDungId: string, khoaId: string) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
-  if (!khoa || khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI") throw new KhongDuocXemTaiLieuError();
+  if (!khoa || khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) throw new KhongDuocXemTaiLieuError();
   const hocVien = await hocVienCuaTaiKhoan(nguoiDungId);
   if (hocVien) {
     const dangKy = await prisma.dangKyHoc.findUnique({ where: { hocVienId_khoaId: { hocVienId: hocVien.id, khoaId } }, include: { lop: true } });
@@ -266,7 +266,7 @@ export async function khoaHocCuaToi(nguoiDungId: string) {
     where: {
       hocVienId: hocVien.id,
       trangThai: { in: ["CHINH_THUC", "HOAN_THANH"] },
-      khoa: { chuongTrinh: { phuongThucDangKy: { not: "CHI_DU_THI" } } },
+      khoa: { chuongTrinh: { NOT: { phuongThucDangKys: { has: "CHI_DU_THI" } } } },
     },
     include: { khoa: { include: { chuongTrinh: true } } },
     orderBy: { khoa: { thoiGianKhaiGiang: "desc" } },

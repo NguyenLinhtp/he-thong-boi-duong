@@ -52,8 +52,8 @@ export async function layKhoaKemChuongTrinh(khoaId: string) {
   return khoa;
 }
 
-export function laKhoaChiDuThi(khoa: { chuongTrinh: { phuongThucDangKy: string | null } }) {
-  return khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+export function laKhoaChiDuThi(khoa: { chuongTrinh: { phuongThucDangKys: string[] } }) {
+  return khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
 }
 
 /**

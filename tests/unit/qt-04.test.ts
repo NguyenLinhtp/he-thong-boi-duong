@@ -5,6 +5,7 @@ import { khoiTaoKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { themHocVienVaoKhoa } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
 import { Prisma } from "@/generated/prisma/client";
 import {
+  chuanHoaDuLieuCu,
   chayBackupNgay,
   danhSachSaoLuu,
   phucHoiTuBanSaoLuu,
@@ -93,10 +94,13 @@ describe("QT-04 sao lưu và phục hồi dữ liệu", () => {
   it(
     "dọn bản sao lưu cũ, chỉ giữ tối đa 30 bản Thành công gần nhất",
     async () => {
+      // (sửa 08/10/2026) test chạy trên CSDL dev chung: bản giả lập mang ngày rất cũ để việc dọn chỉ
+      // xóa bản giả, không xóa bản sao lưu thật (trước đây bản giả mới hơn -> bản thật cũ nhất bị xóa cả tệp)
+      const banThatTruoc = await prisma.saoLuu.findMany({ where: { trangThai: "THANH_CONG" }, select: { id: true } });
       const banGiaLap = await prisma.saoLuu.createMany({
         data: Array.from({ length: 32 }, (_, i) => ({
           trangThai: "THANH_CONG" as const,
-          thoiGianBatDau: new Date(Date.now() - (32 - i) * 60_000),
+          thoiGianBatDau: new Date(Date.UTC(2000, 0, 1) + i * 60_000),
           duongDanFile: `khong-ton-tai-${i}.json.gz`,
           kichThuocByte: 1,
         })),
@@ -109,6 +113,11 @@ describe("QT-04 sao lưu và phục hồi dữ liệu", () => {
 
       const conLai = await prisma.saoLuu.findMany({ where: { trangThai: "THANH_CONG" } });
       expect(conLai.length).toBeLessThanOrEqual(30);
+      // bản thật (khi chưa quá 30 bản) không bị dọn
+      if (banThatTruoc.length < 30) {
+        const idConLai = new Set(conLai.map((b) => b.id));
+        expect(banThatTruoc.every((b) => idConLai.has(b.id))).toBe(true);
+      }
       // dọn nốt các bản giả lập test tự tạo trực tiếp (không qua saoLuuTaoTrongTest)
       await prisma.saoLuu.deleteMany({
         where: { duongDanFile: { startsWith: "khong-ton-tai-" } },
@@ -186,6 +195,31 @@ describe("QT-04 sao lưu và phục hồi dữ liệu", () => {
       }
     },
     // sao lưu + phục hồi 2 lần toàn bộ CSDL dev - thời gian tăng theo dữ liệu tích lũy (~32s ngày 01/10/2026)
-    90_000,
+    // phục hồi toàn bộ CSDL 2 lần - thời gian tăng theo lượng dữ liệu dev (~47 giây/lần với ~32 nghìn dòng, 08/10/2026)
+    300_000,
   );
+
+  it("(08/10/2026) bản sao lưu cũ phục hồi được: phương thức đơn -> danh sách, phiếu thu gắn thành phần -> dòng chi tiết", () => {
+    const dl = chuanHoaDuLieuCu({
+      chuongTrinh: [
+        { id: "ct1", phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY" },
+        { id: "ct2", phuongThucDangKy: null },
+        { id: "ct3", phuongThucDangKys: ["CHI_DU_THI"] },
+      ],
+      thanhPhanLePhi: [{ id: "tp1", ten: "Đăng ký thi" }],
+      hocPhiThanhPhan: [{ id: "d1", thanhPhanId: "tp1" }],
+      phieuThu: [
+        { id: "p1", soTien: "450000", hocPhiThanhPhanId: "d1" },
+        { id: "p2", soTien: "100000", hocPhiThanhPhanId: null },
+        { id: "p3", soTien: "1" },
+      ],
+    });
+    expect(dl.chuongTrinh).toEqual([
+      { id: "ct1", phuongThucDangKys: ["TRUC_TUYEN_NOP_GIAY"] },
+      { id: "ct2", phuongThucDangKys: [] },
+      { id: "ct3", phuongThucDangKys: ["CHI_DU_THI"] },
+    ]);
+    expect(dl.phieuThu.every((p) => !("hocPhiThanhPhanId" in p))).toBe(true);
+    expect(dl.phieuThuChiTiet).toEqual([{ id: "ptct_p1", phieuThuId: "p1", hocPhiThanhPhanId: "d1", noiDung: "Đăng ký thi", soTien: "450000" }]);
+  });
 });

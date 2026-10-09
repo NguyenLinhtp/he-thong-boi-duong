@@ -61,7 +61,7 @@ export async function dangTaiLieu(nguoiDungId: string, input: DangTaiLieuInput) 
 
   const khoa = await prisma.khoa.findUnique({ where: { id: input.khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new TaiLieuKhongHopLeError("không tìm thấy khóa");
-  if (khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI") throw new KhoaKhongGiangDayError();
+  if (khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) throw new KhoaKhongGiangDayError();
   const lopId = input.lopId || null;
   if (lopId && !(await prisma.lopHoc.findFirst({ where: { id: lopId, khoaId: khoa.id } }))) {
     throw new TaiLieuKhongHopLeError("lớp không thuộc khóa");
@@ -131,7 +131,7 @@ export async function hocLieuCuaGiangVien(nguoiDungId: string) {
     prisma.giangVienHocPhan.findMany({
       where: {
         giangVienId: giangVien.id,
-        khoa: { trangThai: { notIn: ["HUY"] }, chuongTrinh: { phuongThucDangKy: { not: "CHI_DU_THI" } } },
+        khoa: { trangThai: { notIn: ["HUY"] }, chuongTrinh: { NOT: { phuongThucDangKys: { has: "CHI_DU_THI" } } } },
       },
       include: { khoa: { include: { chuongTrinh: true } }, hocPhan: true, lop: true },
       orderBy: [{ khoa: { maKhoa: "asc" } }, { hocPhan: { thuTu: "asc" } }],

@@ -44,7 +44,7 @@ async function taoHopDongCoHoSo(hanNop: Date[]) {
   const lh = await prisma.loaiHinhBoiDuong.create({ data: { ma: `LH05_${uid()}`, ten: "LH" } });
   loaiHinhIds.push(lh.id);
   const ct = await prisma.chuongTrinh.create({
-    data: { maCT: `CT05_${uid()}`, ten: "CT", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKy: "QUA_DON_VI_LIEN_KET" },
+    data: { maCT: `CT05_${uid()}`, ten: "CT", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKys: ["QUA_DON_VI_LIEN_KET"] },
   });
   chuongTrinhIds.push(ct.id);
   const khoa = await prisma.khoa.create({

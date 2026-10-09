@@ -72,7 +72,7 @@ async function taoKhoa(opts: { phuongThuc?: PhuongThucDangKy; siSoToiDa?: number
       ten: "CT KH-07",
       loaiHinhBoiDuongId: lh.id,
       trangThai: "DA_BAN_HANH",
-      phuongThucDangKy: opts.phuongThuc ?? "TRUC_TUYEN_NOP_GIAY",
+      phuongThucDangKys: [opts.phuongThuc ?? "TRUC_TUYEN_NOP_GIAY"],
     },
   });
   chuongTrinhIds.push(ct.id);

@@ -33,7 +33,7 @@ export async function thongTinDieuChinh(dangKyId: string) {
   const boSung = Array.isArray(dangKy.thongTinBoSung) ? (dangKy.thongTinBoSung as MucBoSung[]) : [];
   return {
     dangKy,
-    laDuThi: dangKy.khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI",
+    laDuThi: dangKy.khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI"),
     daPheDuyet: await khoaDaPheDuyetKetQua(dangKy.khoaId),
     dsTruong: cauHinh.truong.filter(truongSuaDuoc).map((t) => ({ ...t, giaTri: boSung.find((b) => b.ma === t.ma)?.giaTri ?? "" })),
   };

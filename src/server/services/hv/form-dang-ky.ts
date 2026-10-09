@@ -33,7 +33,7 @@ export type NguonCauHinh = "KHOA" | "CHUONG_TRINH" | "MAC_DINH";
 export async function cauHinhHieuLuc(khoaId: string): Promise<{ cauHinh: CauHinhForm; nguon: NguonCauHinh }> {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  const duThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  const duThi = khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
   // mã sinh viên chỉ dùng cho Phương thức 3 - chương trình đổi phương thức sau đó thì quay về CCCD;
   // (sửa 05/10/2026) form dự thi luôn có số điện thoại xác thực bắt buộc
   const hopLe = (c: CauHinhForm): CauHinhForm =>
@@ -45,8 +45,8 @@ export async function cauHinhHieuLuc(khoaId: string): Promise<{ cauHinh: CauHinh
   return { cauHinh: hopLe(CAU_HINH_MAC_DINH), nguon: "MAC_DINH" };
 }
 
-function chanMaSinhVienNgoaiPT3(cauHinh: CauHinhForm | null, phuongThuc: string | null) {
-  if (cauHinh?.dinhDanh === "MA_SINH_VIEN" && phuongThuc !== "CHI_DU_THI") {
+function chanMaSinhVienNgoaiPT3(cauHinh: CauHinhForm | null, dsPhuongThuc: string[]) {
+  if (cauHinh?.dinhDanh === "MA_SINH_VIEN" && !dsPhuongThuc.includes("CHI_DU_THI")) {
     throw new CauHinhFormKhongHopLeError("định danh bằng mã sinh viên chỉ áp dụng cho chương trình Phương thức 3 (đăng ký dự thi)");
   }
 }
@@ -68,7 +68,7 @@ export async function luuCauHinhChuongTrinh(chuongTrinhId: string, tho: unknown,
   if (!ct) throw new CauHinhFormKhongHopLeError("không tìm thấy chương trình");
   if (ct.trangThai === "NGUNG_HIEU_LUC") throw new CauHinhFormKhongHopLeError("chương trình đã ngừng hiệu lực");
   const cauHinh = chuanHoaHoacLoi(tho);
-  chanMaSinhVienNgoaiPT3(cauHinh, ct.phuongThucDangKy);
+  chanMaSinhVienNgoaiPT3(cauHinh, ct.phuongThucDangKys);
   await prisma.$transaction(async (tx) => {
     await tx.chuongTrinh.update({ where: { id: ct.id }, data: { cauHinhFormDangKy: cauHinh } });
     await ghiThaoTac(nguoi, "CAU_HINH_FORM_DANG_KY", "ChuongTrinh", ct.id, `${ct.maCT}: ${moTaCauHinh(cauHinh)}`, tx);
@@ -82,7 +82,7 @@ export async function luuCauHinhKhoa(khoaId: string, tho: unknown | null, nguoi:
   if (!khoa) throw new KhongTimThayKhoaError();
   if (khoa.trangThai === "DA_KET_THUC" || khoa.trangThai === "HUY") throw new CauHinhFormKhongHopLeError("khóa đã kết thúc/hủy");
   const cauHinh = tho === null ? null : chuanHoaHoacLoi(tho);
-  chanMaSinhVienNgoaiPT3(cauHinh, khoa.chuongTrinh.phuongThucDangKy);
+  chanMaSinhVienNgoaiPT3(cauHinh, khoa.chuongTrinh.phuongThucDangKys);
   await prisma.$transaction(async (tx) => {
     await tx.khoa.update({ where: { id: khoa.id }, data: { cauHinhFormDangKy: cauHinh ?? Prisma.DbNull } });
     await ghiThaoTac(

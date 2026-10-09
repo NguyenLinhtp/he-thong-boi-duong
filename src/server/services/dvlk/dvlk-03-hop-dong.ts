@@ -66,7 +66,7 @@ export async function taoHopDong(
   if (!donVi) throw new KhongTimThayDonViLienKetError();
   if (!khoa) throw new KhongTimThayKhoaDvlkError();
   if (donVi.trangThaiHopTac === "TAM_NGUNG") throw new DonViTamNgungError();
-  if (khoa.chuongTrinh.phuongThucDangKy !== "QUA_DON_VI_LIEN_KET") throw new KhoaKhongQuaDonViLienKetError();
+  if (!khoa.chuongTrinh.phuongThucDangKys.includes("QUA_DON_VI_LIEN_KET")) throw new KhoaKhongQuaDonViLienKetError();
   if (khoa.trangThai === "DA_KET_THUC" || khoa.trangThai === "HUY") throw new KhoaDaDongError();
   const daCo = await prisma.hopDongLienKet.findFirst({
     where: { khoaId: khoa.id, donViLienKetId: donVi.id, trangThai: "DANG_TRIEN_KHAI" },
@@ -200,7 +200,7 @@ export async function tuyChonLapHopDong() {
     prisma.donViLienKet.findMany({ where: { trangThaiHopTac: "DANG_HOP_TAC" }, orderBy: { ten: "asc" } }),
     prisma.khoa.findMany({
       where: {
-        chuongTrinh: { phuongThucDangKy: "QUA_DON_VI_LIEN_KET" },
+        chuongTrinh: { phuongThucDangKys: { has: "QUA_DON_VI_LIEN_KET" } },
         trangThai: { notIn: ["DA_KET_THUC", "HUY"] },
       },
       include: { chuongTrinh: true },

@@ -11,7 +11,8 @@ import {
 } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { TableHeader, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { BangPhanTrang } from "@/components/chung/bang-phan-trang";
 
 export type LopRutGon = { id: string; maLop: string; ten: string; siSoToiDa: number | null; siSoHienTai: number };
 
@@ -189,52 +190,53 @@ export function BangChonHocVien({
       </div>
       <ThongDiep ketQua={ketQua} />
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-8">
-              <input
-                type="checkbox"
-                aria-label="Chọn tất cả học viên đang hiển thị"
-                checked={chonTatCa}
-                onChange={() => setDaChon(chonTatCa ? new Set() : new Set(dsHocVien.map((hv) => hv.dangKyId)))}
-              />
-            </TableHead>
-            <TableHead>Mã học viên</TableHead>
-            <TableHead>Họ tên</TableHead>
-            <TableHead>Đơn vị công tác</TableHead>
-            <TableHead>Đơn vị liên kết</TableHead>
-            <TableHead>Lớp hiện tại</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {dsHocVien.map((hv) => (
-            <TableRow key={hv.dangKyId} onClick={() => doiChon(hv.dangKyId)} className="cursor-pointer">
-              <TableCell>
+      <BangPhanTrang
+        dauBang={
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-8">
                 <input
                   type="checkbox"
-                  aria-label={`Chọn ${hv.hoTen}`}
-                  checked={daChon.has(hv.dangKyId)}
-                  onChange={() => doiChon(hv.dangKyId)}
-                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Chọn tất cả học viên đang hiển thị"
+                  checked={chonTatCa}
+                  onChange={() => setDaChon(chonTatCa ? new Set() : new Set(dsHocVien.map((hv) => hv.dangKyId)))}
                 />
-              </TableCell>
-              <TableCell>{hv.maHocVien}</TableCell>
-              <TableCell>{hv.hoTen}</TableCell>
-              <TableCell>{hv.donViCongTac ?? "—"}</TableCell>
-              <TableCell>{hv.donViLienKet ?? "—"}</TableCell>
-              <TableCell>{hv.maLop ?? <span className="text-muted-foreground">Chưa xếp</span>}</TableCell>
+              </TableHead>
+              <TableHead>Mã học viên</TableHead>
+              <TableHead>Họ tên</TableHead>
+              <TableHead>Đơn vị công tác</TableHead>
+              <TableHead>Đơn vị liên kết</TableHead>
+              <TableHead>Lớp hiện tại</TableHead>
             </TableRow>
-          ))}
-          {dsHocVien.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                Không có học viên chính thức nào khớp bộ lọc
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+        }
+        rong={
+          <TableRow>
+            <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+              Không có học viên chính thức nào khớp bộ lọc
+            </TableCell>
+          </TableRow>
+        }
+      >
+        {dsHocVien.map((hv) => (
+          <TableRow key={hv.dangKyId} onClick={() => doiChon(hv.dangKyId)} className="cursor-pointer">
+            <TableCell>
+              <input
+                type="checkbox"
+                aria-label={`Chọn ${hv.hoTen}`}
+                checked={daChon.has(hv.dangKyId)}
+                onChange={() => doiChon(hv.dangKyId)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </TableCell>
+            <TableCell>{hv.maHocVien}</TableCell>
+            <TableCell>{hv.hoTen}</TableCell>
+            <TableCell>{hv.donViCongTac ?? "—"}</TableCell>
+            <TableCell>{hv.donViLienKet ?? "—"}</TableCell>
+            <TableCell>{hv.maLop ?? <span className="text-muted-foreground">Chưa xếp</span>}</TableCell>
+          </TableRow>
+        ))}
+      </BangPhanTrang>
     </form>
   );
 }

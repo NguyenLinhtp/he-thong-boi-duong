@@ -11,6 +11,7 @@ import {
   DINH_DANG_PHAN_TRAM,
   type CotBang,
 } from "@/server/services/bc/excel";
+import { nhanNganPhuongThuc } from "@/lib/phuong-thuc";
 
 export const NHAN_TRANG_THAI_KHOA: Record<TrangThaiKhoa, string> = {
   CHUAN_BI: "Chuẩn bị mở",
@@ -20,12 +21,6 @@ export const NHAN_TRANG_THAI_KHOA: Record<TrangThaiKhoa, string> = {
   HUY: "Hủy",
 };
 
-export const NHAN_PHUONG_THUC: Record<string, string> = {
-  TRUC_TUYEN_NOP_GIAY: "PT1",
-  IMPORT_TU_XAC_NHAN: "PT2",
-  CHI_DU_THI: "PT3",
-  QUA_DON_VI_LIEN_KET: "PT4",
-};
 
 /** Học viên được nhận vào khóa (tính sĩ số thực học), kể cả thôi học giữa chừng. */
 const TRANG_THAI_DA_NHAN: TrangThaiDangKy[] = ["CHINH_THUC", "HOAN_THANH", "THOI_HOC"];
@@ -119,7 +114,7 @@ export async function baoCaoHoatDongDaoTao(loc: LocBaoCaoDaoTao = {}) {
       maKhoa: k.maKhoa,
       tenChuongTrinh: k.chuongTrinh.ten,
       loaiHinh: k.chuongTrinh.loaiHinhBoiDuong.ten,
-      phuongThuc: k.chuongTrinh.phuongThucDangKy ? NHAN_PHUONG_THUC[k.chuongTrinh.phuongThucDangKy] : "—",
+      phuongThuc: nhanNganPhuongThuc(k.chuongTrinh.phuongThucDangKys),
       dot: k.dotTuyenSinh?.ten ?? null,
       khaiGiang: k.thoiGianKhaiGiang,
       beGiang: k.thoiGianBeGiang,

@@ -24,6 +24,7 @@ import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { FormImport } from "../form-import";
+import { cotMauImport } from "@/server/services/hv/hv-03-import-danh-sach";
 import { FormThamDinh } from "../form-tham-dinh";
 import { danhSachTheoThanhPhan } from "@/server/services/hp/hp-01-thanh-phan-le-phi";
 import { KhongKhop, OTimKiem, PhanTrang, locVaPhanTrang, thamSoPhang, type ThamSoUrl } from "@/components/chung/phan-trang";
@@ -143,7 +144,7 @@ export default async function TuyenSinhKhoaPage({
   const trangTuXacNhan = locVaPhanTrang(dsChoTuXacNhan, sp, "xn", hv, (dk) => [dk.hocVien.donViCongTac]);
   const trangThiSinh = locVaPhanTrang(dsThiSinh, sp, "ts", hv, (dk) => [dk.hocVien.lopSinhHoat]);
   // (bổ sung 06/10/2026) khóa chia thành phần lệ phí: danh sách riêng theo từng thành phần (vd. ôn thi, thi)
-  const dsTheoThanhPhan = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" ? await danhSachTheoThanhPhan(id) : [];
+  const dsTheoThanhPhan = khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") ? await danhSachTheoThanhPhan(id) : [];
   const tpChon = dsTheoThanhPhan.find((x) => x.thanhPhan.id === thamSo.tp);
   const trangThanhPhan = locVaPhanTrang(tpChon?.ds ?? [], sp, "tp", (d) => d.hocPhi.hocVien, (d) => [d.hocPhi.hocVien.lopSinhHoat]);
   const trangChoThamDinh = locVaPhanTrang(dsChoThamDinh, sp, "td", hv);
@@ -151,8 +152,8 @@ export default async function TuyenSinhKhoaPage({
   const trangXetDuyet = locVaPhanTrang(dsHopLeChoXetDuyet, sp, "xd", hv);
   const trangHocVien = locVaPhanTrang(dsHocVienTheoKhoa, sp, "hv", hv);
   const trangLichSu = locVaPhanTrang(lichSuDanhSach, sp, "ls", (ls) => ({ hoTen: ls.chiTiet }), (ls) => [ls.nguoiThucHienTen]);
-  const thanhPhanTrang = (t: { ma: string; trang: number; tongTrang: number; tongDong: number }) => (
-    <PhanTrang duong={duong} thamSo={thamSo} ten={`${t.ma}_trang`} trang={t.trang} tongTrang={t.tongTrang} tongDong={t.tongDong} />
+  const thanhPhanTrang = (t: { ma: string; trang: number; tongTrang: number; tongDong: number; soDong: number }) => (
+    <PhanTrang duong={duong} thamSo={thamSo} ten={`${t.ma}_trang`} trang={t.trang} tongTrang={t.tongTrang} tongDong={t.tongDong} soDong={t.soDong} />
   );
   const oTim = (t: { ma: string; tuKhoa: string; tongDong: number; tongGoc: number }, goiY?: string) =>
     (t.tongGoc > 0 || t.tuKhoa) && <OTimKiem duong={duong} thamSo={thamSo} ma={t.ma} tuKhoa={t.tuKhoa} ketQua={t.tongDong} goiY={goiY} />;
@@ -248,7 +249,7 @@ export default async function TuyenSinhKhoaPage({
         cauHinh={formDangKy.cauHinh}
         dsChucDanh={dsChucDanh.map((c) => ({ id: c.id, ten: c.ten }))}
         duocSua={suaForm && khoa.trangThai !== "DA_KET_THUC" && khoa.trangThai !== "HUY"}
-        choPhepMaSinhVien={khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI"}
+        choPhepMaSinhVien={khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")}
       />
       <KhoiMauDon
         khoaId={khoa.id}
@@ -259,7 +260,7 @@ export default async function TuyenSinhKhoaPage({
         bien={await bienCuaKhoa(mauDon.khoa)}
         duocSua={suaForm && khoa.trangThai !== "DA_KET_THUC" && khoa.trangThai !== "HUY"}
       />
-      {khoa.chuongTrinh.phuongThucDangKy === "TRUC_TUYEN_NOP_GIAY" && (
+      {khoa.chuongTrinh.phuongThucDangKys.includes("TRUC_TUYEN_NOP_GIAY") && (
         <section className="flex flex-col gap-3">
           {tieuDe(<h2 className="text-base font-bold text-ued-blue-dam">HV-02 · Xác nhận đã nhận hồ sơ giấy</h2>, trangNopGiay)}
           {khongKhop(trangNopGiay)}
@@ -313,11 +314,11 @@ export default async function TuyenSinhKhoaPage({
         </section>
       )}
 
-      {khoa.chuongTrinh.phuongThucDangKy === "IMPORT_TU_XAC_NHAN" && (
+      {khoa.chuongTrinh.phuongThucDangKys.includes("IMPORT_TU_XAC_NHAN") && (
         <section className="flex flex-col gap-3">
           <h2 className="text-base font-bold text-ued-blue-dam">HV-03 · Import danh sách học viên</h2>
 
-          <FormImport khoaId={khoa.id} />
+          <FormImport khoaId={khoa.id} dsCot={await cotMauImport(khoa.id)} />
           {tieuDe(<span />, trangTuXacNhan, "Họ tên / CCCD / đơn vị công tác")}
           {khongKhop(trangTuXacNhan)}
 
@@ -352,7 +353,7 @@ export default async function TuyenSinhKhoaPage({
         </section>
       )}
 
-      {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && (
+      {khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") && (
         <section className="flex flex-col gap-3">
           {dsTheoThanhPhan.length > 0 && (
             <nav aria-label="Danh sách theo thành phần" className="flex flex-wrap gap-1.5">
@@ -589,7 +590,7 @@ export default async function TuyenSinhKhoaPage({
                   <TableHead className="w-12">STT</TableHead>
                   <TableHead>Học viên</TableHead>
                   <TableHead>Mã SV / CCCD</TableHead>
-                  {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && <TableHead>Lệ phí</TableHead>}
+                  {khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") && <TableHead>Lệ phí</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -599,7 +600,7 @@ export default async function TuyenSinhKhoaPage({
                     <TableCell>{trangXetDuyet.tuDong + i + 1}</TableCell>
                     <TableCell>{dk.hocVien.hoTen}</TableCell>
                     <TableCell>{dk.hocVien.maSinhVien ?? dk.hocVien.soCCCD ?? "—"}</TableCell>
-                    {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && (
+                    {khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") && (
                       <TableCell>
                         {dk.chuaXacNhanLePhi ? (
                           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800 ring-1 ring-amber-600/30">Chưa xác nhận lệ phí</span>

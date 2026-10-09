@@ -158,7 +158,7 @@ async function taoTaiKhoanHocVienDangHoc() {
     where: {
       trangThai: "CHINH_THUC",
       hocVien: { nguoiDungId: null, soCCCD: { not: null } },
-      khoa: { trangThai: "DANG_DIEN_RA", chuongTrinh: { phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY", loaiHinhBoiDuong: { ma: { startsWith: "DEMO_" } } } },
+      khoa: { trangThai: "DANG_DIEN_RA", chuongTrinh: { phuongThucDangKys: { has: "TRUC_TUYEN_NOP_GIAY" }, loaiHinhBoiDuong: { ma: { startsWith: "DEMO_" } } } },
     },
     include: { hocVien: true },
     orderBy: { hocVien: { maHocVien: "asc" } },

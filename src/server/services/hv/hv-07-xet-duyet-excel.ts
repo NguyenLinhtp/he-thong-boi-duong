@@ -39,7 +39,7 @@ async function duLieuXetDuyet(khoaId: string) {
     orderBy: [{ trangThai: "asc" }, { ngayDangKy: "asc" }],
   });
   // (bổ sung 06/10/2026) khóa dự thi: chỉ thí sinh đã xác nhận lệ phí được duyệt chính thức
-  const laDuThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  const laDuThi = khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
   const chuaXacNhan = laDuThi ? await hocVienChuaXacNhanLePhi(khoa, dsDangKy.map((dk) => dk.hocVienId)) : new Set<string>();
   return { khoa, dsDangKy, laDuThi, chuaXacNhan };
 }
@@ -94,7 +94,7 @@ export async function nhapExcelXetDuyet(khoaId: string, noiDung: Buffer, tenTep:
 
   const dsCuaKhoa = await prisma.dangKyHoc.findMany({ where: { khoaId }, include: { hocVien: true } });
   const chuaXacNhan =
-    khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI"
+    khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")
       ? await hocVienChuaXacNhanLePhi(khoa, dsCuaKhoa.map((dk) => dk.hocVienId))
       : new Set<string>();
   const theoMa = new Map(dsCuaKhoa.map((dk) => [dk.hocVien.maHocVien, dk]));

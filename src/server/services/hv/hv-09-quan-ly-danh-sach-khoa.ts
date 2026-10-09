@@ -93,7 +93,8 @@ async function kiemTraKhoaDich(khoaId: string) {
   if (khoa.trangThai === "DA_KET_THUC" || khoa.trangThai === "HUY") {
     throw new KhoaDichKhongNhanHocVienError("khóa đã kết thúc hoặc đã hủy");
   }
-  if (khoa.chuongTrinh.phuongThucDangKy === "QUA_DON_VI_LIEN_KET") {
+  // (sửa 08/10/2026) chương trình nhiều phương thức: chỉ chặn khi khóa chỉ tuyển sinh qua đơn vị liên kết
+  if (khoa.chuongTrinh.phuongThucDangKys.length > 0 && khoa.chuongTrinh.phuongThucDangKys.every((m) => m === "QUA_DON_VI_LIEN_KET")) {
     throw new KhoaDichKhongNhanHocVienError("khóa tuyển sinh qua đơn vị liên kết - đăng ký qua đơn vị (HV-11/HV-12)");
   }
   if (await khoaDaPheDuyetKetQua(khoaId)) throw new KhoaDichKhongNhanHocVienError("kết quả khóa đã phê duyệt");

@@ -26,7 +26,6 @@ export function FormCapNhatBanHanh({
   coKhoaDangHoatDong: boolean;
 }) {
   const [loi, formAction, dangXuLy] = useActionState(suaChuongTrinhDaBanHanhAction, undefined);
-  const tenLoaiHinhHienTai = dsLoaiHinh.find((lh) => lh.id === chuongTrinh.loaiHinhBoiDuongId)?.ten;
 
   return (
     <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
@@ -35,8 +34,8 @@ export function FormCapNhatBanHanh({
       </h2>
       {coKhoaDangHoatDong && (
         <p className="text-sm text-amber-600">
-          Chương trình đang có khóa hoạt động - chỉ sửa được tên/mục tiêu/đối tượng áp dụng, không
-          đổi được loại hình/tổng thời lượng.
+          Chương trình đang có khóa hoạt động - các khóa dùng ngay nội dung mới (kể cả loại hình, tổng thời lượng). Đổi loại hình hoặc
+          tổng thời lượng phải nhập lý do sửa.
         </p>
       )}
       {/* key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount */}
@@ -60,59 +59,38 @@ export function FormCapNhatBanHanh({
           />
         </div>
 
-        {coKhoaDangHoatDong ? (
-          <>
-            {/* Đang có khóa hoạt động: không cho đổi, nhưng vẫn phải gửi
-                đúng giá trị hiện tại lên (input disabled không submit). */}
-            <input type="hidden" name="loaiHinhBoiDuongId" value={chuongTrinh.loaiHinhBoiDuongId} />
-            <input
-              type="hidden"
-              name="tongThoiLuong"
-              value={chuongTrinh.tongThoiLuong ?? ""}
-            />
-            <div className="flex flex-col gap-1.5 text-sm">
-              <Label>Loại hình (không đổi được)</Label>
-              <span>{tenLoaiHinhHienTai}</span>
-            </div>
-            <div className="flex flex-col gap-1.5 text-sm">
-              <Label>Tổng thời lượng (không đổi được)</Label>
-              <span>{chuongTrinh.tongThoiLuong ?? "—"}</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="loaiHinhBoiDuongId">Loại hình</Label>
-              <select
-                id="loaiHinhBoiDuongId"
-                name="loaiHinhBoiDuongId"
-                defaultValue={chuongTrinh.loaiHinhBoiDuongId}
-                required
-                className="h-8 rounded-lg border px-2 text-sm"
-              >
-                {dsLoaiHinh.map((lh) => (
-                  <option key={lh.id} value={lh.id}>
-                    {lh.ten}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="tongThoiLuong">Tổng thời lượng (tiết)</Label>
-              <Input
-                id="tongThoiLuong"
-                name="tongThoiLuong"
-                type="number"
-                min={0}
-                defaultValue={chuongTrinh.tongThoiLuong ?? undefined}
-                className="w-32"
-              />
-            </div>
-          </>
-        )}
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="loaiHinhBoiDuongId">Loại hình</Label>
+          <select
+            id="loaiHinhBoiDuongId"
+            name="loaiHinhBoiDuongId"
+            defaultValue={chuongTrinh.loaiHinhBoiDuongId}
+            required
+            className="h-8 rounded-lg border px-2 text-sm"
+          >
+            {dsLoaiHinh.map((lh) => (
+              <option key={lh.id} value={lh.id}>
+                {lh.ten}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="tongThoiLuong">Tổng thời lượng (tiết)</Label>
+          <Input
+            id="tongThoiLuong"
+            name="tongThoiLuong"
+            type="number"
+            min={0}
+            defaultValue={chuongTrinh.tongThoiLuong ?? undefined}
+            className="w-32"
+          />
+        </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="lyDoSua">Lý do sửa</Label>
+          <Label htmlFor="lyDoSua">
+            Lý do sửa{coKhoaDangHoatDong && <span className="text-muted-foreground"> (bắt buộc khi đổi loại hình/thời lượng)</span>}
+          </Label>
           <Input id="lyDoSua" name="lyDoSua" className="w-64" />
         </div>
         {loi && <p className="text-sm text-destructive">{loi}</p>}

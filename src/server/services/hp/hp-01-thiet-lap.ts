@@ -81,7 +81,7 @@ export async function thietLapHocPhi(khoaId: string, input: ThietLapHocPhiInput,
  */
 export async function apDungLePhiTuDo(khoaId: string) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
-  if (!khoa || khoa.chuongTrinh.phuongThucDangKy !== "CHI_DU_THI") return false;
+  if (!khoa || !khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) return false;
   return (await cauHinhHieuLuc(khoaId)).cauHinh.dinhDanh === "MA_SINH_VIEN";
 }
 
@@ -94,7 +94,7 @@ async function dongBoHocPhiTheoKhoa(db: Prisma.TransactionClient, khoaId: string
   const khoa = await db.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   const dsChinhThuc = await db.dangKyHoc.findMany({
     where:
-      khoa?.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" ? dieuKienChiemCho(khoaId) : { khoaId, trangThai: "CHINH_THUC" },
+      khoa?.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") ? dieuKienChiemCho(khoaId) : { khoaId, trangThai: "CHINH_THUC" },
     include: { hocVien: true },
   });
 

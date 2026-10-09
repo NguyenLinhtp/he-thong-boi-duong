@@ -16,6 +16,7 @@ import {
   KhongTimThayDangKyError,
 } from "@/server/services/hv/loi-hoc-vien";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
+import { kiemTraChuaCoTrongKhoa } from "@/server/services/hv/kiem-tra-trung-khoa";
 
 export type DangKyTrucTuyenInput = ThongTinHocVienInput & { khoaId: string };
 
@@ -32,10 +33,13 @@ export async function dangKyTrucTuyen(input: DangKyTrucTuyenInput) {
   });
   if (!khoa) throw new KhongTimThayKhoaError();
 
-  if (khoa.chuongTrinh.phuongThucDangKy !== "TRUC_TUYEN_NOP_GIAY") {
+  if (!khoa.chuongTrinh.phuongThucDangKys.includes("TRUC_TUYEN_NOP_GIAY")) {
     throw new SaiPhuongThucDangKyError("Phương thức 1 (đăng ký trực tuyến kèm nộp bản giấy)");
   }
 
+  // (bổ sung 08/10/2026) khóa nhiều phương thức: đã có trong khóa (theo số CCCD, kể cả đã có trong
+  // danh sách được cử đi học) thì báo đã tồn tại, không tạo hồ sơ thứ 2
+  await kiemTraChuaCoTrongKhoa(khoa.id, { soCCCD: input.soCCCD });
   const conMo = await coTheNhanDangKy(khoa.id);
   if (!conMo) throw new KhoaKhongMoDangKyError();
 
@@ -55,7 +59,10 @@ export async function dangKyTrucTuyen(input: DangKyTrucTuyenInput) {
   } catch (error) {
     const laLoiTrungDangKy =
       error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
-    if (laLoiTrungDangKy) throw new DaDangKyKhoaNayError();
+    if (laLoiTrungDangKy) {
+      await kiemTraChuaCoTrongKhoa(khoa.id, { hocVienId: hocVien.id, soCCCD: input.soCCCD });
+      throw new DaDangKyKhoaNayError();
+    }
     throw error;
   }
   await luuHoSoBoSung(dangKy.id, boSung);

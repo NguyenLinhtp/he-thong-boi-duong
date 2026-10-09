@@ -37,7 +37,7 @@ async function taoDangKyChoDuyet() {
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD-HV06",
       ngayBanHanh: new Date(),
-      phuongThucDangKy: "CHI_DU_THI",
+      phuongThucDangKys: ["CHI_DU_THI"],
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);
@@ -91,7 +91,7 @@ describe("HV-06 kiểm tra, thẩm định hồ sơ đăng ký", () => {
         trangThai: "DA_BAN_HANH",
         soQuyetDinh: "QD",
         ngayBanHanh: new Date(),
-        phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY",
+        phuongThucDangKys: ["TRUC_TUYEN_NOP_GIAY"],
       },
     });
     chuongTrinhTaoTrongTest.push(ct.id);

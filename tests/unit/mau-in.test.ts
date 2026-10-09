@@ -32,7 +32,7 @@ async function taoKhoa() {
   const lh = await prisma.loaiHinhBoiDuong.create({ data: { ma: `LH_MI_${crypto.randomUUID()}`, ten: "LH mẫu in" } });
   loaiHinh.push(lh.id);
   const ct = await prisma.chuongTrinh.create({
-    data: { maCT: `CT_MI_${crypto.randomUUID().slice(0, 8)}`, ten: "Thi tin học ứng dụng", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKy: "CHI_DU_THI" },
+    data: { maCT: `CT_MI_${crypto.randomUUID().slice(0, 8)}`, ten: "Thi tin học ứng dụng", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKys: ["CHI_DU_THI"] },
   });
   chuongTrinh.push(ct.id);
   const khoa = await prisma.khoa.create({

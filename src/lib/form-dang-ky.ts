@@ -247,6 +247,7 @@ export function kiemTraDuLieu(
  * học viên để đăng ký (học trực tuyến, xem điểm, nhận thông báo); khóa chỉ đăng
  * ký dự thi (Phương thức 3) không cần - thí sinh mở lại đơn bằng mã SV/CCCD + số điện thoại.
  */
-export function canTaiKhoanKhiDangKy(phuongThuc: string | null | undefined) {
-  return phuongThuc !== "CHI_DU_THI";
+export function canTaiKhoanKhiDangKy(dsPhuongThuc: readonly string[]) {
+  // (sửa 08/10/2026) chương trình có nhiều phương thức: chỉ PT3 (đứng riêng) không cần tài khoản
+  return !dsPhuongThuc.includes("CHI_DU_THI");
 }

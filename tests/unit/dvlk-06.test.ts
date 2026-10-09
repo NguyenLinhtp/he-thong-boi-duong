@@ -54,7 +54,7 @@ async function taoKhoa(opts: { pheDuyet?: boolean } = {}) {
       ten: "CT DVLK-06",
       loaiHinhBoiDuongId: lh.id,
       trangThai: "DA_BAN_HANH",
-      phuongThucDangKy: "QUA_DON_VI_LIEN_KET",
+      phuongThucDangKys: ["QUA_DON_VI_LIEN_KET"],
       loaiVanBang: "CHUNG_NHAN",
     },
   });

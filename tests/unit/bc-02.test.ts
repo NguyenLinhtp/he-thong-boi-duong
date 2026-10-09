@@ -49,7 +49,7 @@ async function taoKhoa(
       ten: "Chương trình BC-02",
       loaiHinhBoiDuongId: loaiHinhId,
       trangThai: "DA_BAN_HANH",
-      phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY",
+      phuongThucDangKys: ["TRUC_TUYEN_NOP_GIAY"],
     },
   });
   chuongTrinhIds.push(ct.id);

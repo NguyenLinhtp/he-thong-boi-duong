@@ -26,7 +26,7 @@ export const POST = apiRoute(async (req: Request, { params }: Params) => {
   if (!file) return NextResponse.json({ message: "Thiếu file import" }, { status: 400 });
 
   try {
-    const ketQua = await importDanhSachHocVien(khoaId, await file.text());
+    const ketQua = await importDanhSachHocVien(khoaId, Buffer.from(await file.arrayBuffer()), file.name);
     return NextResponse.json({ soLuongDaTao: ketQua.length }, { status: 201 });
   } catch (error) {
     if (error instanceof DuLieuImportLoiError) {

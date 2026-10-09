@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePermission, apiRoute } from "@/lib/auth/guard";
 import {
   thietLapPhuongThucDangKy,
-  DoiPhuongThucKhiCoKhoaDangHoatDongError,
+  PhuongThucDangKyKhongHopLeError,
 } from "@/server/services/ct/ct-07-phuong-thuc-dang-ky";
 import {
   SaiTrangThaiChuongTrinhError,
@@ -18,11 +18,13 @@ export const PATCH = apiRoute(async (req: Request, { params }: Params) => {
   const body = await req.json();
 
   try {
-    return NextResponse.json(await thietLapPhuongThucDangKy(id, body.phuongThucDangKy, nguoiTuPhien(phien)));
+    // (sửa 08/10/2026) nhận danh sách phuongThucDangKys (vẫn nhận 1 giá trị phuongThucDangKy cũ) + lyDo
+    const ds = body.phuongThucDangKys ?? (body.phuongThucDangKy ? [body.phuongThucDangKy] : []);
+    return NextResponse.json(await thietLapPhuongThucDangKy(id, ds, body.lyDo ?? null, nguoiTuPhien(phien)));
   } catch (error) {
     if (
       error instanceof SaiTrangThaiChuongTrinhError ||
-      error instanceof DoiPhuongThucKhiCoKhoaDangHoatDongError
+      error instanceof PhuongThucDangKyKhongHopLeError
     ) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }

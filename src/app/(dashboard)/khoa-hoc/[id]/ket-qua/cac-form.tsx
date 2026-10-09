@@ -11,7 +11,8 @@ import {
 } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { TableHeader, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { BangPhanTrang } from "@/components/chung/bang-phan-trang";
 
 type TrangThaiAction = (prev: string | undefined, formData: FormData) => Promise<string | undefined>;
 
@@ -65,35 +66,37 @@ export function FormKetQuaThi({ khoaId, dsThiSinh }: { khoaId: string; dsThiSinh
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="khoaId" value={khoaId} />
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Mã học viên</TableHead>
-            <TableHead>Họ tên</TableHead>
-            <TableHead>Điểm thi (0–10)</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {dsThiSinh.map((ts) => (
-            <TableRow key={ts.hocVienId}>
-              <TableCell>{ts.maHocVien}</TableCell>
-              <TableCell>{ts.hoTen}</TableCell>
-              <TableCell>
-                <input type="hidden" name="hocVienId" value={ts.hocVienId} />
-                <Input
-                  name={`diemThi_${ts.hocVienId}`}
-                  type="number"
-                  min={0}
-                  max={10}
-                  step={0.1}
-                  defaultValue={ts.diemThi ?? ""}
-                  className="w-24"
-                />
-              </TableCell>
+      <BangPhanTrang
+        dauBang={
+          <TableHeader>
+            <TableRow>
+              <TableHead>Mã học viên</TableHead>
+              <TableHead>Họ tên</TableHead>
+              <TableHead>Điểm thi (0–10)</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+        }
+        giuDong
+      >
+        {dsThiSinh.map((ts) => (
+          <TableRow key={ts.hocVienId}>
+            <TableCell>{ts.maHocVien}</TableCell>
+            <TableCell>{ts.hoTen}</TableCell>
+            <TableCell>
+              <input type="hidden" name="hocVienId" value={ts.hocVienId} />
+              <Input
+                name={`diemThi_${ts.hocVienId}`}
+                type="number"
+                min={0}
+                max={10}
+                step={0.1}
+                defaultValue={ts.diemThi ?? ""}
+                className="w-24"
+              />
+            </TableCell>
+          </TableRow>
+        ))}
+      </BangPhanTrang>
       <Button type="submit" size="sm" disabled={dangXuLy || dsThiSinh.length === 0} className="self-start">
         {dangXuLy ? "Đang lưu..." : "Lưu kết quả thi"}
       </Button>

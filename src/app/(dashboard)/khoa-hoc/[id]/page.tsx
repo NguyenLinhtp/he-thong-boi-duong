@@ -15,13 +15,8 @@ import { FormTrangThai } from "./form-trang-thai";
 import { FormThongBao } from "./form-thong-bao";
 import { FormHanDangKy } from "./form-han-dang-ky";
 import { tuDongTaoLinkAction } from "./actions";
+import { nhanDayDuPhuongThuc } from "@/lib/phuong-thuc";
 
-const NHAN_PHUONG_THUC: Record<string, string> = {
-  TRUC_TUYEN_NOP_GIAY: "PT1 · Đăng ký trực tuyến, in đơn nộp bản giấy",
-  IMPORT_TU_XAC_NHAN: "PT2 · Import danh sách sẵn, học viên tự xác nhận",
-  CHI_DU_THI: "PT3 · Chỉ đăng ký dự thi, không qua học",
-  QUA_DON_VI_LIEN_KET: "PT4 · Qua đơn vị liên kết",
-};
 
 // Tab Tổng quan của khóa: thông tin chung, trạng thái (KH-05), hình thức (KH-04), thông báo (KH-06)
 export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id: string }> }) {
@@ -63,9 +58,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
         <div className="sm:col-span-2">
           <dt className="text-muted-foreground">Phương thức đăng ký (kế thừa từ chương trình)</dt>
           <dd className="font-medium">
-            {khoa.chuongTrinh.phuongThucDangKy
-              ? (NHAN_PHUONG_THUC[khoa.chuongTrinh.phuongThucDangKy] ?? khoa.chuongTrinh.phuongThucDangKy)
-              : "Chưa thiết lập ở chương trình"}
+            {nhanDayDuPhuongThuc(khoa.chuongTrinh.phuongThucDangKys, "Chưa thiết lập ở chương trình")}
           </dd>
         </div>
         <div>

@@ -28,7 +28,7 @@ export async function xetDuyetDanhSachChinhThuc(
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
   if (dsDangKyId.length === 0) throw new DanhSachXetDuyetRongError();
-  const laDuThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  const laDuThi = khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
 
   // kiểm tra hợp lệ + sĩ số + cập nhật + nhật ký trong 1 transaction, khóa theo
   // khóa học: 2 lần duyệt đồng thời không cùng lọt qua kiểm tra sĩ số
@@ -112,7 +112,7 @@ export async function danhSachHopLeChoXetDuyet(khoaId: string) {
     }),
   ]);
   const chuaXacNhan =
-    khoa?.chuongTrinh.phuongThucDangKy === "CHI_DU_THI"
+    khoa?.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")
       ? await hocVienChuaXacNhanLePhi(khoa, ds.map((dk) => dk.hocVienId))
       : new Set<string>();
   return ds.map((dk) => ({ ...dk, chuaXacNhanLePhi: chuaXacNhan.has(dk.hocVienId) }));

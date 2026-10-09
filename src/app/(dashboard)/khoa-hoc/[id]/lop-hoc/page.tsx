@@ -8,12 +8,13 @@ import {
   lichSuChuyenLopCuaKhoa,
   tuyChonBoLocLop,
 } from "@/server/services/kh/kh-07-lop-hoc";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { TableHeader, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { DauTrangKhoa } from "@/components/khoa/dau-trang-khoa";
 import { FormTaoLop, NutChiaTuDong, HangLop, BangChonHocVien } from "./cac-form";
+import { BangPhanTrang } from "@/components/chung/bang-phan-trang";
 
 type BoLocUrl = { q?: string; dvct?: string; dvlk?: string; lop?: string };
 
@@ -38,7 +39,7 @@ export default async function LopHocPage({
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
 
-  if (khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI") {
+  if (khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
     return (
       <p className="p-6 text-muted-foreground">
         Khóa {khoa.maKhoa} thuộc Phương thức 3 (chỉ dự thi) - không có giảng dạy nên không chia lớp.
@@ -76,28 +77,29 @@ export default async function LopHocPage({
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold text-ued-blue-dam">Danh sách lớp</h2>
         <FormTaoLop khoaId={khoa.id} />
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Mã lớp</TableHead>
-              <TableHead>Tên</TableHead>
-              <TableHead>Sĩ số</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dsLop.map((lop) => (
-              <HangLop key={lop.id} khoaId={khoa.id} lop={lop} />
-            ))}
-            {dsLop.length === 0 && (
+        <BangPhanTrang
+          dauBang={
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                  Khóa chưa chia lớp
-                </TableCell>
+                <TableHead>Mã lớp</TableHead>
+                <TableHead>Tên</TableHead>
+                <TableHead>Sĩ số</TableHead>
+                <TableHead />
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+          }
+          rong={
+            <TableRow>
+              <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                Khóa chưa chia lớp
+              </TableCell>
+            </TableRow>
+          }
+        >
+          {dsLop.map((lop) => (
+            <HangLop key={lop.id} khoaId={khoa.id} lop={lop} />
+          ))}
+        </BangPhanTrang>
       </section>
 
       <section className="flex flex-col gap-3">
@@ -173,32 +175,33 @@ export default async function LopHocPage({
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold text-ued-blue-dam">Lịch sử xếp/chuyển lớp</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Thời điểm</TableHead>
-              <TableHead>Học viên</TableHead>
-              <TableHead>Từ lớp</TableHead>
-              <TableHead>Sang lớp</TableHead>
-              <TableHead>Hiệu lực</TableHead>
-              <TableHead>Lý do</TableHead>
-              <TableHead>Người thực hiện</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dsLichSu.map((ls) => (
-              <TableRow key={ls.id}>
-                <TableCell>{ls.createdAt.toLocaleString("vi-VN")}</TableCell>
-                <TableCell>{ls.dangKy.hocVien.hoTen}</TableCell>
-                <TableCell>{ls.tuLop?.maLop ?? "—"}</TableCell>
-                <TableCell>{ls.denLop.maLop}</TableCell>
-                <TableCell>{ls.ngayHieuLuc.toLocaleDateString("vi-VN")}</TableCell>
-                <TableCell>{ls.lyDo ?? ""}</TableCell>
-                <TableCell>{ls.nguoiThucHienTen}</TableCell>
+        <BangPhanTrang
+          dauBang={
+            <TableHeader>
+              <TableRow>
+                <TableHead>Thời điểm</TableHead>
+                <TableHead>Học viên</TableHead>
+                <TableHead>Từ lớp</TableHead>
+                <TableHead>Sang lớp</TableHead>
+                <TableHead>Hiệu lực</TableHead>
+                <TableHead>Lý do</TableHead>
+                <TableHead>Người thực hiện</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+          }
+        >
+          {dsLichSu.map((ls) => (
+            <TableRow key={ls.id}>
+              <TableCell>{ls.createdAt.toLocaleString("vi-VN")}</TableCell>
+              <TableCell>{ls.dangKy.hocVien.hoTen}</TableCell>
+              <TableCell>{ls.tuLop?.maLop ?? "—"}</TableCell>
+              <TableCell>{ls.denLop.maLop}</TableCell>
+              <TableCell>{ls.ngayHieuLuc.toLocaleDateString("vi-VN")}</TableCell>
+              <TableCell>{ls.lyDo ?? ""}</TableCell>
+              <TableCell>{ls.nguoiThucHienTen}</TableCell>
+            </TableRow>
+          ))}
+        </BangPhanTrang>
       </section>
     </main>
   );

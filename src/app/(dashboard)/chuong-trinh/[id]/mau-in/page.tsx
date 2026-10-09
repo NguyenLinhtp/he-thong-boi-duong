@@ -23,7 +23,7 @@ export default async function MauInChuongTrinhPage({ params }: { params: Promise
   const { id } = await params;
   const ct = await prisma.chuongTrinh.findUnique({ where: { id } });
   if (!ct) notFound();
-  const laDuThi = ct.phuongThucDangKy === "CHI_DU_THI";
+  const laDuThi = ct.phuongThucDangKys.includes("CHI_DU_THI");
   const conHieuLuc = ct.trangThai !== "NGUNG_HIEU_LUC";
   const [suaDon, suaBienLai, bien, soKhoaRieng] = await Promise.all([
     coQuyen("CT-07").then((c) => c && conHieuLuc),

@@ -28,7 +28,7 @@ async function taoKhoa(siSoToiDa = 30, phuongThuc: "CHI_DU_THI" | "TRUC_TUYEN_NO
   const lh = await prisma.loaiHinhBoiDuong.create({ data: { ma: `LH_LO_${crypto.randomUUID()}`, ten: "LH lô" } });
   loaiHinh.push(lh.id);
   const ct = await prisma.chuongTrinh.create({
-    data: { maCT: `CT_LO_${crypto.randomUUID()}`, ten: "CT lô", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKy: phuongThuc },
+    data: { maCT: `CT_LO_${crypto.randomUUID()}`, ten: "CT lô", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKys: phuongThuc ? [phuongThuc] : [] },
   });
   chuongTrinh.push(ct.id);
   const khoa = await prisma.khoa.create({ data: { maKhoa: `KH_LO_${crypto.randomUUID()}`, chuongTrinhId: ct.id, siSoToiDa, trangThai: "DANG_TUYEN_SINH" } });

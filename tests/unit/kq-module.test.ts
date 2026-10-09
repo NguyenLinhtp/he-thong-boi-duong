@@ -75,7 +75,7 @@ async function taoKhoaCoGiangDay(phuongThuc: PhuongThucDangKy = "TRUC_TUYEN_NOP_
       ten: "CT KQ",
       loaiHinhBoiDuongId: lh.id,
       trangThai: "DA_BAN_HANH",
-      phuongThucDangKy: phuongThuc,
+      phuongThucDangKys: phuongThuc ? [phuongThuc] : [],
       tongThoiLuong: 40,
     },
   });
@@ -122,7 +122,7 @@ async function taoKhoaChiDuThi() {
       ten: "CT KQ6",
       loaiHinhBoiDuongId: lh.id,
       trangThai: "DA_BAN_HANH",
-      phuongThucDangKy: "CHI_DU_THI",
+      phuongThucDangKys: ["CHI_DU_THI"],
     },
   });
   chuongTrinhIds.push(ct.id);

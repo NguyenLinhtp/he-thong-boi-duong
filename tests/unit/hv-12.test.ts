@@ -45,7 +45,7 @@ async function taoKhoaQuaDVLK(siSoToiDa = 2) {
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD-HV12",
       ngayBanHanh: new Date(),
-      phuongThucDangKy: "QUA_DON_VI_LIEN_KET",
+      phuongThucDangKys: ["QUA_DON_VI_LIEN_KET"],
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);
@@ -124,7 +124,7 @@ describe("HV-12 học viên tự đăng ký và chọn đơn vị liên kết th
         trangThai: "DA_BAN_HANH",
         soQuyetDinh: "QD",
         ngayBanHanh: new Date(),
-        phuongThucDangKy: "CHI_DU_THI",
+        phuongThucDangKys: ["CHI_DU_THI"],
       },
     });
     chuongTrinhTaoTrongTest.push(ct.id);

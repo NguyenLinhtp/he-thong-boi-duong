@@ -8,6 +8,7 @@ import {
 import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
 import type { DuLieuForm } from "@/lib/form-dang-ky";
 import { kiemTraDangKyTheoKhoa, luuHoSoBoSung } from "@/server/services/hv/form-dang-ky";
+import { bienTheSoCCCD } from "@/server/services/hv/kiem-tra-trung-khoa";
 
 export type XacNhanThamGiaInput = {
   khoaId: string;
@@ -40,7 +41,8 @@ export async function xacNhanThamGia(input: XacNhanThamGiaInput, nguoiDungTaiKho
   const hocVien = nguoiDungTaiKhoanId
     ? await hocVienCuaTaiKhoan(nguoiDungTaiKhoanId)
     : soCCCD
-      ? await prisma.hocVien.findUnique({ where: { soCCCD } })
+      ? // (sửa 08/10/2026) danh sách import đã chuẩn hóa số CCCD - nhận cả cách ghi khác (khoảng trắng, chữ thường, thiếu số 0 đầu)
+        await prisma.hocVien.findFirst({ where: { soCCCD: { in: bienTheSoCCCD(soCCCD) } } })
       : null;
   if (!hocVien) throw new KhongKhopDuLieuImportError();
 

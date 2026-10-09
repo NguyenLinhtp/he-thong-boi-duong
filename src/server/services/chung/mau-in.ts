@@ -69,7 +69,7 @@ export type NguonMau = "KHOA" | "CHUONG_TRINH" | "MAC_DINH";
 
 export async function mauDonHieuLuc(khoaId: string) {
   const khoa = await prisma.khoa.findUniqueOrThrow({ where: { id: khoaId }, include: { chuongTrinh: true } });
-  const laDuThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  const laDuThi = khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
   const luu = khoa.mauDonDangKy ?? khoa.chuongTrinh.mauDonDangKy;
   const nguon: NguonMau = khoa.mauDonDangKy ? "KHOA" : khoa.chuongTrinh.mauDonDangKy ? "CHUONG_TRINH" : "MAC_DINH";
   return { mau: chuanHoaMauDon(luu, laDuThi), nguon, laDuThi, khoa };
@@ -89,7 +89,7 @@ const jsonHoacNull = (v: object | null) => (v === null ? P.DbNull : (v as Prisma
 /** Lưu mẫu đơn của chương trình; null = về mẫu mặc định. */
 export async function luuMauDonChuongTrinh(chuongTrinhId: string, mauNhap: unknown | null, nguoi: NguoiThucHien) {
   const ct = await prisma.chuongTrinh.findUniqueOrThrow({ where: { id: chuongTrinhId } });
-  const mau = mauNhap === null ? null : chuanHoaMauDon(mauNhap, ct.phuongThucDangKy === "CHI_DU_THI");
+  const mau = mauNhap === null ? null : chuanHoaMauDon(mauNhap, ct.phuongThucDangKys.includes("CHI_DU_THI"));
   if (mau) kiemTraMauDon(mau);
   await prisma.$transaction(async (tx) => {
     await tx.chuongTrinh.update({ where: { id: chuongTrinhId }, data: { mauDonDangKy: jsonHoacNull(mau) } });
@@ -100,7 +100,7 @@ export async function luuMauDonChuongTrinh(chuongTrinhId: string, mauNhap: unkno
 /** Lưu mẫu đơn riêng của khóa; null = dùng lại mẫu của chương trình. */
 export async function luuMauDonKhoa(khoaId: string, mauNhap: unknown | null, nguoi: NguoiThucHien) {
   const khoa = await prisma.khoa.findUniqueOrThrow({ where: { id: khoaId }, include: { chuongTrinh: true } });
-  const mau = mauNhap === null ? null : chuanHoaMauDon(mauNhap, khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI");
+  const mau = mauNhap === null ? null : chuanHoaMauDon(mauNhap, khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI"));
   if (mau) kiemTraMauDon(mau);
   await prisma.$transaction(async (tx) => {
     await tx.khoa.update({ where: { id: khoaId }, data: { mauDonDangKy: jsonHoacNull(mau) } });
@@ -157,7 +157,7 @@ export async function taoNoiDungInBienLai(
   const mau = chuanHoaMauBienLai(hocPhi.khoa.chuongTrinh.mauBienLai);
   const noiDung =
     dsMuc.length === 0
-      ? hocPhi.khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI"
+      ? hocPhi.khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")
         ? "Lệ phí thi"
         : "Học phí"
       : dsMuc.length === 1

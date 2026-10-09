@@ -50,7 +50,7 @@ async function taoKhoa(phuongThuc: "CHI_DU_THI" | "TRUC_TUYEN_NOP_GIAY", moTuyen
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD",
       ngayBanHanh: new Date(),
-      phuongThucDangKy: phuongThuc,
+      phuongThucDangKys: phuongThuc ? [phuongThuc] : [],
     },
   });
   chuongTrinh.push(ct.id);
@@ -73,8 +73,9 @@ const tk = (soCCCD: string, them: Record<string, string> = {}) => ({
 
 describe("Khóa nào cần tài khoản (bổ sung 01/10/2026)", () => {
   it("chỉ khóa đăng ký dự thi (PT3) không cần tài khoản", () => {
-    expect(canTaiKhoanKhiDangKy("CHI_DU_THI")).toBe(false);
-    for (const pt of ["TRUC_TUYEN_NOP_GIAY", "IMPORT_TU_XAC_NHAN", "QUA_DON_VI_LIEN_KET"]) expect(canTaiKhoanKhiDangKy(pt)).toBe(true);
+    expect(canTaiKhoanKhiDangKy(["CHI_DU_THI"])).toBe(false);
+    for (const pt of ["TRUC_TUYEN_NOP_GIAY", "IMPORT_TU_XAC_NHAN", "QUA_DON_VI_LIEN_KET"]) expect(canTaiKhoanKhiDangKy([pt])).toBe(true);
+    expect(canTaiKhoanKhiDangKy(["TRUC_TUYEN_NOP_GIAY", "QUA_DON_VI_LIEN_KET"])).toBe(true);
   });
 });
 

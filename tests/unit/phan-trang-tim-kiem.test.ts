@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { khopTuKhoa } from "@/lib/tim-kiem";
-import { locVaPhanTrang, thamSoPhang, viTriTrang } from "@/components/chung/phan-trang";
+import { locVaPhanTrang, soDongTuUrl, tenThamSoSoDong, thamSoPhang, viTriTrang } from "@/components/chung/phan-trang";
+import { chuanHoaSoDong } from "@/components/chung/bang-phan-trang";
 import { trangHoSoHocVien } from "@/server/services/hv/hv-08-ho-so-hoc-vien";
 
 // (bổ sung 06/10/2026) tìm nhanh + phân trang 20 dòng cho các danh sách HP/HV
@@ -42,8 +43,9 @@ describe("locVaPhanTrang - mỗi danh sách có tham số riêng", () => {
     expect(t2.dsTrang).toHaveLength(5);
   });
   it("viTriTrang cho phân trang trong CSDL; thamSoPhang bỏ giá trị rỗng", () => {
-    expect(viTriTrang(41, "3")).toEqual({ trang: 3, tongTrang: 3, tongDong: 41, tuDong: 40 });
-    expect(viTriTrang(0, "5")).toEqual({ trang: 1, tongTrang: 1, tongDong: 0, tuDong: 0 });
+    expect(viTriTrang(41, "3")).toEqual({ trang: 3, tongTrang: 3, tongDong: 41, soDong: 20, tuDong: 40 });
+    expect(viTriTrang(0, "5")).toEqual({ trang: 1, tongTrang: 1, tongDong: 0, soDong: 20, tuDong: 0 });
+    expect(viTriTrang(41, "2", 50)).toEqual({ trang: 1, tongTrang: 1, tongDong: 41, soDong: 50, tuDong: 0 });
     expect(thamSoPhang({ a: "", b: ["x", "y"], c: undefined })).toEqual({ a: undefined, b: "x", c: undefined });
   });
 });
@@ -62,5 +64,25 @@ describe("HV-08 trang hồ sơ học viên - phân trang trong CSDL", () => {
     const t2 = await trangHoSoHocVien(ma, tat, 20, 20);
     expect(t2.ds).toHaveLength(3);
     expect(await trangHoSoHocVien(ma, { toanBo: false, hocVienId: null }, 0, 20)).toEqual({ ds: [], tong: 0 });
+  });
+});
+
+describe("(09/10/2026) số dòng mỗi trang nhập được", () => {
+  it("tham số số dòng đi cùng tham số trang; giá trị sai/ngoài 1..500 về mặc định hoặc chặn trên", () => {
+    expect(tenThamSoSoDong("hv_trang")).toBe("hv_so");
+    expect(tenThamSoSoDong("trang")).toBe("so");
+    expect(soDongTuUrl({ hv_so: "50" }, "hv_trang")).toBe(50);
+    expect(soDongTuUrl({ hv_so: "0" }, "hv_trang")).toBe(20);
+    expect(soDongTuUrl({ hv_so: "abc" }, "hv_trang")).toBe(20);
+    expect(soDongTuUrl({ so: "9999" }, "trang")).toBe(500);
+    expect(chuanHoaSoDong("35")).toBe(35);
+    expect(chuanHoaSoDong("-1")).toBe(20);
+    expect(chuanHoaSoDong("1000")).toBe(500);
+  });
+
+  it("locVaPhanTrang đọc số dòng theo danh sách", () => {
+    const ds = Array.from({ length: 45 }, (_, i) => ({ hoTen: `HV ${i}` }));
+    const t = locVaPhanTrang(ds, { ts_so: "10", ts_trang: "3" }, "ts", (x) => x);
+    expect([t.soDong, t.tongTrang, t.trang, t.dsTrang.length, t.dsTrang[0].hoTen]).toEqual([10, 5, 3, 10, "HV 20"]);
   });
 });

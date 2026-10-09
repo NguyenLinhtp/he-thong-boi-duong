@@ -3,7 +3,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { danhSachSinhVien, layCotBoSungSinhVien } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { OTimKiem, PhanTrang, SO_DONG_MOI_TRANG, thamSoDanhSach, thamSoPhang, viTriTrang, type ThamSoUrl } from "@/components/chung/phan-trang";
+import { OTimKiem, PhanTrang, soDongTuUrl, thamSoDanhSach, thamSoPhang, viTriTrang, type ThamSoUrl } from "@/components/chung/phan-trang";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { TrangThaiRong } from "@/components/chung/trang-thai-rong";
 import { FormImportSinhVien } from "@/components/dang-ky/form-import-sinh-vien";
@@ -24,8 +24,8 @@ export default async function DanhSachSinhVienPage({ searchParams }: { searchPar
   const q = (thamSo[ten.q] ?? "").trim();
   // (bổ sung 06/10/2026) phân trang 20 dòng trong CSDL thay cho giới hạn 200 dòng đầu
   const [{ tong }, dsCot] = await Promise.all([danhSachSinhVien(q, 0), layCotBoSungSinhVien()]);
-  const vt = viTriTrang(tong, thamSo[ten.trang]);
-  const { ds } = await danhSachSinhVien(q, SO_DONG_MOI_TRANG, vt.tuDong);
+  const vt = viTriTrang(tong, thamSo[ten.trang], soDongTuUrl(thamSo, ten.trang));
+  const { ds } = await danhSachSinhVien(q, vt.soDong, vt.tuDong);
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
@@ -75,7 +75,7 @@ export default async function DanhSachSinhVienPage({ searchParams }: { searchPar
               ))}
             </TableBody>
           </Table>
-          <PhanTrang duong="/hoc-vien/sinh-vien" thamSo={thamSo} ten={ten.trang} trang={vt.trang} tongTrang={vt.tongTrang} tongDong={tong} />
+          <PhanTrang duong="/hoc-vien/sinh-vien" thamSo={thamSo} ten={ten.trang} trang={vt.trang} tongTrang={vt.tongTrang} tongDong={tong} soDong={vt.soDong} />
         </>
       )}
     </main>

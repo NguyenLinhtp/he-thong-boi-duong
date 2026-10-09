@@ -11,6 +11,9 @@ import {
   KhoaChuaMoXacNhanThamGiaError,
 } from "@/server/services/hv/loi-hoc-vien";
 
+// (08/10/2026) import chuẩn hóa số CCCD (tối đa 30 ký tự, viết hoa) - sinh số CCCD 12 chữ số như thật
+const cccdNgauNhien = () => `0${String(Math.floor(Math.random() * 1e11)).padStart(11, "0")}`;
+
 const loaiHinhTaoTrongTest: string[] = [];
 const chuongTrinhTaoTrongTest: string[] = [];
 const khoaTaoTrongTest: string[] = [];
@@ -41,7 +44,7 @@ async function taoKhoaDaImport(soHocVien = 1, siSoToiDa = 10) {
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD-HV04",
       ngayBanHanh: new Date(),
-      phuongThucDangKy: "IMPORT_TU_XAC_NHAN",
+      phuongThucDangKys: ["IMPORT_TU_XAC_NHAN"],
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);
@@ -49,7 +52,7 @@ async function taoKhoaDaImport(soHocVien = 1, siSoToiDa = 10) {
   const khoa = await khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa });
   khoaTaoTrongTest.push(khoa.id);
 
-  const cccds = Array.from({ length: soHocVien }, () => crypto.randomUUID());
+  const cccds = Array.from({ length: soHocVien }, () => cccdNgauNhien());
   const csv = [
     "hoTen,soCCCD",
     ...cccds.map((cccd, i) => `Học viên ${i + 1},${cccd}`),
@@ -97,14 +100,14 @@ describe("HV-04 học viên tự xác nhận tham gia (Phương thức 2)", () =
         trangThai: "DA_BAN_HANH",
         soQuyetDinh: "QD",
         ngayBanHanh: new Date(),
-        phuongThucDangKy: "IMPORT_TU_XAC_NHAN",
+        phuongThucDangKys: ["IMPORT_TU_XAC_NHAN"],
       },
     });
     chuongTrinhTaoTrongTest.push(ct.id);
     const khoa = await khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 10 });
     khoaTaoTrongTest.push(khoa.id);
 
-    const cccd = crypto.randomUUID();
+    const cccd = cccdNgauNhien();
     const dsDangKy = await importDanhSachHocVien(
       khoa.id,
       ["hoTen,soCCCD,donViCongTac,soDienThoai,email", `A,${cccd},Trường A,0911111111,cu@example.com`].join(

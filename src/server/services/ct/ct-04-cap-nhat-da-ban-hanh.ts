@@ -6,11 +6,11 @@ import {
   KhongTimThayChuongTrinhError,
 } from "@/server/services/ct/loi-chuong-trinh";
 
+// (sửa 08/10/2026) được đổi tổng thời lượng/loại hình cả khi có khóa hoạt động (khóa dùng theo chương
+// trình nên cập nhật theo) - nhưng bắt buộc ghi lý do
 export class SuaTruongAnhHuongKhoaDangChayError extends Error {
   constructor() {
-    super(
-      "Chương trình đang có khóa hoạt động, chỉ được sửa tên/mục tiêu/đối tượng áp dụng - không được đổi tổng thời lượng hoặc loại hình",
-    );
+    super("Chương trình đang có khóa hoạt động - đổi tổng thời lượng hoặc loại hình cần nhập lý do sửa (các khóa sẽ dùng giá trị mới)");
   }
 }
 
@@ -47,9 +47,8 @@ export type SuaChuongTrinhDaBanHanhInput = {
 /**
  * CT-04: sửa chương trình đã ban hành - luôn lưu snapshot nội dung TRƯỚC
  * khi sửa vào ChuongTrinhPhienBan và tăng phienBanHienTai. Nếu chương
- * trình đang có khóa hoạt động, chỉ cho đổi các trường không ảnh hưởng
- * khóa đang chạy (ten/mucTieu/doiTuongApDung) - chặn đổi tongThoiLuong
- * hoặc loaiHinhBoiDuongId.
+ * trình đang có khóa hoạt động: (sửa 08/10/2026) vẫn đổi được tongThoiLuong /
+ * loaiHinhBoiDuongId - mọi khóa của chương trình dùng giá trị mới - nhưng bắt buộc lý do sửa.
  */
 export async function suaChuongTrinhDaBanHanh(
   id: string,
@@ -64,11 +63,10 @@ export async function suaChuongTrinhDaBanHanh(
     );
   }
 
-  if (await coKhoaDangHoatDong(id)) {
-    const doiThoiLuong = input.tongThoiLuong !== chuongTrinh.tongThoiLuong;
-    const doiLoaiHinh = input.loaiHinhBoiDuongId !== chuongTrinh.loaiHinhBoiDuongId;
-    if (doiThoiLuong || doiLoaiHinh) throw new SuaTruongAnhHuongKhoaDangChayError();
-  }
+  const doiThoiLuong = input.tongThoiLuong !== undefined && input.tongThoiLuong !== chuongTrinh.tongThoiLuong;
+  const doiLoaiHinh = input.loaiHinhBoiDuongId !== chuongTrinh.loaiHinhBoiDuongId;
+  const anhHuongKhoa = (doiThoiLuong || doiLoaiHinh) && (await coKhoaDangHoatDong(id));
+  if (anhHuongKhoa && !input.lyDoSua?.trim()) throw new SuaTruongAnhHuongKhoaDangChayError();
 
   if (input.tongThoiLuong !== undefined && input.tongThoiLuong !== chuongTrinh.tongThoiLuong) {
     const tongTiet = await tongSoTietHocPhan(id);
@@ -105,7 +103,11 @@ export async function suaChuongTrinhDaBanHanh(
       "SUA_CHUONG_TRINH_DA_BAN_HANH",
       "ChuongTrinh",
       id,
-      `${sau.maCT}: phiên bản ${chuongTrinh.phienBanHienTai} -> ${sau.phienBanHienTai}${input.lyDoSua ? ` - lý do: ${input.lyDoSua}` : ""}`,
+      `${sau.maCT}: phiên bản ${chuongTrinh.phienBanHienTai} -> ${sau.phienBanHienTai}` +
+        (doiThoiLuong ? `; tổng thời lượng ${chuongTrinh.tongThoiLuong ?? "—"} -> ${input.tongThoiLuong ?? "—"}` : "") +
+        (doiLoaiHinh ? "; đổi loại hình" : "") +
+        (anhHuongKhoa ? "; áp dụng cho các khóa đang hoạt động" : "") +
+        (input.lyDoSua ? ` - lý do: ${input.lyDoSua}` : ""),
       tx,
     );
     return sau;

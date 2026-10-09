@@ -18,6 +18,7 @@ import {
   KhongPhaiTaiKhoanDonViLienKetError,
   KhongCoHopDongLienKetHieuLucError,
 } from "@/server/services/hv/loi-hoc-vien";
+import { kiemTraChuaCoTrongKhoa } from "@/server/services/hv/kiem-tra-trung-khoa";
 
 export type DangKyThayMatInput = ThongTinHocVienInput & { khoaId: string };
 
@@ -39,7 +40,7 @@ export async function dangKyThayMatDonViLienKet(nguoiDungId: string, input: Dang
   });
   if (!khoa) throw new KhongTimThayKhoaError();
 
-  if (khoa.chuongTrinh.phuongThucDangKy !== "QUA_DON_VI_LIEN_KET") {
+  if (!khoa.chuongTrinh.phuongThucDangKys.includes("QUA_DON_VI_LIEN_KET")) {
     throw new SaiPhuongThucDangKyError("Phương thức 4 (đăng ký qua đơn vị liên kết)");
   }
 
@@ -48,6 +49,9 @@ export async function dangKyThayMatDonViLienKet(nguoiDungId: string, input: Dang
   });
   if (!hopDong) throw new KhongCoHopDongLienKetHieuLucError();
 
+  // (bổ sung 08/10/2026) khóa nhiều phương thức: đã có trong khóa (theo số CCCD, kể cả đã có trong
+  // danh sách được cử đi học) thì báo đã tồn tại, không tạo hồ sơ thứ 2
+  await kiemTraChuaCoTrongKhoa(khoa.id, { soCCCD: input.soCCCD });
   const conMo = await coTheNhanDangKy(khoa.id);
   if (!conMo) throw new KhoaKhongMoDangKyError();
 
@@ -77,7 +81,10 @@ export async function dangKyThayMatDonViLienKet(nguoiDungId: string, input: Dang
   } catch (error) {
     const laLoiTrungDangKy =
       error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
-    if (laLoiTrungDangKy) throw new DaDangKyKhoaNayError();
+    if (laLoiTrungDangKy) {
+      await kiemTraChuaCoTrongKhoa(khoa.id, { hocVienId: hocVien.id, soCCCD: input.soCCCD });
+      throw new DaDangKyKhoaNayError();
+    }
     throw error;
   }
   await luuHoSoBoSung(dangKy.id, boSung);

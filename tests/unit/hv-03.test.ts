@@ -12,6 +12,9 @@ import {
   FileImportRongError,
 } from "@/server/services/hv/loi-hoc-vien";
 
+// (08/10/2026) import chuẩn hóa số CCCD (tối đa 30 ký tự, viết hoa) - sinh số CCCD 12 chữ số như thật
+const cccdNgauNhien = () => `0${String(Math.floor(Math.random() * 1e11)).padStart(11, "0")}`;
+
 const loaiHinhTaoTrongTest: string[] = [];
 const chuongTrinhTaoTrongTest: string[] = [];
 const khoaTaoTrongTest: string[] = [];
@@ -42,7 +45,7 @@ async function taoKhoa(
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD-HV03",
       ngayBanHanh: new Date(),
-      phuongThucDangKy,
+      phuongThucDangKys: phuongThucDangKy ? [phuongThucDangKy] : [],
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);
@@ -61,8 +64,8 @@ describe("HV-03 import danh sách học viên có sẵn (Phương thức 2)", ()
     const khoa = await taoKhoa();
     const csv = [
       "hoTen,soCCCD,donViCongTac,soDienThoai,email",
-      `Nguyễn Văn A,${crypto.randomUUID()},Trường A,0900000001,a@example.com`,
-      `Trần Thị B,${crypto.randomUUID()},Trường B,,`,
+      `Nguyễn Văn A,${cccdNgauNhien()},Trường A,0900000001,a@example.com`,
+      `Trần Thị B,${cccdNgauNhien()},Trường B,,`,
     ].join("\n");
 
     const ketQua = await importDanhSachHocVien(khoa.id, csv);
@@ -77,7 +80,7 @@ describe("HV-03 import danh sách học viên có sẵn (Phương thức 2)", ()
 
   it("chặn khi chương trình không cấu hình Phương thức 2", async () => {
     const khoa = await taoKhoa(10, "TRUC_TUYEN_NOP_GIAY");
-    const csv = ["hoTen,soCCCD", `A,${crypto.randomUUID()}`].join("\n");
+    const csv = ["hoTen,soCCCD", `A,${cccdNgauNhien()}`].join("\n");
 
     await expect(importDanhSachHocVien(khoa.id, csv)).rejects.toThrow(SaiPhuongThucDangKyError);
   });
@@ -86,14 +89,14 @@ describe("HV-03 import danh sách học viên có sẵn (Phương thức 2)", ()
     const khoa = await taoKhoa();
     await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
     await chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA");
-    const csv = ["hoTen,soCCCD", `A,${crypto.randomUUID()}`].join("\n");
+    const csv = ["hoTen,soCCCD", `A,${cccdNgauNhien()}`].join("\n");
 
     await expect(importDanhSachHocVien(khoa.id, csv)).rejects.toThrow(KhoaKhongConNhanImportError);
   });
 
   it("báo lỗi chi tiết khi trùng CCCD trong cùng file, không tạo dữ liệu nào", async () => {
     const khoa = await taoKhoa();
-    const cccdTrung = crypto.randomUUID();
+    const cccdTrung = cccdNgauNhien();
     const csv = [
       "hoTen,soCCCD",
       `A,${cccdTrung}`,
@@ -110,7 +113,7 @@ describe("HV-03 import danh sách học viên có sẵn (Phương thức 2)", ()
     const khoa = await taoKhoa();
     const csv = [
       "hoTen,soCCCD",
-      `,${crypto.randomUUID()}`,
+      `,${cccdNgauNhien()}`,
       "C,",
     ].join("\n");
 
@@ -136,8 +139,8 @@ describe("HV-03 import danh sách học viên có sẵn (Phương thức 2)", ()
     const khoa = await taoKhoa(1);
     const csv = [
       "hoTen,soCCCD",
-      `A,${crypto.randomUUID()}`,
-      `B,${crypto.randomUUID()}`,
+      `A,${cccdNgauNhien()}`,
+      `B,${cccdNgauNhien()}`,
     ].join("\n");
 
     await expect(importDanhSachHocVien(khoa.id, csv)).rejects.toThrow(ImportVuotSiSoToiDaError);
@@ -145,7 +148,7 @@ describe("HV-03 import danh sách học viên có sẵn (Phương thức 2)", ()
 
   it("báo lỗi khi CCCD đã có trong danh sách của khóa này (import lại)", async () => {
     const khoa = await taoKhoa();
-    const cccd = crypto.randomUUID();
+    const cccd = cccdNgauNhien();
     const lan1 = await importDanhSachHocVien(khoa.id, ["hoTen,soCCCD", `A,${cccd}`].join("\n"));
     ghiNhanHocVien(lan1);
 
@@ -157,7 +160,7 @@ describe("HV-03 import danh sách học viên có sẵn (Phương thức 2)", ()
   it("HV-08: CCCD đã tồn tại từ trước (khóa khác) thì dùng lại cùng 1 mã học viên khi import", async () => {
     const khoa1 = await taoKhoa();
     const khoa2 = await taoKhoa();
-    const cccd = crypto.randomUUID();
+    const cccd = cccdNgauNhien();
 
     const lan1 = await importDanhSachHocVien(khoa1.id, ["hoTen,soCCCD", `A,${cccd}`].join("\n"));
     ghiNhanHocVien(lan1);
@@ -168,7 +171,7 @@ describe("HV-03 import danh sách học viên có sẵn (Phương thức 2)", ()
 
   it("không tìm thấy khóa", async () => {
     await expect(
-      importDanhSachHocVien("khong-ton-tai", ["hoTen,soCCCD", `A,${crypto.randomUUID()}`].join("\n")),
+      importDanhSachHocVien("khong-ton-tai", ["hoTen,soCCCD", `A,${cccdNgauNhien()}`].join("\n")),
     ).rejects.toThrow(KhongTimThayKhoaError);
   });
 });

@@ -37,7 +37,7 @@ async function taoKhoaDangTuyenSinh(siSoToiDa = 10) {
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD-HV02",
       ngayBanHanh: new Date(),
-      phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY",
+      phuongThucDangKys: ["TRUC_TUYEN_NOP_GIAY"],
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);

@@ -35,8 +35,8 @@ export async function chuongTrinhDangMoDangKy() {
       mucTieu: ct.mucTieu,
       doiTuong: ct.doiTuongApDung,
       loaiHinh: ct.loaiHinhBoiDuong.ten,
-      laDuThi: ct.phuongThucDangKy === "CHI_DU_THI",
-      canTaiKhoan: canTaiKhoanKhiDangKy(ct.phuongThucDangKy),
+      laDuThi: ct.phuongThucDangKys.includes("CHI_DU_THI"),
+      canTaiKhoan: canTaiKhoanKhiDangKy(ct.phuongThucDangKys),
       soKhoa: dsKhoa.length,
       phiThapNhat: phi.length ? Math.min(...phi) : null,
       hanGanNhat: han.length ? new Date(Math.min(...han.map((h) => h.getTime()))) : null,
@@ -51,8 +51,8 @@ export async function chuongTrinhCongKhai(maCT: string) {
   const siSo = await Promise.all(dsKhoa.map((k) => siSoHienTai(k.id)));
   return {
     ct,
-    laDuThi: ct.phuongThucDangKy === "CHI_DU_THI",
-    canTaiKhoan: canTaiKhoanKhiDangKy(ct.phuongThucDangKy),
+    laDuThi: ct.phuongThucDangKys.includes("CHI_DU_THI"),
+    canTaiKhoan: canTaiKhoanKhiDangKy(ct.phuongThucDangKys),
     dsKhoa: dsKhoa.map((k, i) => ({
       maKhoa: k.maKhoa,
       tenKhoa: k.tenKhoa,

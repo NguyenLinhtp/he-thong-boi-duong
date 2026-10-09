@@ -248,10 +248,11 @@ export async function importDanhSachAction(
   await requirePermission("HV-03");
   const khoaId = String(formData.get("khoaId"));
   const file = formData.get("file") as File | null;
-  if (!file || file.size === 0) return { loi: "Vui lòng chọn file CSV để import" };
+  if (!file || file.size === 0) return { loi: "Vui lòng chọn tệp Excel (.xlsx) hoặc CSV để import" };
 
   try {
-    const ketQua = await importDanhSachHocVien(khoaId, await file.text());
+    // (sửa 08/10/2026) nhận tệp mẫu Excel theo form đăng ký của khóa (vẫn nhận CSV)
+    const ketQua = await importDanhSachHocVien(khoaId, Buffer.from(await file.arrayBuffer()), file.name);
     lamMoiKhoa(khoaId);
     return { soLuongDaTao: ketQua.length };
   } catch (error) {

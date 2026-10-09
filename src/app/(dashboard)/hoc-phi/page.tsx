@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { TrangThaiRong } from "@/components/chung/trang-thai-rong";
-import { PhanTrang, catTrang, thamSoPhang, type ThamSoUrl } from "@/components/chung/phan-trang";
+import { PhanTrang, catTrang, soDongTuUrl, thamSoPhang, type ThamSoUrl } from "@/components/chung/phan-trang";
 import { dinhDangTien } from "@/lib/dinh-dang";
 
 const NHAN_TRANG_THAI_KHOA: Record<string, string> = {
@@ -41,7 +41,7 @@ export default async function HocPhiTheoKhoaPage({ searchParams }: { searchParam
   );
   const ctChon = dsChuongTrinh.find((ct) => ct.id === thamSo.ct)?.id;
   const loc = ctChon ? tatCa.filter((k) => k.chuongTrinh.id === ctChon) : tatCa;
-  const trang = catTrang(loc, thamSo.kh_trang);
+  const trang = catTrang(loc, thamSo.kh_trang, soDongTuUrl(thamSo, "kh_trang"));
   const tongHop = await tongHopHocPhiTheoKhoa(trang.dsTrang.map((k) => k.id));
 
   return (
@@ -126,7 +126,7 @@ export default async function HocPhiTheoKhoaPage({ searchParams }: { searchParam
               </TableBody>
             </Table>
           </div>
-          <PhanTrang duong={DUONG} thamSo={thamSo} ten="kh_trang" trang={trang.trang} tongTrang={trang.tongTrang} tongDong={trang.tongDong} />
+          <PhanTrang duong={DUONG} thamSo={thamSo} ten="kh_trang" trang={trang.trang} tongTrang={trang.tongTrang} tongDong={trang.tongDong} soDong={trang.soDong} />
         </>
       )}
     </main>

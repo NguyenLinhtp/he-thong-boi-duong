@@ -391,7 +391,7 @@ export async function kiemTraQuyenXemHocLieuKhung(phien: { userId: string; maCND
   const hocLieu = await prisma.hocLieuHocPhan.findUnique({ where: { id }, include: { hocPhan: true } });
   if (!hocLieu) throw new KhongTimThayTaiLieuError();
   if (phien.maCNDuocPhep.some((ma) => ma === "CT-02" || ma === "CT-05")) return hocLieu;
-  const khoaCuaChuongTrinh = { chuongTrinhId: hocLieu.hocPhan.chuongTrinhId, chuongTrinh: { phuongThucDangKy: { not: "CHI_DU_THI" as const } } };
+  const khoaCuaChuongTrinh = { chuongTrinhId: hocLieu.hocPhan.chuongTrinhId, chuongTrinh: { NOT: { phuongThucDangKys: { has: "CHI_DU_THI" as const } } } };
 
   const hocVien = await hocVienCuaTaiKhoan(phien.userId);
   if (

@@ -31,7 +31,7 @@ async function taoChuongTrinhTest(tongThoiLuong: number | null = 10) {
       ten: "Chương trình test CT-03",
       loaiHinhBoiDuongId: lh.id,
       tongThoiLuong,
-      phuongThucDangKy: "TRUC_TUYEN_NOP_GIAY",
+      phuongThucDangKys: ["TRUC_TUYEN_NOP_GIAY"],
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);
@@ -48,7 +48,7 @@ describe("CT-03 trình duyệt và phê duyệt chương trình", () => {
 
   it("chặn trình thẩm định khi chưa chọn phương thức đăng ký (CT-07) - khóa mở ra sẽ không đăng ký được", async () => {
     const ct = await taoChuongTrinhTest(10);
-    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKy: null } });
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKys: [] } });
     await themHocPhan(ct.id, { ten: "A", soTiet: 10 });
 
     await expect(trinhThamDinh(ct.id)).rejects.toThrow(ChuaChonPhuongThucDangKyError);

@@ -17,6 +17,17 @@ import { FormTimLaiDon } from "./form-tim-lai-don";
 import { cauHinhHieuLuc, giaTriTuHoSo } from "@/server/services/hv/form-dang-ky";
 import { danhSachChucDanhHocVi } from "@/server/services/dm/dm-02-chuc-danh-hoc-vi";
 import type { DuLieuDungForm } from "./kieu-form";
+import { thongBaoDaTonTai, timDangKyTrongKhoa } from "@/server/services/hv/kiem-tra-trung-khoa";
+import { MA_NGAN_PHUONG_THUC, sapXepPhuongThuc, type MaPhuongThuc } from "@/lib/phuong-thuc";
+import type { ReactNode } from "react";
+
+// (bổ sung 08/10/2026 - CT-07) chương trình có nhiều phương thức: mỗi phương thức 1 cách đăng ký
+const TIEU_DE_CACH_DANG_KY: Record<MaPhuongThuc, string> = {
+  IMPORT_TU_XAC_NHAN: "Tôi được đơn vị cử đi học (đã có tên trong danh sách) - xác nhận tham gia",
+  TRUC_TUYEN_NOP_GIAY: "Tự đăng ký trực tuyến, in đơn nộp bản giấy về trường",
+  QUA_DON_VI_LIEN_KET: "Đăng ký và nộp hồ sơ giấy qua đơn vị liên kết",
+  CHI_DU_THI: "Đăng ký dự thi",
+};
 
 
 export default async function TrangDangKyCongKhaiKhoa({
@@ -29,7 +40,7 @@ export default async function TrangDangKyCongKhaiKhoa({
   if (!khoa) notFound();
 
   const conMo = await coTheNhanDangKy(khoa.id);
-  const laDuThi = khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI";
+  const laDuThi = khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
   // PT2: học viên đã import sẵn giữ chỗ từ trước, không cần kiểm tra lại sĩ
   // số khi xác nhận (khác với PT1 là đăng ký mới, phải qua coTheNhanDangKy).
   const conMoXacNhanThamGia = khoa.trangThai === "DANG_TUYEN_SINH";
@@ -44,9 +55,17 @@ export default async function TrangDangKyCongKhaiKhoa({
   const dsThanhPhan = laDuThi ? await dsThanhPhanLePhi(khoa.id) : [];
   const userId = (await auth())?.phienDangNhap?.userId;
   const tuHoSo = await giaTriTuHoSo(userId, cauHinh);
+  // (sửa 08/10/2026) danh sách phương thức của chương trình (PT3 đứng riêng)
+  const dsPhuongThuc = sapXepPhuongThuc(khoa.chuongTrinh.phuongThucDangKys);
+  const co = (m: MaPhuongThuc) => dsPhuongThuc.includes(m);
   // (bổ sung 01/10/2026) khóa bồi dưỡng cần tài khoản học viên; khóa chỉ thi thì không
-  const canTaiKhoan = canTaiKhoanKhiDangKy(khoa.chuongTrinh.phuongThucDangKy);
+  const canTaiKhoan = canTaiKhoanKhiDangKy(dsPhuongThuc);
   const hocVien = userId ? await hocVienCuaTaiKhoan(userId) : null;
+  // (bổ sung 08/10/2026) học viên đang đăng nhập đã tồn tại trong khóa (theo tài khoản hoặc số CCCD):
+  // có tên trong danh sách được cử đi học thì chỉ hiện mục xác nhận; đã đăng ký thì báo đã tồn tại
+  const daCoTrongKhoa = hocVien && !laDuThi ? await timDangKyTrongKhoa(khoa.id, { hocVienId: hocVien.id, soCCCD: hocVien.soCCCD }) : null;
+  const coTrongDanhSachCu = daCoTrongKhoa?.trangThai === "CHO_TU_XAC_NHAN" && co("IMPORT_TU_XAC_NHAN");
+  const daDangKyRoi = !!daCoTrongKhoa && !coTrongDanhSachCu;
   const quayLai = `/khoa/${khoa.maKhoa}`;
   const chanTaiKhoan =
     canTaiKhoan && (conMo || conMoXacNhanThamGia) && !hocVien ? (
@@ -93,7 +112,7 @@ export default async function TrangDangKyCongKhaiKhoa({
     })),
   };
   const goiYDangNhap =
-    conMo && !chanTaiKhoan && khoa.chuongTrinh.phuongThucDangKy !== "IMPORT_TU_XAC_NHAN" && cauHinh.dinhDanh !== "MA_SINH_VIEN" ? (
+    conMo && !chanTaiKhoan && !daDangKyRoi && (co("TRUC_TUYEN_NOP_GIAY") || co("QUA_DON_VI_LIEN_KET") || laDuThi) && cauHinh.dinhDanh !== "MA_SINH_VIEN" ? (
       tuHoSo ? (
         <p className="mb-4 rounded-lg bg-success/10 p-3 text-sm text-success">
           Thông tin đã được điền sẵn từ hồ sơ của bạn ({tuHoSo.maHocVien}) - vui lòng kiểm tra lại trước khi đăng ký.
@@ -108,10 +127,7 @@ export default async function TrangDangKyCongKhaiKhoa({
         </p>
       )
     ) : null;
-  const dsDonViLienKet =
-    khoa.chuongTrinh.phuongThucDangKy === "QUA_DON_VI_LIEN_KET"
-      ? await dsDonViLienKetChoKhoa(khoa.id)
-      : [];
+  const dsDonViLienKet = co("QUA_DON_VI_LIEN_KET") ? await dsDonViLienKetChoKhoa(khoa.id) : [];
 
   return (
     <main>
@@ -182,83 +198,104 @@ export default async function TrangDangKyCongKhaiKhoa({
         <div className="rounded-lg border bg-card p-6 shadow-md">
           {goiYDangNhap}
           {chanTaiKhoan}
-          {!chanTaiKhoan && (conMo || conMoXacNhanThamGia) && (
+          {!chanTaiKhoan && !daDangKyRoi && (conMo || conMoXacNhanThamGia) && (
             <p className="mb-4 text-xs text-muted-foreground">
               Các mục có dấu <span className="text-destructive">*</span> là bắt buộc.
             </p>
           )}
-          {!chanTaiKhoan && (
-            <>
-          {khoa.chuongTrinh.phuongThucDangKy === "TRUC_TUYEN_NOP_GIAY" &&
-            (conMo ? (
-              <FormDangKy khoaId={khoa.id} maKhoa={khoa.maKhoa} form={form} />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Khóa hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).
-              </p>
-            ))}
-
-          {khoa.chuongTrinh.phuongThucDangKy === "IMPORT_TU_XAC_NHAN" &&
-            (conMoXacNhanThamGia ? (
-              <FormXacNhanThamGia
-                khoaId={khoa.id}
-                hocVienDangNhap={hocVien ? { hoTen: hocVien.hoTen, maHocVien: hocVien.maHocVien } : null}
-                form={form}
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Khóa hiện chưa/không còn mở xác nhận tham gia.
-              </p>
-            ))}
-
-          {khoa.chuongTrinh.phuongThucDangKy === "CHI_DU_THI" && (
-            <div className="flex flex-col gap-4">
-              {conMo ? (
-                <FormDangKyDuThi khoaId={khoa.id} maKhoa={khoa.maKhoa} form={form} />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Đợt thi hiện không còn mở đăng ký (đã hết hạn, đã đóng đăng ký hoặc đã đủ sĩ số).
-                </p>
+          {!chanTaiKhoan && daCoTrongKhoa && (
+            <div className="mb-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+              <p className="font-medium">{thongBaoDaTonTai(daCoTrongKhoa)}</p>
+              {daDangKyRoi && (
+                <Link href={`/khoa/${khoa.maKhoa}/don-dang-ky/${daCoTrongKhoa.id}`} className="mt-1 inline-block font-medium text-primary underline">
+                  Xem hồ sơ/đơn đăng ký của bạn
+                </Link>
               )}
-              <FormTimLaiDon khoaId={khoa.id} maKhoa={khoa.maKhoa} moSan={!conMo} theoMaSinhVien={form.dinhDanh === "MA_SINH_VIEN"} />
             </div>
           )}
-
-          {khoa.chuongTrinh.phuongThucDangKy === "QUA_DON_VI_LIEN_KET" &&
-            (!conMo ? (
-              <p className="text-sm text-muted-foreground">
-                Khóa hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).
-              </p>
-            ) : dsDonViLienKet.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Khóa chưa có đơn vị liên kết nào được phân công tiếp nhận hồ sơ. Vui lòng liên hệ trực
-                tiếp trung tâm.
-              </p>
-            ) : (
-              <FormDangKyQuaDVLK
-                khoaId={khoa.id}
-                maKhoa={khoa.maKhoa}
-                form={form}
-                dsDonViLienKet={dsDonViLienKet.map((hd) => ({
-                  id: hd.donViLienKetId,
-                  ten: hd.donViLienKet.ten,
-                }))}
-              />
-            ))}
-
-          {khoa.chuongTrinh.phuongThucDangKy &&
-            !["TRUC_TUYEN_NOP_GIAY", "IMPORT_TU_XAC_NHAN", "CHI_DU_THI", "QUA_DON_VI_LIEN_KET"].includes(
-              khoa.chuongTrinh.phuongThucDangKy,
-            ) && (
-              <p className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
-                Khóa đang mở đăng ký theo hình thức khác đăng ký trực tuyến. Vui lòng liên hệ trực tiếp
-                trung tâm/đơn vị liên kết để biết chi tiết.
-              </p>
-            )}
+          {!chanTaiKhoan && !daDangKyRoi && (
+            <>
+          <CacCachDangKy
+            mo={coTrongDanhSachCu ? "IMPORT_TU_XAC_NHAN" : undefined}
+            ds={dsPhuongThuc.filter((m) => !coTrongDanhSachCu || m === "IMPORT_TU_XAC_NHAN").map((m) => ({
+              ma: m,
+              noiDung:
+                m === "TRUC_TUYEN_NOP_GIAY" ? (
+                  conMo ? (
+                    <FormDangKy khoaId={khoa.id} maKhoa={khoa.maKhoa} form={form} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Khóa hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).</p>
+                  )
+                ) : m === "IMPORT_TU_XAC_NHAN" ? (
+                  conMoXacNhanThamGia ? (
+                    <FormXacNhanThamGia
+                      khoaId={khoa.id}
+                      hocVienDangNhap={hocVien ? { hoTen: hocVien.hoTen, maHocVien: hocVien.maHocVien } : null}
+                      form={form}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Khóa hiện chưa/không còn mở xác nhận tham gia.</p>
+                  )
+                ) : m === "CHI_DU_THI" ? (
+                  <div className="flex flex-col gap-4">
+                    {conMo ? (
+                      <FormDangKyDuThi khoaId={khoa.id} maKhoa={khoa.maKhoa} form={form} />
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Đợt thi hiện không còn mở đăng ký (đã hết hạn, đã đóng đăng ký hoặc đã đủ sĩ số).
+                      </p>
+                    )}
+                    <FormTimLaiDon khoaId={khoa.id} maKhoa={khoa.maKhoa} moSan={!conMo} theoMaSinhVien={form.dinhDanh === "MA_SINH_VIEN"} />
+                  </div>
+                ) : !conMo ? (
+                  <p className="text-sm text-muted-foreground">Khóa hiện không còn mở đăng ký (đã đóng đăng ký hoặc đã đủ sĩ số).</p>
+                ) : dsDonViLienKet.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Khóa chưa có đơn vị liên kết nào được phân công tiếp nhận hồ sơ. Vui lòng liên hệ trực tiếp trung tâm.
+                  </p>
+                ) : (
+                  <FormDangKyQuaDVLK
+                    khoaId={khoa.id}
+                    maKhoa={khoa.maKhoa}
+                    form={form}
+                    dsDonViLienKet={dsDonViLienKet.map((hd) => ({ id: hd.donViLienKetId, ten: hd.donViLienKet.ten }))}
+                  />
+                ),
+            }))}
+          />
+          {dsPhuongThuc.length === 0 && (
+            <p className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+              Chương trình chưa thiết lập cách đăng ký trực tuyến. Vui lòng liên hệ trực tiếp trung tâm để biết chi tiết.
+            </p>
+          )}
             </>
           )}
         </div>
       </div>
     </main>
+  );
+}
+
+/**
+ * 1 phương thức: hiện thẳng form như trước. Nhiều phương thức: mỗi cách đăng ký 1 mục mở/đóng (chỉ mở
+ * 1 mục một lúc), mở sẵn mục phù hợp (vd. học viên đã có tên trong danh sách được cử đi học).
+ */
+function CacCachDangKy({ ds, mo }: { ds: { ma: MaPhuongThuc; noiDung: ReactNode }[]; mo?: MaPhuongThuc }) {
+  if (ds.length === 0) return null;
+  if (ds.length === 1) return <>{ds[0].noiDung}</>;
+  const moSan = mo && ds.some((d) => d.ma === mo) ? mo : ds[0].ma;
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-medium">Khóa nhận đăng ký theo {ds.length} cách - chọn cách phù hợp với bạn:</p>
+      {ds.map((d) => (
+        <details key={d.ma} name="cach-dang-ky" open={d.ma === moSan} className="group rounded-lg border open:border-primary">
+          <summary className="flex cursor-pointer items-center gap-2 p-3 text-sm font-semibold text-ued-blue-dam select-none">
+            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">{MA_NGAN_PHUONG_THUC[d.ma]}</span>
+            {TIEU_DE_CACH_DANG_KY[d.ma]}
+          </summary>
+          <div className="border-t p-4">{d.noiDung}</div>
+        </details>
+      ))}
+    </div>
   );
 }

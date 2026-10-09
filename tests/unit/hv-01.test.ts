@@ -41,7 +41,7 @@ async function taoKhoaDangTuyenSinh(
       trangThai: "DA_BAN_HANH",
       soQuyetDinh: "QD-HV01",
       ngayBanHanh: new Date(),
-      phuongThucDangKy,
+      phuongThucDangKys: phuongThucDangKy ? [phuongThucDangKy] : [],
     },
   });
   chuongTrinhTaoTrongTest.push(ct.id);

@@ -4,7 +4,7 @@ import { layThamSoSo } from "@/server/services/qt/qt-05-tham-so";
 import type { DuLieuForm, KetQuaKiemTra } from "@/lib/form-dang-ky";
 import { kiemTraDangKyTheoKhoa } from "@/server/services/hv/form-dang-ky";
 
-async function taoHocVienVoiMaTuSinh<T>(taoVoiMa: (maHocVien: string) => Promise<T>): Promise<T> {
+export async function taoHocVienVoiMaTuSinh<T>(taoVoiMa: (maHocVien: string) => Promise<T>): Promise<T> {
   const nam = new Date().getFullYear();
   const tienTo = `HV${nam}`;
   const soLuongDaCo = await prisma.hocVien.count({

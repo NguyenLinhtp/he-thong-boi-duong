@@ -36,7 +36,7 @@ async function taoLePhi(trangThai: "CHUA_NOP" | "MIEN_GIAM" | "CHO_THANH_LY_HOP_
       ten: "CT dự thi test",
       loaiHinhBoiDuongId: lh.id,
       trangThai: "DA_BAN_HANH",
-      phuongThucDangKy: "CHI_DU_THI",
+      phuongThucDangKys: ["CHI_DU_THI"],
     },
   });
   chuongTrinh.push(ct.id);

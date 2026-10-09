@@ -48,7 +48,7 @@ async function taoKhoa() {
   const lh = await prisma.loaiHinhBoiDuong.create({ data: { ma: `LH_GD_${uid()}`, ten: "LH giao dịch" } });
   loaiHinh.push(lh.id);
   const ct = await prisma.chuongTrinh.create({
-    data: { maCT: `CT_GD_${uid()}`, ten: "CT dự thi", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKy: "CHI_DU_THI" },
+    data: { maCT: `CT_GD_${uid()}`, ten: "CT dự thi", loaiHinhBoiDuongId: lh.id, trangThai: "DA_BAN_HANH", phuongThucDangKys: ["CHI_DU_THI"] },
   });
   chuongTrinh.push(ct.id);
   const khoa = await prisma.khoa.create({ data: { maKhoa: `KHGD${uid()}`, chuongTrinhId: ct.id, siSoToiDa: 50 } });

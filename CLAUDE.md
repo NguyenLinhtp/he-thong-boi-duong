@@ -27,7 +27,7 @@ Kế hoạch triển khai tổng thể (giai đoạn 0-4, quy trình lặp) nằ
 
 ## Ràng buộc nghiệp vụ cốt lõi (bắt buộc tuân thủ khi thiết kế/code)
 
-- Mỗi chương trình bồi dưỡng gắn đúng 1 trong 4 phương thức đăng ký (CT-07); mọi khóa mở theo chương trình kế thừa phương thức đó.
+- Mỗi chương trình chọn 1 hoặc nhiều phương thức đăng ký đào tạo (PT1, PT2, PT4), hoặc riêng PT3 (chỉ dự thi - không chọn chung) (CT-07, sửa 08/10/2026). Mọi khóa dùng danh sách phương thức hiện hành của chương trình (`ChuongTrinh.phuongThucDangKys`, kiểm tra bằng `.includes(...)`); sửa ở chương trình thì khóa cập nhật theo.
 - Học viên qua đơn vị liên kết (Phương thức 4) chỉ gắn với đúng 1 hợp đồng liên kết.
 - Điều kiện cấp chứng chỉ rẽ nhánh: học phí cá nhân đã nộp đủ (thông thường) **hoặc** hợp đồng liên kết đã thanh lý (nếu qua đơn vị liên kết) — không áp cả hai cùng lúc.
 - KH-07: 1 khóa chia nhiều lớp; kết quả/học phí/chứng chỉ gắn theo **khóa** (không theo lớp) nên chuyển lớp trong cùng khóa không mất dữ liệu; phê duyệt KQ-04 vẫn theo khóa. Giảng viên hiệu lực = phân công của lớp, không có thì phân công cấp khóa; chuyên cần tính theo lớp học viên thuộc về tại ngày học (LichSuChuyenLop).
