@@ -13,6 +13,7 @@ import {
 } from "@/server/services/kq/dung-chung";
 import { tinhDiemTongKet, danhGiaHocTap } from "@/server/services/kq/kq-02-tong-hop";
 import { danhGiaHoanThanh } from "@/server/services/kq/kq-03-xet-hoan-thanh";
+import { cauHinhDiemThiCuaKhoa, chotCauHinhKhiPheDuyet, coDieuKien, CauTrucDiemThiError, danhGiaTheoCauHinh } from "@/server/services/kq/cau-truc-diem-thi";
 import {
   ChuaTongHopKetQuaError,
   ChuaXetDieuKienError,
@@ -45,10 +46,24 @@ export async function pheDuyetKetQua(khoaId: string, input: PheDuyetKetQuaInput)
   if (dsDangKy.length === 0 || dsDangKy.some((dk) => !hocVienCoKetQua.has(dk.hocVienId))) {
     throw new ChuaTongHopKetQuaError();
   }
+  // (bổ sung 13/10/2026) khóa dự thi không còn bước xét điều kiện KQ-03 (lưu điểm là xác định luôn):
+  // kết quả nhập trước thay đổi còn chưa xét thì xác định ngay lúc phê duyệt
+  if (laKhoaChiDuThi(khoa)) {
+    // (bổ sung 13/10/2026) cấu trúc điểm không đặt điều kiện nào = khóa không xét kết quả -> không phê duyệt
+    const { cauHinh } = await cauHinhDiemThiCuaKhoa(khoaId);
+    if (cauHinh && !coDieuKien(cauHinh)) {
+      throw new CauTrucDiemThiError("Khóa không đặt điều kiện đạt (chỉ ghi điểm/lấy danh sách) nên không phê duyệt kết quả");
+    }
+    for (const kq of dsKetQua.filter((k) => k.hoanThanh === null)) {
+      Object.assign(kq, await prisma.ketQuaKhoa.update({ where: { id: kq.id }, data: await danhGiaHoanThanh(kq) }));
+    }
+  }
   if (dsKetQua.some((kq) => kq.hoanThanh === null)) throw new ChuaXetDieuKienError();
 
   const hocVienHoanThanh = dsKetQua.filter((kq) => kq.hoanThanh).map((kq) => kq.hocVienId);
   const ngayPheDuyet = new Date();
+  // (bổ sung 13/10/2026) chốt cấu trúc điểm vào khóa: sửa ở chương trình sau đó không đổi khóa đã duyệt
+  if (laKhoaChiDuThi(khoa)) await chotCauHinhKhiPheDuyet(khoaId);
 
   await prisma.$transaction([
     prisma.ketQuaKhoa.updateMany({
@@ -128,7 +143,7 @@ export async function phucKhaoDiemHocPhan(ketQuaHocTapId: string, input: PhucKha
   kiemTraDiem(input.diemThanhPhan);
   kiemTraDiem(input.diemKetThuc);
 
-  const thamSo = await thamSoKetQua();
+  const thamSo = await thamSoKetQua(ketQua.khoaId);
   const diemHocPhan = tinhDiemHocPhan(input.diemThanhPhan, input.diemKetThuc, thamSo.tyLeThanhPhan);
 
   await prisma.ketQuaHocTap.update({
@@ -190,7 +205,7 @@ export async function phucKhaoKetQuaThi(ketQuaKhoaId: string, input: PhucKhaoKet
   if (!input.soQuyetDinhPhucKhao.trim()) throw new ThieuSoQuyetDinhError();
   kiemTraDiem(input.diemThi);
 
-  const thamSo = await thamSoKetQua();
+  const thamSo = await thamSoKetQua(ketQuaKhoa.khoaId);
   const danhGia = danhGiaHocTap(
     { diemTongKet: input.diemThi, hocPhanThieuDiem: [], tyLeChuyenCan: null },
     thamSo,
@@ -206,4 +221,37 @@ export async function phucKhaoKetQuaThi(ketQuaKhoaId: string, input: PhucKhaoKet
   });
 
   return capNhatKetQuaKhoaSauPhucKhao(ketQuaKhoa, { diemTongKet: input.diemThi, ...danhGia });
+}
+
+export type PhucKhaoDiemThanhPhanInput = NguoiThucHien & {
+  diem: Record<string, number | null>;
+  soQuyetDinhPhucKhao: string;
+};
+
+/** (bổ sung 13/10/2026) KQ-04 + KQ-06: phúc khảo khóa chỉ thi có cấu trúc điểm - sửa từng điểm thành phần. */
+export async function phucKhaoDiemThanhPhan(ketQuaKhoaId: string, input: PhucKhaoDiemThanhPhanInput) {
+  const ketQuaKhoa = await prisma.ketQuaKhoa.findUnique({ where: { id: ketQuaKhoaId } });
+  if (!ketQuaKhoa) throw new KhongTimThayKetQuaError();
+  if (!laKhoaChiDuThi(await layKhoaKemChuongTrinh(ketQuaKhoa.khoaId))) throw new KhongPhaiKhoaChiDuThiError();
+  if (!ketQuaKhoa.daPheDuyet) throw new ChuaPheDuyetKhongCanPhucKhaoError();
+  if (!input.soQuyetDinhPhucKhao.trim()) throw new ThieuSoQuyetDinhError();
+  const { cauHinh } = await cauHinhDiemThiCuaKhoa(ketQuaKhoa.khoaId);
+  if (!cauHinh || cauHinh.thanhPhans.length === 0) throw new CauTrucDiemThiError("Khóa không có cấu trúc điểm thành phần");
+  const diem: Record<string, number | null> = {};
+  for (const tp of cauHinh.thanhPhans) {
+    const v = input.diem[tp.ma];
+    if (v != null && (!Number.isFinite(v) || v < 0 || v > tp.diemToiDa)) throw new CauTrucDiemThiError(`${tp.ten} phải từ 0 đến ${tp.diemToiDa}`);
+    diem[tp.ma] = v == null ? null : Math.round(v * 100) / 100;
+  }
+  const dg = danhGiaTheoCauHinh(cauHinh, diem);
+  await ghiNhatKy({
+    nguoiThucHienId: input.nguoiThucHienId,
+    nguoiThucHienTen: input.nguoiThucHienTen,
+    hanhDong: "PHUC_KHAO_KET_QUA_THI",
+    doiTuong: "KetQuaKhoa",
+    doiTuongId: ketQuaKhoaId,
+    chiTiet: `QĐ phúc khảo ${input.soQuyetDinhPhucKhao}: ${JSON.stringify(ketQuaKhoa.diemThanhPhan)} -> ${JSON.stringify(diem)}`,
+  });
+  await prisma.ketQuaKhoa.update({ where: { id: ketQuaKhoaId }, data: { diemThanhPhan: diem } });
+  return capNhatKetQuaKhoaSauPhucKhao(ketQuaKhoa, { diemTongKet: dg.diemTong, datHocTap: dg.datHocTap === true, ghiChu: dg.ghiChu });
 }

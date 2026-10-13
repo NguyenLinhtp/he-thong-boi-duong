@@ -41,6 +41,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
     coQuyen("KH-05"),
   ]);
   // hạn đăng ký lưu cuối ngày giờ Việt Nam -> hiển thị/nhập theo ngày Việt Nam
+  const laDuThi = khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
   const hanDangKy = khoa.hanDangKy ? new Date(khoa.hanDangKy.getTime() + 7 * 3600_000).toISOString().slice(0, 10) : null;
 
   return (
@@ -62,9 +63,9 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           </dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Khai giảng – bế giảng</dt>
+          <dt className="text-muted-foreground">{laDuThi ? "Ngày thi" : "Khai giảng – bế giảng"}</dt>
           <dd className="font-medium">
-            {dinhDangNgay(khoa.thoiGianKhaiGiang)} – {dinhDangNgay(khoa.thoiGianBeGiang)}
+            {laDuThi ? dinhDangNgay(khoa.thoiGianKhaiGiang) : `${dinhDangNgay(khoa.thoiGianKhaiGiang)} – ${dinhDangNgay(khoa.thoiGianBeGiang)}`}
           </dd>
         </div>
         <div>
@@ -98,6 +99,8 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
         <FormTrangThai khoaId={khoa.id} trangThaiHienTai={khoa.trangThai} />
       </section>
 
+      {/* (bổ sung 12/10/2026) khóa chỉ dự thi/ôn thi (Phương thức 3) không có giảng dạy */}
+      {!laDuThi && (
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-bold text-ued-blue-dam">KH-04 · Hình thức giảng dạy</h2>
 
@@ -122,6 +125,7 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           </div>
         )}
       </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-bold text-ued-blue-dam">KH-06 · Thông báo tuyển sinh/mở khóa</h2>

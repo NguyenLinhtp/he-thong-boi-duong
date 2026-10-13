@@ -122,7 +122,7 @@ export async function nhapDiemHocPhan(
   });
   if (daDuyet > 0) throw new KetQuaDaPheDuyetError();
 
-  const { tyLeThanhPhan, diemDat } = await thamSoKetQua();
+  const { tyLeThanhPhan, diemDat } = await thamSoKetQua(khoaId);
 
   // Kết quả toàn khóa (KQ-02) của học viên vừa đổi điểm không còn đúng - xóa
   // để KQ-03/KQ-04 buộc phải tổng hợp lại, tránh xét/duyệt trên số liệu cũ.

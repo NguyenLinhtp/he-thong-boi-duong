@@ -53,7 +53,7 @@ export async function dangKyTrucTuyen(input: DangKyTrucTuyenInput) {
   let dangKy;
   try {
     dangKy = await prisma.dangKyHoc.create({
-      data: { hocVienId: hocVien.id, khoaId: khoa.id, trangThai: "CHO_NOP_GIAY", hanNopGiay },
+      data: { hocVienId: hocVien.id, khoaId: khoa.id, trangThai: "CHO_NOP_GIAY", hanNopGiay, phuongThuc: "TRUC_TUYEN_NOP_GIAY" },
       include: { hocVien: true, khoa: { include: { chuongTrinh: true } } },
     });
   } catch (error) {

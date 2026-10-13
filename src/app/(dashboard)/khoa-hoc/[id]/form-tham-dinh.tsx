@@ -5,24 +5,25 @@ import { thamDinhHoSoAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function FormThamDinh({ khoaId, dangKyId }: { khoaId: string; dangKyId: string }) {
+// (sửa 11/10/2026 - HV-06/HV-07 gộp 1 bước) Duyệt chính thức (chỉ khi học phí/lệ phí đã xác nhận) hoặc Không hợp lệ
+export function FormThamDinh({ khoaId, dangKyId, duocDuyet = true }: { khoaId: string; dangKyId: string; duocDuyet?: boolean }) {
   const [loi, formAction, dangXuLy] = useActionState(thamDinhHoSoAction, undefined);
 
   return (
     <form action={formAction} className="flex flex-col gap-1.5">
       <input type="hidden" name="khoaId" value={khoaId} />
       <input type="hidden" name="dangKyId" value={dangKyId} />
-      <div className="flex items-center gap-1.5">
-        <Input name="ghiChu" placeholder="Lý do (nếu có)" className="h-7 w-40 text-xs" />
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Input name="ghiChu" placeholder="Lý do không hợp lệ" className="h-7 w-40 text-xs" />
         <Button
           type="submit"
           name="ketQua"
-          value="HOP_LE"
-          disabled={dangXuLy}
-          variant="secondary"
+          value="CHINH_THUC"
+          disabled={dangXuLy || !duocDuyet}
+          title={duocDuyet ? undefined : "Chờ cán bộ tài chính xác nhận học phí/lệ phí"}
           className="h-7 px-2 text-xs"
         >
-          Hợp lệ
+          Duyệt chính thức
         </Button>
         <Button
           type="submit"

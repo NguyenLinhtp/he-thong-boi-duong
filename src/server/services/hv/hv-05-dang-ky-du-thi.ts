@@ -281,6 +281,7 @@ export async function dangKyDuThi(input: DangKyDuThiInput) {
         hocVienId: hocVien.id,
         khoaId: khoa.id,
         soDienThoaiXacThuc: soDienThoai,
+        phuongThuc: "CHI_DU_THI",
         ...(suaThongTin ? { suaThongTinDanhSach: suaThongTin } : {}),
       },
       include: { hocVien: true, khoa: { include: { chuongTrinh: true } } },

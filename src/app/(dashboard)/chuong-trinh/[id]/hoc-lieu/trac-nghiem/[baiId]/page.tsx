@@ -45,6 +45,7 @@ export default async function SoanTracNghiemPage({ params }: { params: Promise<{
             soLanToiDa: bai.soLanToiDa,
             tinhDiem: bai.tinhDiem,
             heSo: Number(bai.heSo),
+            diemDat: bai.diemDat == null ? null : Number(bai.diemDat),
           }}
         />
       )}

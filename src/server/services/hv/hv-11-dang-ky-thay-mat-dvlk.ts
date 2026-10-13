@@ -71,6 +71,7 @@ export async function dangKyThayMatDonViLienKet(nguoiDungId: string, input: Dang
         trangThai: "CHO_NOP_GIAY",
         hanNopGiay,
         hopDongLienKetId: hopDong.id,
+        phuongThuc: "QUA_DON_VI_LIEN_KET",
       },
       include: {
         hocVien: true,

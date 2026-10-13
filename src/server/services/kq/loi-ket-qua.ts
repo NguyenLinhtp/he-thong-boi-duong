@@ -84,3 +84,16 @@ export class KhongPhaiTaiKhoanHocVienError extends LoiKetQua {
     super("Tài khoản đăng nhập chưa gắn với hồ sơ học viên nào");
   }
 }
+
+// (bổ sung 13/10/2026 - KQ-06) nhập điểm thi từ tệp danh sách phòng thi
+export class TepDiemThiKhongHopLeError extends LoiKetQua {
+  constructor(lyDo: string) {
+    super(`Tệp điểm thi không hợp lệ: ${lyDo}`);
+  }
+}
+
+export class TepDiemThiCoLoiError extends LoiKetQua {
+  constructor(public readonly cacDongLoi: { dong: string; loi: string }[]) {
+    super(`Tệp có ${cacDongLoi.length} dòng lỗi, chưa nhập điểm nào - sửa rồi tải lên lại`);
+  }
+}

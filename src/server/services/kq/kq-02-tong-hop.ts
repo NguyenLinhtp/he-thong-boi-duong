@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { danhGiaTheoHocLieu, diemTheoMuc, mucDanhGiaCuaChuongTrinh } from "@/server/services/kq/kq-02-theo-hoc-lieu";
 import {
   thamSoKetQua,
   lamTron2,
@@ -113,13 +114,40 @@ export async function tongHopKetQuaKhoa(khoaId: string) {
   const [dsDangKy, dsKetQuaHocPhan, { diemDat, chuyenCanToiThieu }] = await Promise.all([
     hocVienTinhKetQua(khoaId),
     prisma.ketQuaHocTap.findMany({ where: { khoaId } }),
-    thamSoKetQua(),
+    thamSoKetQua(khoaId),
   ]);
   const chuyenCan = await tyLeChuyenCanTheoHocVien(
     khoaId,
     dsDangKy.map((dk) => dk.hocVienId),
   );
   const hocPhans = khoa.chuongTrinh.hocPhans;
+
+  // (bổ sung 13/10/2026) chương trình có bài đánh giá tính điểm/bắt buộc đạt trong học liệu: xét theo các bài đó
+  const dsMuc = await mucDanhGiaCuaChuongTrinh(khoa.chuongTrinhId);
+  if (dsMuc.length > 0) {
+    const diemHv = await diemTheoMuc(khoaId, dsMuc, dsDangKy.map((dk) => dk.hocVienId));
+    await prisma.$transaction(
+      dsDangKy.map((dk) => {
+        const tyLeChuyenCan = chuyenCan.get(dk.hocVienId) ?? null;
+        const dg = danhGiaTheoHocLieu(dsMuc, diemHv.get(dk.hocVienId) ?? {}, { diemDat, chuyenCanToiThieu }, tyLeChuyenCan);
+        const data = {
+          diemTongKet: dg.diemTongKet,
+          tyLeChuyenCan,
+          datHocTap: dg.datHocTap,
+          ghiChu: dg.ghiChu,
+          diemThanhPhan: dg.diemThanhPhan,
+          duDieuKienHocPhi: null,
+          hoanThanh: null,
+        };
+        return prisma.ketQuaKhoa.upsert({
+          where: { hocVienId_khoaId: { hocVienId: dk.hocVienId, khoaId } },
+          update: data,
+          create: { hocVienId: dk.hocVienId, khoaId, ...data },
+        });
+      }),
+    );
+    return bangTongHopKetQua(khoaId);
+  }
 
   await prisma.$transaction(
     dsDangKy.map((dk) => {

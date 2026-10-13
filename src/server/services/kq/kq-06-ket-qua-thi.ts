@@ -3,6 +3,7 @@ import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/q
 import {
   thamSoKetQua,
   kiemTraDiem,
+  lamTron2,
   layKhoaKemChuongTrinh,
   laKhoaChiDuThi,
   hocVienTinhKetQua,
@@ -13,6 +14,7 @@ import {
   HocVienKhongThuocKhoaError,
 } from "@/server/services/kq/loi-ket-qua";
 import { danhGiaHocTap } from "@/server/services/kq/kq-02-tong-hop";
+import { danhGiaHoanThanh } from "@/server/services/kq/kq-03-xet-hoan-thanh";
 
 export type DongKetQuaThiInput = { hocVienId: string; diemThi: number | null };
 
@@ -21,6 +23,9 @@ export type DongKetQuaThiInput = { hocVienId: string; diemThi: number | null };
  * làm căn cứ xét cấp chứng chỉ. "Không áp dụng bước tổng hợp điểm chuyên cần
  * vì khóa không có điểm danh/giảng dạy" - tyLeChuyenCan luôn null, đạt chỉ
  * xét theo điểm thi.
+ * (sửa 13/10/2026) lưu điểm là xác định luôn Đạt/Không đạt và hoàn thành - không cần bước xét
+ * điều kiện KQ-03: thí sinh vào danh sách chính thức dự thi đã được xác nhận lệ phí (HV-07), điều
+ * kiện tài chính HP-06 vẫn được tính kèm (thường đã đạt) để giữ đúng quy tắc cấp chứng chỉ.
  */
 export async function nhapKetQuaThi(
   khoaId: string,
@@ -32,6 +37,8 @@ export async function nhapKetQuaThi(
   await chanNeuDaPheDuyet(khoaId);
 
   for (const dong of danhSach) kiemTraDiem(dong.diemThi);
+  // (bổ sung 13/10/2026) điểm thi làm tròn 2 chữ số thập phân (màn hình và nhập từ tệp)
+  danhSach = danhSach.map((d) => ({ ...d, diemThi: d.diemThi === null ? null : lamTron2(d.diemThi) }));
 
   const dsThiSinh = await hocVienTinhKetQua(khoaId);
   const thiSinhHopLe = new Set(dsThiSinh.map((dk) => dk.hocVienId));
@@ -39,7 +46,7 @@ export async function nhapKetQuaThi(
     throw new HocVienKhongThuocKhoaError();
   }
 
-  const thamSo = await thamSoKetQua();
+  const thamSo = await thamSoKetQua(khoaId);
 
   const maHocVien = new Map(dsThiSinh.map((dk) => [dk.hocVienId, dk.hocVien.maHocVien]));
   const nhatKy = ghiThaoTac(
@@ -51,25 +58,30 @@ export async function nhapKetQuaThi(
       danhSach.map((d) => `${maHocVien.get(d.hocVienId) ?? d.hocVienId} ${d.diemThi ?? "-"}`).join("; "),
   );
 
+  const dsData = await Promise.all(
+    danhSach.map(async (dong) => {
+      const hocTap = danhGiaHocTap({ diemTongKet: dong.diemThi, hocPhanThieuDiem: [], tyLeChuyenCan: null }, thamSo);
+      return {
+        hocVienId: dong.hocVienId,
+        data: {
+          diemTongKet: dong.diemThi,
+          tyLeChuyenCan: null,
+          ...hocTap,
+          ...(await danhGiaHoanThanh({ hocVienId: dong.hocVienId, khoaId, ...hocTap })),
+        },
+      };
+    }),
+  );
+
   await prisma.$transaction([
     nhatKy,
-    ...danhSach.map((dong) => {
-      const data = {
-        diemTongKet: dong.diemThi,
-        tyLeChuyenCan: null,
-        ...danhGiaHocTap(
-          { diemTongKet: dong.diemThi, hocPhanThieuDiem: [], tyLeChuyenCan: null },
-          thamSo,
-        ),
-        duDieuKienHocPhi: null,
-        hoanThanh: null,
-      };
-      return prisma.ketQuaKhoa.upsert({
-        where: { hocVienId_khoaId: { hocVienId: dong.hocVienId, khoaId } },
+    ...dsData.map(({ hocVienId, data }) =>
+      prisma.ketQuaKhoa.upsert({
+        where: { hocVienId_khoaId: { hocVienId, khoaId } },
         update: data,
-        create: { hocVienId: dong.hocVienId, khoaId, ...data },
-      });
-    }),
+        create: { hocVienId, khoaId, ...data },
+      }),
+    ),
   ]);
 
   return prisma.ketQuaKhoa.findMany({

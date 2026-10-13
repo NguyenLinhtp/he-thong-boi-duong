@@ -236,7 +236,7 @@ export async function importDanhSachHocVien(khoaId: string, noiDung: string | Bu
       chucDanhHocViId: c.chucDanhHocViId,
     });
     const dangKy = await prisma.dangKyHoc.create({
-      data: { hocVienId: hocVien.id, khoaId, trangThai: "CHO_TU_XAC_NHAN" },
+      data: { hocVienId: hocVien.id, khoaId, trangThai: "CHO_TU_XAC_NHAN", phuongThuc: "IMPORT_TU_XAC_NHAN" },
       include: { hocVien: true },
     });
     // trường tùy chỉnh của form lưu kèm hồ sơ đăng ký (như khi học viên tự đăng ký)

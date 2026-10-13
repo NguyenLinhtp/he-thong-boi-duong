@@ -192,9 +192,12 @@ describe("HV-07 bổ sung 05/10/2026 - xét duyệt chính thức theo danh sác
     expect((await prisma.dangKyHoc.findUniqueOrThrow({ where: { id: a.id } })).trangThai).toBe("CHINH_THUC");
   });
 
-  it("chặn hồ sơ chưa Hợp lệ, giá trị lạ; vượt sĩ số thì không duyệt hồ sơ nào", async () => {
+  // (sửa 11/10/2026 - duyệt 1 bước) hồ sơ đang chờ duyệt không cần thẩm định Hợp lệ trước; hồ sơ đã
+  // Không hợp lệ (không còn chờ duyệt) mới là dòng lỗi
+  it("chặn hồ sơ không còn chờ duyệt, giá trị lạ; vượt sĩ số thì không duyệt hồ sơ nào", async () => {
     const { khoa, ds } = await khoaCoHopLe(10, 2);
-    const chuaThamDinh = await dangKy(khoa.id, "Chưa thẩm định");
+    const chuaThamDinh = await dangKy(khoa.id, "Đã không hợp lệ");
+    await prisma.dangKyHoc.update({ where: { id: chuaThamDinh.id }, data: { trangThai: "KHONG_HOP_LE" } });
     // giảm sĩ số sau khi đã có đăng ký -> 2 hồ sơ Hợp lệ nhưng chỉ còn 1 chỗ
     await prisma.khoa.update({ where: { id: khoa.id }, data: { siSoToiDa: 1 } });
     const { noiDung } = await xuatExcelXetDuyet(khoa.id);
@@ -206,7 +209,7 @@ describe("HV-07 bổ sung 05/10/2026 - xét duyệt chính thức theo danh sác
     ).catch((e) => e);
     expect((loi as DuLieuImportLoiError).cacDongLoi.map((d) => d.loi)).toEqual([
       expect.stringMatching(/không hợp lệ/),
-      expect.stringMatching(/chưa được thẩm định Hợp lệ/),
+      expect.stringMatching(/không ở trạng thái chờ duyệt/),
     ]);
     await expect(
       nhapExcelXetDuyet(

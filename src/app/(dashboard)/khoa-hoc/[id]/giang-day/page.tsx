@@ -44,6 +44,17 @@ export default async function GiangDayKhoaPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const khoa = await layKhoa(id);
   if (!khoa) notFound();
+  // (bổ sung 12/10/2026) khóa chỉ dự thi/ôn thi (Phương thức 3): không có giảng dạy (tab bị ẩn, mở trực tiếp thì báo)
+  if (khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
+    return (
+      <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
+        <DauTrangKhoa khoa={khoa} dangChon="giang-day" />
+        <p className="text-muted-foreground">
+          Khóa {khoa.maKhoa} chỉ đăng ký dự thi/ôn thi (Phương thức 3) - không có phân công giảng viên, thời khóa biểu.
+        </p>
+      </main>
+    );
+  }
 
   const [dsPhanCong, dsGiangVien, dsBuoiHoc, dsPhongHoc] = await Promise.all([
     danhSachPhanCong(id),

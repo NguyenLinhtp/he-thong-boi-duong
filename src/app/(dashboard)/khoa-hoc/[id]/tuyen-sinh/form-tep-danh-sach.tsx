@@ -18,6 +18,7 @@ function Khung({
   khoaId,
   duong,
   huongDan,
+  tieuDe,
   dangXuLy,
   formAction,
   children,
@@ -25,13 +26,14 @@ function Khung({
   khoaId: string;
   duong: string;
   huongDan: string;
+  tieuDe: string;
   dangXuLy: boolean;
   formAction: (fd: FormData) => void;
   children: React.ReactNode;
 }) {
   return (
     <details className="rounded-lg border bg-card p-4 text-sm shadow-sm">
-      <summary className="cursor-pointer font-medium">Cập nhật theo danh sách từ tệp Excel</summary>
+      <summary className="cursor-pointer font-medium">{tieuDe}</summary>
       <div className="mt-3 flex flex-col gap-3">
         <ol className="list-decimal pl-5 text-muted-foreground">
           <li>
@@ -79,7 +81,8 @@ function FormThamDinhTuTep({ khoaId }: { khoaId: string }) {
     <Khung
       khoaId={khoaId}
       duong="tham-dinh"
-      huongDan='Ghi "Hợp lệ" hoặc "Không hợp lệ" ở cột Kết quả thẩm định (Không hợp lệ phải ghi Lý do; để trống = giữ nguyên).'
+      tieuDe="Ghi Không hợp lệ theo danh sách từ tệp Excel"
+      huongDan='Ghi "Không hợp lệ" kèm Lý do ở cột Kết quả thẩm định cho hồ sơ bị loại (để trống = giữ nguyên; hồ sơ đạt thì duyệt bằng tệp Duyệt chính thức).'
       dangXuLy={dangXuLy}
       formAction={formAction}
     >
@@ -101,7 +104,8 @@ function FormXetDuyetTuTep({ khoaId }: { khoaId: string }) {
     <Khung
       khoaId={khoaId}
       duong="xet-duyet"
-      huongDan='Ghi "Chính thức" ở cột Xét duyệt cho hồ sơ được duyệt (không vượt sĩ số còn lại ghi ở đầu tệp).'
+      tieuDe="Duyệt chính thức theo danh sách từ tệp Excel"
+      huongDan='Ghi "Chính thức" ở cột Xét duyệt cho hồ sơ được duyệt - chỉ hồ sơ đã xác nhận học phí/lệ phí (cột Học phí/lệ phí), không vượt sĩ số còn lại ghi ở đầu tệp.'
       dangXuLy={dangXuLy}
       formAction={formAction}
     >

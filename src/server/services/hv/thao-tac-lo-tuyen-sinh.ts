@@ -3,7 +3,7 @@ import type { NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { chuanHoaDanhSachId, LoKhongHopLeError, xuLyLo, type KetQuaLo } from "@/server/services/chung/xu-ly-lo";
 import { xacNhanNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { thamDinhHoSo, type KetQuaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
-import { xetDuyetDanhSachChinhThuc } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
+import { duyetHoSoChinhThuc, xetDuyetDanhSachChinhThuc } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
 import { chuyenHocVienSangKhoa, ghiNhanThoiHoc, xoaHocVienKhoiKhoa } from "@/server/services/hv/hv-09-quan-ly-danh-sach-khoa";
 
 /**
@@ -50,6 +50,21 @@ export async function xetDuyetLo(khoaId: string, ids: string[], nguoi: NguoiThuc
   const ds = chuanHoaDanhSachId(ids);
   try {
     await xetDuyetDanhSachChinhThuc(khoaId, ds, nguoi);
+    return { thanhCong: ds.length, loi: [], ghiChu: [] };
+  } catch (error) {
+    if (!(error instanceof Error)) throw error;
+    return { thanhCong: 0, loi: [{ ten: `Cả ${ds.length} hồ sơ (chặn cả lô)`, loi: error.message }], ghiChu: [] };
+  }
+}
+
+/**
+ * (bổ sung 11/10/2026 - HV-06/HV-07 gộp 1 bước) duyệt thẳng hồ sơ đang chờ vào danh sách chính
+ * thức - chặn cả lô như HV-07 (sĩ số, chưa xác nhận học phí/lệ phí, thiếu minh chứng).
+ */
+export async function duyetHoSoLo(khoaId: string, ids: string[], nguoi: NguoiThucHien): Promise<KetQuaLo> {
+  const ds = chuanHoaDanhSachId(ids);
+  try {
+    await duyetHoSoChinhThuc(khoaId, ds, nguoi);
     return { thanhCong: ds.length, loi: [], ghiChu: [] };
   } catch (error) {
     if (!(error instanceof Error)) throw error;

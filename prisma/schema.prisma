@@ -263,6 +263,7 @@ model PhongHoc {
   sucChua Int?
 
   buoiHocs BuoiHoc[]
+  phongThis PhongThi[]
 
   @@map("phong_hoc")
 }
@@ -300,6 +301,13 @@ model ChuongTrinh {
   // (sửa 08/10/2026 - CT-07) 1 chương trình chọn được nhiều phương thức đào tạo (PT1, PT2, PT4);
   // PT3 (CHI_DU_THI) luôn đứng riêng. Mọi khóa của chương trình dùng theo danh sách này.
   phuongThucDangKys  PhuongThucDangKy[] @default([])
+  // (bổ sung 13/10/2026 - KQ-02/KQ-06) điều kiện đạt: điểm tổng kết/điểm thi tối thiểu; null = theo tham số KQ_DIEM_DAT
+  diemDat            Decimal?           @db.Decimal(4, 2)
+  // (bổ sung 13/10/2026 - KQ-06) chương trình chỉ thi: cấu trúc điểm thi {thanhPhans:[{ma,ten,heSo,diemToiDa,diemDat}],
+  // diemDatTong}; null = 1 điểm thi theo điểm đạt; thanhPhans rỗng = không nhập điểm/không xét kết quả
+  cauHinhDiemThi     Json?
+  // (bổ sung 13/10/2026) chuyên cần tối thiểu (%) để hoàn thành khóa có đào tạo; null = theo tham số KQ_TY_LE_CHUYEN_CAN_TOI_THIEU
+  chuyenCanToiThieu  Decimal?           @db.Decimal(5, 2)
   // HV-01/04/05/11/12 (bổ sung 30/09/2026): cấu hình form đăng ký của chương trình
   // (trường có sẵn bật/tắt/bắt buộc + trường tùy chỉnh) - null = form mặc định
   cauHinhFormDangKy  Json?
@@ -402,6 +410,12 @@ model Khoa {
   // HP-01: "mức học phí không đổi sau khi khóa đã có học viên đăng ký, trừ
   // khi có quyết định điều chỉnh" - lưu lý do lần điều chỉnh gần nhất.
   lyDoDieuChinhHocPhi String?
+  // (bổ sung 13/10/2026) điểm đạt riêng của khóa; null = theo chương trình
+  diemDat             Decimal?         @db.Decimal(4, 2)
+  // (bổ sung 13/10/2026) cấu trúc điểm thi riêng của khóa; null = theo chương trình (chốt vào đây khi phê duyệt KQ-04)
+  cauHinhDiemThi      Json?
+  // (bổ sung 13/10/2026) chuyên cần tối thiểu riêng của khóa; null = theo chương trình
+  chuyenCanToiThieu   Decimal?         @db.Decimal(5, 2)
   trangThai           TrangThaiKhoa    @default(CHUAN_BI)
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
@@ -421,6 +435,8 @@ model Khoa {
   taiLieus             TaiLieuHocTap[]
   lanLamTracNghiems    LanLamTracNghiem[]
   baiNopSanPhams       BaiNopSanPham[]
+  // (bổ sung 12/10/2026 - KH-03) đợt thi/ôn thi của khóa dự thi
+  dotThis              DotThi[]
 
   @@map("khoa")
 }
@@ -560,6 +576,10 @@ model DangKyHoc {
   // mỗi học viên qua ĐVLK gắn đúng 1 hợp đồng liên kết.
   hopDongLienKetId String?
   hopDongLienKet   HopDongLienKet? @relation(fields: [hopDongLienKetId], references: [id])
+  // (bổ sung 11/10/2026 - HV-06/HV-07) phương thức của hồ sơ khi đăng ký (khóa mở nhiều phương
+  // thức): quyết định có phải xác nhận học phí/lệ phí trước khi duyệt chính thức không.
+  // null = cán bộ thêm trực tiếp (HV-09) hoặc chuyển khóa
+  phuongThuc       PhuongThucDangKy?
   // KH-07: lớp hiện tại trong khóa (null = chưa xếp lớp). Kết quả học tập/học
   // phí/chứng chỉ gắn theo khóa nên đổi lớp không ảnh hưởng tới chúng.
   lopId            String?
@@ -580,6 +600,7 @@ model DangKyHoc {
 
   lichSuChuyenLops LichSuChuyenLop[]
   tepHoSos         TepHoSoDangKy[]
+  xepPhongThis     XepPhongThi[]
 
   @@unique([hocVienId, khoaId])
   @@map("dang_ky_hoc")
@@ -765,7 +786,10 @@ model KetQuaKhoa {
   hocVien          HocVien   @relation(fields: [hocVienId], references: [id])
   khoaId           String
   khoa             Khoa      @relation(fields: [khoaId], references: [id])
-  diemTongKet      Decimal?  @db.Decimal(4, 2)
+  // (sửa 13/10/2026) khóa chỉ thi có thang điểm thành phần tới 100 -> điểm tổng rộng hơn
+  diemTongKet      Decimal?  @db.Decimal(6, 2)
+  // (bổ sung 13/10/2026) điểm từng thành phần của khóa chỉ thi: { ma: điểm }
+  diemThanhPhan    Json?
   // % buổi có mặt (0-100); null với khóa Phương thức 3 hoặc khóa chưa điểm
   // danh buổi nào.
   tyLeChuyenCan    Decimal?  @db.Decimal(5, 2)
@@ -916,6 +940,7 @@ model ThanhPhanLePhi {
   thuTu       Int      @default(0)
 
   hocPhiThanhPhans HocPhiThanhPhan[]
+  dotThis          DotThi[]
 
   @@map("thanh_phan_le_phi")
 }
@@ -1216,6 +1241,9 @@ model BaiTracNghiem {
   soLanToiDa   Int?
   tinhDiem     Boolean            @default(false)
   heSo         Decimal            @default(1) @db.Decimal(4, 2)
+  // (bổ sung 13/10/2026) điều kiện hoàn thành của bài: điểm tối thiểu phải đạt (null = không bắt buộc đạt);
+  // tinhDiem = đưa vào điểm cuối khóa theo hệ số
+  diemDat      Decimal?           @db.Decimal(4, 2)
   thuTu        Int                @default(0)
   createdAt    DateTime           @default(now())
   cauHois      CauHoiTracNghiem[]
@@ -1268,6 +1296,8 @@ model YeuCauSanPham {
   moTa      String?
   tinhDiem  Boolean         @default(false)
   heSo      Decimal         @default(1) @db.Decimal(4, 2)
+  // (bổ sung 13/10/2026) điểm tối thiểu phải đạt (null = không bắt buộc đạt)
+  diemDat   Decimal?        @db.Decimal(4, 2)
   thuTu     Int             @default(0)
   createdAt DateTime        @default(now())
   baiNops   BaiNopSanPham[]
@@ -1340,4 +1370,78 @@ model GhiChepHocTap {
 
   @@unique([nguoiDungId, khoaId, mucKey])
   @@map("ghi_chep_hoc_tap")
+}
+
+// ============================================================
+// (bổ sung 12/10/2026 - KH-03) LỊCH THI, PHÒNG THI của khóa chỉ đăng ký dự thi/ôn thi (PT3)
+// Đợt thi (hoặc đợt ôn thi) lấy thí sinh từ danh sách chính thức (theo 1 thành phần lệ phí
+// nếu có), chia vào các phòng (ngày, ca, giờ, phòng vật lý, sức chứa) theo tên A->Z.
+// Đã chốt thì thí sinh bổ sung xếp vào phòng cuối, không xếp lại toàn bộ.
+// ============================================================
+
+enum LoaiDotThi {
+  THI
+  ON_THI
+}
+
+model DotThi {
+  id          String          @id @default(cuid())
+  khoaId      String
+  khoa        Khoa            @relation(fields: [khoaId], references: [id], onDelete: Cascade)
+  ten         String
+  loai        LoaiDotThi      @default(THI)
+  // nguồn thí sinh: danh sách chính thức của thành phần lệ phí này; null = cả danh sách chính thức
+  thanhPhanId String?
+  thanhPhan   ThanhPhanLePhi? @relation(fields: [thanhPhanId], references: [id], onDelete: SetNull)
+  // ghi chú thời gian chung (vd. lịch ôn: tối thứ 3, 5 hằng tuần từ 15/10 đến 15/11)
+  moTa        String?
+  daChot      Boolean         @default(false)
+  chotLuc     DateTime?
+  createdAt   DateTime        @default(now())
+
+  phongThis PhongThi[]
+
+  @@index([khoaId])
+  @@map("dot_thi")
+}
+
+model PhongThi {
+  id          String     @id @default(cuid())
+  dotThiId    String
+  dotThi      DotThi     @relation(fields: [dotThiId], references: [id], onDelete: Cascade)
+  thuTu       Int
+  ten         String
+  // ngày thi/ôn (lưu dạng ngày), ca và giờ của ca
+  ngay        DateTime?  @db.Date
+  ca          String?
+  gioBatDau   String?
+  gioKetThuc  String?
+  // phòng vật lý theo danh mục phòng học (DM-04) và/hoặc địa điểm ghi tay
+  phongHocId  String?
+  phongHoc    PhongHoc?  @relation(fields: [phongHocId], references: [id], onDelete: SetNull)
+  diaDiem     String?
+  sucChua     Int
+
+  xepPhongThis XepPhongThi[]
+
+  @@unique([dotThiId, thuTu])
+  @@map("phong_thi")
+}
+
+model XepPhongThi {
+  id         String    @id @default(cuid())
+  phongThiId String
+  phongThi   PhongThi  @relation(fields: [phongThiId], references: [id], onDelete: Cascade)
+  // trùng lặp dotThiId để ràng buộc mỗi thí sinh chỉ ở 1 phòng trong 1 đợt
+  dotThiId   String
+  dangKyId   String
+  dangKy     DangKyHoc @relation(fields: [dangKyId], references: [id], onDelete: Cascade)
+  // số báo danh trong đợt (tăng dần theo thứ tự xếp), thứ tự trong phòng
+  soBaoDanh  Int
+  thuTu      Int
+  boSung     Boolean   @default(false)
+
+  @@unique([dotThiId, dangKyId])
+  @@unique([dotThiId, soBaoDanh])
+  @@map("xep_phong_thi")
 }

@@ -18,6 +18,7 @@ import { xetDuyetDanhSachChinhThuc } from "@/server/services/hv/hv-07-xet-duyet-
 import { dangKyThayMatDonViLienKet } from "@/server/services/hv/hv-11-dang-ky-thay-mat-dvlk";
 import { thietLapHocPhi, hocPhiCuaKhoa } from "@/server/services/hp/hp-01-thiet-lap";
 import { xacNhanThanhToan, xacNhanMienGiam } from "@/server/services/hp/hp-02-thanh-toan";
+import { chuyenTrangThaiLePhi } from "@/server/services/hp/hp-02-chuyen-trang-thai-le-phi";
 import { nhapDiemHocPhan } from "@/server/services/kq/kq-01-nhap-diem";
 import { tongHopKetQuaKhoa } from "@/server/services/kq/kq-02-tong-hop";
 import { xetDieuKienHoanThanh } from "@/server/services/kq/kq-03-xet-hoan-thanh";
@@ -148,12 +149,16 @@ describe("Luồng xuyên suốt: đăng ký → xét duyệt → học → đi�
       await xacNhanNopGiay(dk.id);
       await thamDinhHoSo(dk.id, "HOP_LE");
     }
-    await xetDuyetDanhSachChinhThuc(khoa.id, [dkAn.id, dkBinh.id]);
-
+    // (sửa 11/10/2026) PT1: học phí lập khi nhận hồ sơ giấy, phải xác nhận trước khi duyệt chính thức
     const dsHocPhi = await hocPhiCuaKhoa(khoa.id);
     const hpAn = dsHocPhi.find((hp) => hp.hocVienId === dkAn.hocVienId)!;
     const hpBinh = dsHocPhi.find((hp) => hp.hocVienId === dkBinh.hocVienId)!;
     await xacNhanThanhToan(hpAn.id, { ...TC, soTien: 1_000_000, hinhThucNop: "Chuyển khoản" });
+    await expect(xetDuyetDanhSachChinhThuc(khoa.id, [dkAn.id, dkBinh.id])).rejects.toThrow(/chưa xác nhận/);
+    await xacNhanThanhToan(hpBinh.id, { ...TC, soTien: 1_000_000, hinhThucNop: "Tiền mặt" });
+    await xetDuyetDanhSachChinhThuc(khoa.id, [dkAn.id, dkBinh.id]);
+    // sau khi chính thức, khoản của Bình bị hủy ghi nhận (tiền bị hoàn) và chỉ nộp lại 400.000đ -> còn nợ
+    await chuyenTrangThaiLePhi(hpBinh.id, "CHUA_DONG", "Giao dịch bị ngân hàng hoàn trả", CB);
     await xacNhanThanhToan(hpBinh.id, { ...TC, soTien: 400_000, hinhThucNop: "Tiền mặt" });
 
     await chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA");

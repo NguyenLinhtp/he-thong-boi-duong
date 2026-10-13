@@ -32,7 +32,7 @@ async function thucHien(duongDan: string, fn: () => Promise<string | void>): Pro
   }
 }
 
-const so = (v: FormDataEntryValue | null) => (v == null || String(v).trim() === "" ? null : Number(v));
+const so = (v: FormDataEntryValue | null) => (v == null || String(v).trim() === "" ? null : Number(String(v).trim().replace(",", ".")));
 const cauHinhBai = (f: FormData) => ({
   tieuDe: String(f.get("tieuDe") ?? ""),
   moTa: String(f.get("moTa") ?? ""),
@@ -40,12 +40,14 @@ const cauHinhBai = (f: FormData) => ({
   soLanToiDa: so(f.get("soLanToiDa")),
   tinhDiem: f.get("tinhDiem") === "on",
   heSo: so(f.get("heSo")),
+  diemDat: so(f.get("diemDat")),
 });
 const yeuCau = (f: FormData) => ({
   tieuDe: String(f.get("tieuDe") ?? ""),
   moTa: String(f.get("moTa") ?? ""),
   tinhDiem: f.get("tinhDiem") === "on",
   heSo: so(f.get("heSo")),
+  diemDat: so(f.get("diemDat")),
 });
 
 export async function xoaHocLieuAction(chuongTrinhId: string, id: string) {

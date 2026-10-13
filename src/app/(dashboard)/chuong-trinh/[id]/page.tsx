@@ -13,6 +13,10 @@ import { FormCapNhatBanHanh } from "./form-cap-nhat-ban-hanh";
 import { LichSuPhienBan } from "./lich-su-phien-ban";
 import { KhoiPhuongThucDangKy } from "./khoi-phuong-thuc-dang-ky";
 import { KhoiLoaiVanBang } from "./khoi-loai-van-bang";
+import { KhoiDieuKienDat } from "./khoi-dieu-kien-dat";
+import { KhoiCauTrucDiem } from "./khoi-cau-truc-diem";
+import { docCauHinh } from "@/server/services/kq/cau-truc-diem-thi";
+import { layThamSoSo } from "@/server/services/qt/qt-05-tham-so";
 import { KhoiNgungHieuLuc } from "./khoi-ngung-hieu-luc";
 import { FormImportSinhVien } from "@/components/dang-ky/form-import-sinh-vien";
 import { danhSachSinhVien, layCotBoSungSinhVien } from "@/server/services/hv/hv-03-danh-sach-sinh-vien";
@@ -174,6 +178,26 @@ export default async function ChiTietChuongTrinhPage({
 
       {choPhepLoaiVanBang && (
         <KhoiLoaiVanBang chuongTrinhId={chuongTrinh.id} loaiHienTai={chuongTrinh.loaiVanBang} />
+      )}
+
+      {/* (bổ sung 13/10/2026) chương trình chỉ thi: cấu trúc điểm thành phần thay cho 1 điểm đạt */}
+      {choPhepLoaiVanBang && chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") && (
+        <KhoiCauTrucDiem
+          chuongTrinhId={chuongTrinh.id}
+          giaTri={docCauHinh(chuongTrinh.cauHinhDiemThi)}
+          diemDatChung={chuongTrinh.diemDat == null ? await layThamSoSo("KQ_DIEM_DAT", 5) : Number(chuongTrinh.diemDat)}
+        />
+      )}
+
+      {choPhepLoaiVanBang && !chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") && (
+        <KhoiDieuKienDat
+          chuongTrinhId={chuongTrinh.id}
+          diemDat={chuongTrinh.diemDat == null ? null : Number(chuongTrinh.diemDat)}
+          diemDatChung={await layThamSoSo("KQ_DIEM_DAT", 5)}
+          laDuThi={chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")}
+          chuyenCan={chuongTrinh.chuyenCanToiThieu == null ? null : Number(chuongTrinh.chuyenCanToiThieu)}
+          chuyenCanChung={await layThamSoSo("KQ_TY_LE_CHUYEN_CAN_TOI_THIEU", 80)}
+        />
       )}
 
       {choPhepNgungHieuLuc && (

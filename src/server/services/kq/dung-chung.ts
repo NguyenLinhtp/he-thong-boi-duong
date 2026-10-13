@@ -11,13 +11,46 @@ import {
  * định theo thông lệ: điểm học phần = 30% thành phần + 70% kết thúc; đạt khi
  * điểm >= 5; chuyên cần tối thiểu 80% số buổi có mặt.
  */
-export async function thamSoKetQua() {
-  const [tyLeThanhPhan, diemDat, chuyenCanToiThieu] = await Promise.all([
+export async function thamSoKetQua(khoaId?: string) {
+  const [tyLeThanhPhan, diemDatChung, chuyenCanChung, rieng, chuyenCan] = await Promise.all([
     layThamSoSo("KQ_TY_LE_DIEM_THANH_PHAN", 0.3),
     layThamSoSo("KQ_DIEM_DAT", 5),
     layThamSoSo("KQ_TY_LE_CHUYEN_CAN_TOI_THIEU", 80),
+    khoaId ? diemDatRieng(khoaId) : null,
+    khoaId ? chuyenCanRieng(khoaId) : null,
   ]);
-  return { tyLeThanhPhan, diemDat, chuyenCanToiThieu };
+  return { tyLeThanhPhan, diemDat: rieng?.diemDat ?? diemDatChung, chuyenCanToiThieu: chuyenCan?.chuyenCanToiThieu ?? chuyenCanChung };
+}
+
+/** (bổ sung 13/10/2026) Chuyên cần tối thiểu riêng: của khóa, không có thì của chương trình. */
+async function chuyenCanRieng(khoaId: string) {
+  const khoa = await prisma.khoa.findUnique({
+    where: { id: khoaId },
+    select: { chuyenCanToiThieu: true, chuongTrinh: { select: { chuyenCanToiThieu: true } } },
+  });
+  if (khoa?.chuyenCanToiThieu != null) return { chuyenCanToiThieu: Number(khoa.chuyenCanToiThieu), nguon: "KHOA" as const };
+  if (khoa?.chuongTrinh.chuyenCanToiThieu != null) return { chuyenCanToiThieu: Number(khoa.chuongTrinh.chuyenCanToiThieu), nguon: "CHUONG_TRINH" as const };
+  return null;
+}
+
+/** Chuyên cần tối thiểu đang áp dụng cho khóa và nguồn. */
+export async function chuyenCanCuaKhoa(khoaId: string) {
+  return (await chuyenCanRieng(khoaId)) ?? { chuyenCanToiThieu: await layThamSoSo("KQ_TY_LE_CHUYEN_CAN_TOI_THIEU", 80), nguon: "HE_THONG" as const };
+}
+
+/** (bổ sung 13/10/2026) Điểm đạt riêng: của khóa, không có thì của chương trình; null = theo tham số chung. */
+async function diemDatRieng(khoaId: string) {
+  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, select: { diemDat: true, chuongTrinh: { select: { diemDat: true } } } });
+  if (khoa?.diemDat != null) return { diemDat: Number(khoa.diemDat), nguon: "KHOA" as const };
+  if (khoa?.chuongTrinh.diemDat != null) return { diemDat: Number(khoa.chuongTrinh.diemDat), nguon: "CHUONG_TRINH" as const };
+  return null;
+}
+
+/** Điều kiện đạt đang áp dụng cho khóa và nguồn của nó (hiển thị ở tab Kết quả). */
+export async function dieuKienDatCuaKhoa(khoaId: string) {
+  const rieng = await diemDatRieng(khoaId);
+  if (rieng) return rieng;
+  return { diemDat: await layThamSoSo("KQ_DIEM_DAT", 5), nguon: "HE_THONG" as const };
 }
 
 export function kiemTraDiem(diem: number | null | undefined) {

@@ -4,6 +4,7 @@ import { dieuKienChiemCho } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { KhongTimThayKhoaError, ThieuLyDoDieuChinhHocPhiError, LePhiTuDoKhongApDungError } from "@/server/services/hp/loi-hoc-phi";
 import { cauHinhHieuLuc } from "@/server/services/hv/form-dang-ky";
+import { canXacNhanHocPhiTruoc, TRANG_THAI_CHO_DUYET } from "@/server/services/hp/thanh-phan-le-phi-chung";
 
 export type ThietLapHocPhiInput = {
   mucHocPhi: number;
@@ -92,11 +93,17 @@ const mucChoHocVien = (muc: MucPhi, theoDoiTuong: boolean, hocVien: { maSinhVien
 async function dongBoHocPhiTheoKhoa(db: Prisma.TransactionClient, khoaId: string, muc: MucPhi, theoDoiTuong: boolean) {
   // (bổ sung 01/10/2026) khóa Phương thức 3 thu lệ phí ngay khi đăng ký: đồng bộ cho mọi hồ sơ còn chiếm chỗ
   const khoa = await db.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
-  const dsChinhThuc = await db.dangKyHoc.findMany({
-    where:
-      khoa?.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") ? dieuKienChiemCho(khoaId) : { khoaId, trangThai: "CHINH_THUC" },
+  const phuongThucKhoa = khoa?.chuongTrinh.phuongThucDangKys ?? [];
+  const dsDangKy = await db.dangKyHoc.findMany({
+    where: phuongThucKhoa.includes("CHI_DU_THI")
+      ? dieuKienChiemCho(khoaId)
+      : // (bổ sung 11/10/2026) hồ sơ PT1 phải nộp học phí trước khi duyệt chính thức: lập khoản cho cả hồ sơ đang chờ duyệt
+        { khoaId, OR: [{ trangThai: "CHINH_THUC" }, { trangThai: { in: [...TRANG_THAI_CHO_DUYET] }, hopDongLienKetId: null }] },
     include: { hocVien: true },
   });
+  const dsChinhThuc = dsDangKy.filter(
+    (dk) => phuongThucKhoa.includes("CHI_DU_THI") || dk.trangThai === "CHINH_THUC" || canXacNhanHocPhiTruoc(dk, phuongThucKhoa),
+  );
 
   for (const dk of dsChinhThuc) {
     await dongBoMotHocPhi(db, dk.hocVienId, khoaId, dk.hopDongLienKetId !== null, mucChoHocVien(muc, theoDoiTuong, dk.hocVien));
@@ -134,6 +141,33 @@ async function dongBoMotHocPhi(
   }
 
   return hienCo;
+}
+
+/**
+ * (bổ sung 11/10/2026 - HV-06/HV-07) Hồ sơ Phương thức 1 (và hồ sơ cán bộ thêm vào khóa có PT1)
+ * phải được xác nhận học phí trước khi duyệt chính thức: lập khoản học phí ngay khi hồ sơ vào
+ * hàng chờ duyệt (nhận hồ sơ giấy HV-02, cán bộ thêm/chuyển khóa HV-09) nếu khóa đã có mức học
+ * phí. Khóa dự thi lập lệ phí lúc đăng ký (HV-05), không xử lý ở đây. Trả số khoản đã lập.
+ */
+export async function damBaoHocPhiChoDuyet(khoaId: string) {
+  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
+  if (!khoa || khoa.mucHocPhi === null) return 0;
+  const phuongThucKhoa = khoa.chuongTrinh.phuongThucDangKys;
+  if (phuongThucKhoa.includes("CHI_DU_THI")) return 0;
+  const dsCho = (
+    await prisma.dangKyHoc.findMany({
+      where: { khoaId, trangThai: { in: [...TRANG_THAI_CHO_DUYET] }, hopDongLienKetId: null },
+    })
+  ).filter((dk) => canXacNhanHocPhiTruoc(dk, phuongThucKhoa));
+  if (dsCho.length === 0) return 0;
+  const daCo = new Set(
+    (await prisma.hocPhi.findMany({ where: { khoaId, hocVienId: { in: dsCho.map((dk) => dk.hocVienId) } }, select: { hocVienId: true } })).map(
+      (h) => h.hocVienId,
+    ),
+  );
+  const canLap = dsCho.filter((dk) => !daCo.has(dk.hocVienId));
+  for (const dk of canLap) await dongBoMotHocPhi(prisma, dk.hocVienId, khoaId, false, Number(khoa.mucHocPhi));
+  return canLap.length;
 }
 
 /**
@@ -177,6 +211,8 @@ export async function taoLePhiKhiDangKyDuThi(dangKyId: string) {
 }
 
 export async function hocPhiCuaKhoa(khoaId: string) {
+  // (bổ sung 11/10/2026) lập bù khoản cho hồ sơ PT1 đang chờ duyệt để cán bộ tài chính xác nhận
+  await damBaoHocPhiChoDuyet(khoaId);
   return prisma.hocPhi.findMany({
     where: { khoaId },
     include: { hocVien: true },

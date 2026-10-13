@@ -6,6 +6,7 @@ import { nguoiTuPhien } from "@/server/services/qt/qt-03-nhat-ky";
 import { bocLoiLo, type KetQuaLo } from "@/server/services/chung/xu-ly-lo";
 import {
   chuyenKhoaLo,
+  duyetHoSoLo,
   thamDinhLo,
   thoiHocLo,
   xacNhanNopGiayLo,
@@ -37,6 +38,14 @@ export async function thamDinhLoAction(khoaId: string, ketQua: KetQuaThamDinh, i
 export async function xetDuyetLoAction(khoaId: string, ids: string[]): Promise<KetQuaLo> {
   const phien = await requirePermission("HV-07");
   const kq = await bocLoiLo(() => xetDuyetLo(khoaId, ids, nguoiTuPhien(phien)));
+  lamMoi(khoaId);
+  return kq;
+}
+
+// (bổ sung 11/10/2026) duyệt 1 bước vào danh sách chính thức
+export async function duyetHoSoLoAction(khoaId: string, ids: string[]): Promise<KetQuaLo> {
+  const phien = await requirePermission("HV-07");
+  const kq = await bocLoiLo(() => duyetHoSoLo(khoaId, ids, nguoiTuPhien(phien)));
   lamMoi(khoaId);
   return kq;
 }

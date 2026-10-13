@@ -15,7 +15,7 @@ export function FormCauHinhBai({
   bai,
 }: {
   hanhDong: HanhDong;
-  bai: { tieuDe: string; moTa: string | null; thoiGianPhut: number | null; soLanToiDa: number | null; tinhDiem: boolean; heSo: number };
+  bai: { tieuDe: string; moTa: string | null; thoiGianPhut: number | null; soLanToiDa: number | null; tinhDiem: boolean; heSo: number; diemDat: number | null };
 }) {
   const [kq, formAction, dangLuu] = useActionState(hanhDong, undefined);
   // key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount
@@ -42,7 +42,7 @@ export function FormCauHinhBai({
         placeholder="Hướng dẫn làm bài (không bắt buộc)"
         className="max-w-2xl rounded-lg border p-2 text-sm"
       />
-      <TruongTinhDiem tinhDiem={bai.tinhDiem} heSo={bai.heSo} />
+      <TruongTinhDiem tinhDiem={bai.tinhDiem} heSo={bai.heSo} diemDat={bai.diemDat} />
       <div className="flex items-center gap-2">
         <Button type="submit" size="sm" disabled={dangLuu}>
           Lưu cấu hình

@@ -20,6 +20,7 @@ import { thuHoiLinkTrucTuyen } from "@/server/services/gd/gd-05-link-truc-tuyen"
 import { xacNhanNopGiay } from "@/server/services/hv/hv-02-xac-nhan-nop-giay";
 import { importDanhSachHocVien } from "@/server/services/hv/hv-03-import-danh-sach";
 import { thamDinhHoSo, tuChoiHoSoThieuMinhChung, type KetQuaThamDinh } from "@/server/services/hv/hv-06-tham-dinh";
+import { duyetHoSoChinhThuc } from "@/server/services/hv/hv-07-xet-duyet-chinh-thuc";
 import { luuCauHinhKhoa } from "@/server/services/hv/form-dang-ky";
 import { CauHinhFormKhongHopLeError } from "@/server/services/hv/loi-hoc-vien";
 import {
@@ -328,14 +329,21 @@ export async function thamDinhHoSoAction(
   _prevState: string | undefined,
   formData: FormData,
 ): Promise<string | undefined> {
-  const phien = await requirePermission("HV-06");
   const khoaId = String(formData.get("khoaId"));
   const dangKyId = String(formData.get("dangKyId"));
-  const ketQua = formData.get("ketQua") as KetQuaThamDinh;
-  const ghiChu = String(formData.get("ghiChu") || "");
+  const ketQua = formData.get("ketQua") as KetQuaThamDinh | "CHINH_THUC";
+  const ghiChu = String(formData.get("ghiChu") || "").trim();
 
   try {
-    await thamDinhHoSo(dangKyId, ketQua, ghiChu || null, nguoiTuPhien(phien));
+    // (bổ sung 11/10/2026) duyệt 1 bước: Duyệt chính thức (HV-07) hoặc Không hợp lệ (HV-06, bắt buộc lý do)
+    if (ketQua === "CHINH_THUC") {
+      const phien = await requirePermission("HV-07");
+      await duyetHoSoChinhThuc(khoaId, [dangKyId], nguoiTuPhien(phien));
+    } else {
+      const phien = await requirePermission("HV-06");
+      if (ketQua === "KHONG_HOP_LE" && !ghiChu) return "Cần nhập lý do Không hợp lệ";
+      await thamDinhHoSo(dangKyId, ketQua, ghiChu || null, nguoiTuPhien(phien));
+    }
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;

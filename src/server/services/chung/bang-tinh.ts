@@ -74,6 +74,31 @@ export async function docBangTinh(noiDung: Buffer, tenTep: string): Promise<Dong
   return ds;
 }
 
+/**
+ * (bổ sung 13/10/2026 - KQ-06) Đọc mọi sheet của tệp .xlsx (tệp danh sách phòng thi: mỗi phòng 1 sheet);
+ * tệp .csv coi như 1 sheet.
+ */
+export async function docMoiSheet(noiDung: Buffer, tenTep: string): Promise<{ tenSheet: string; dsDong: DongBangTinh[] }[]> {
+  const duoi = tenTep.toLowerCase().slice(tenTep.lastIndexOf("."));
+  if (duoi === ".csv") return [{ tenSheet: tenTep, dsDong: await docBangTinh(noiDung, tenTep) }];
+  if (duoi !== ".xlsx") throw new TepBangTinhKhongHopLeError("chỉ nhận tệp Excel .xlsx hoặc .csv");
+  const wb = new ExcelJS.Workbook();
+  try {
+    await wb.xlsx.load(noiDung as unknown as ArrayBuffer);
+  } catch {
+    throw new TepBangTinhKhongHopLeError("không phải tệp Excel .xlsx hợp lệ");
+  }
+  return wb.worksheets.map((ws) => {
+    const dsDong: DongBangTinh[] = [];
+    ws.eachRow((row, soDong) => {
+      const o: string[] = [];
+      for (let i = 1; i <= Math.max(row.cellCount, 1); i++) o.push(chuCuaO(row.getCell(i).value).trim());
+      if (o.some(Boolean)) dsDong.push({ soDong, o });
+    });
+    return { tenSheet: ws.name, dsDong };
+  });
+}
+
 /** Bỏ dấu tiếng Việt + chữ thường + gộp khoảng trắng - so khớp tiêu đề cột/giá trị gõ tay. */
 export function chuanHoaChu(s: string) {
   return s

@@ -56,6 +56,25 @@ function kiemTraHeSo(tinhDiem: boolean, heSo: number | null | undefined) {
   return hs;
 }
 
+/**
+ * (bổ sung 13/10/2026) điều kiện hoàn thành của bài đánh giá: điểm tối thiểu phải đạt (0-10), null = không
+ * bắt buộc đạt. Cách tính: chỉ tự kiểm tra (không tính điểm, không điểm đạt) / bắt buộc đạt (có điểm đạt,
+ * không vào điểm cuối khóa) / tính vào điểm cuối khóa theo hệ số (điểm đạt riêng tùy chọn).
+ */
+function kiemTraDiemDat(diemDat: number | null | undefined) {
+  if (diemDat == null) return null;
+  if (!(Number.isFinite(diemDat) && diemDat >= 0 && diemDat <= 10)) throw new DanhGiaKhongHopLeError("điểm đạt của bài phải trong khoảng 0-10");
+  return Math.round(diemDat * 100) / 100;
+}
+
+const moTaCachTinh = (x: { tinhDiem: boolean; heSo: unknown; diemDat: unknown }) =>
+  [
+    x.tinhDiem ? `tính điểm cuối khóa, hệ số ${Number(x.heSo)}` : x.diemDat == null ? "chỉ tự kiểm tra" : "bắt buộc đạt",
+    x.diemDat == null ? "" : `điểm đạt ${Number(x.diemDat)}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
 // ---------------- học liệu ----------------
 
 export type ThemHocLieuInput = {
@@ -160,6 +179,7 @@ export type CauHinhBaiInput = {
   soLanToiDa?: number | null;
   tinhDiem: boolean;
   heSo?: number | null;
+  diemDat?: number | null;
 };
 
 function chuanHoaCauHinh(input: CauHinhBaiInput) {
@@ -175,6 +195,7 @@ function chuanHoaCauHinh(input: CauHinhBaiInput) {
     soLanToiDa: input.soLanToiDa ?? null,
     tinhDiem: input.tinhDiem,
     heSo: kiemTraHeSo(input.tinhDiem, input.heSo),
+    diemDat: kiemTraDiemDat(input.diemDat),
   };
 }
 
@@ -197,7 +218,7 @@ export async function capNhatBaiTracNghiem(baiId: string, input: CauHinhBaiInput
   const duLieu = chuanHoaCauHinh(input);
   return prisma.$transaction(async (tx) => {
     const moi = await tx.baiTracNghiem.update({ where: { id: baiId }, data: duLieu });
-    await ghiThaoTac(nguoi, "CAP_NHAT_BAI_TRAC_NGHIEM", "BaiTracNghiem", baiId, `${moi.tieuDe}: ${moi.tinhDiem ? `tính điểm, hệ số ${moi.heSo}` : "chỉ tự kiểm tra"}`, tx);
+    await ghiThaoTac(nguoi, "CAP_NHAT_BAI_TRAC_NGHIEM", "BaiTracNghiem", baiId, `${moi.tieuDe}: ${moTaCachTinh(moi)}`, tx);
     return moi;
   });
 }
@@ -308,17 +329,18 @@ export async function mauExcelCauHoi(): Promise<Buffer> {
 
 // ---------------- yêu cầu sản phẩm cuối khóa ----------------
 
-export type YeuCauSanPhamInput = { tieuDe: string; moTa?: string | null; tinhDiem: boolean; heSo?: number | null };
+export type YeuCauSanPhamInput = { tieuDe: string; moTa?: string | null; tinhDiem: boolean; heSo?: number | null; diemDat?: number | null };
 
 export async function taoYeuCauSanPham(hocPhanId: string, input: YeuCauSanPhamInput, nguoi: NguoiThucHien = HE_THONG) {
   const hocPhan = await hocPhanDeSua(hocPhanId);
   const tieuDe = input.tieuDe?.trim();
   if (!tieuDe) throw new DanhGiaKhongHopLeError("thiếu tiêu đề yêu cầu sản phẩm");
   const heSo = kiemTraHeSo(input.tinhDiem, input.heSo);
+  const diemDat = kiemTraDiemDat(input.diemDat);
   const thuTu = ((await prisma.yeuCauSanPham.aggregate({ where: { hocPhanId }, _max: { thuTu: true } }))._max.thuTu ?? 0) + 1;
   return prisma.$transaction(async (tx) => {
     const yc = await tx.yeuCauSanPham.create({
-      data: { hocPhanId, tieuDe, moTa: lamSach(input.moTa), tinhDiem: input.tinhDiem, heSo, thuTu },
+      data: { hocPhanId, tieuDe, moTa: lamSach(input.moTa), tinhDiem: input.tinhDiem, heSo, diemDat, thuTu },
     });
     await ghiThaoTac(nguoi, "TAO_YEU_CAU_SAN_PHAM", "YeuCauSanPham", yc.id, `${hocPhan.ten}: ${tieuDe}`, tx);
     return yc;
@@ -332,9 +354,10 @@ export async function capNhatYeuCauSanPham(id: string, input: YeuCauSanPhamInput
   const tieuDe = input.tieuDe?.trim();
   if (!tieuDe) throw new DanhGiaKhongHopLeError("thiếu tiêu đề yêu cầu sản phẩm");
   const heSo = kiemTraHeSo(input.tinhDiem, input.heSo);
+  const diemDat = kiemTraDiemDat(input.diemDat);
   return prisma.$transaction(async (tx) => {
-    const moi = await tx.yeuCauSanPham.update({ where: { id }, data: { tieuDe, moTa: lamSach(input.moTa), tinhDiem: input.tinhDiem, heSo } });
-    await ghiThaoTac(nguoi, "CAP_NHAT_YEU_CAU_SAN_PHAM", "YeuCauSanPham", id, `${tieuDe}: ${moi.tinhDiem ? `tính điểm, hệ số ${moi.heSo}` : "không tính điểm"}`, tx);
+    const moi = await tx.yeuCauSanPham.update({ where: { id }, data: { tieuDe, moTa: lamSach(input.moTa), tinhDiem: input.tinhDiem, heSo, diemDat } });
+    await ghiThaoTac(nguoi, "CAP_NHAT_YEU_CAU_SAN_PHAM", "YeuCauSanPham", id, `${tieuDe}: ${moTaCachTinh(moi)}`, tx);
     return moi;
   });
 }

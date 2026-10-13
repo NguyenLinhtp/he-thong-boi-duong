@@ -15,6 +15,8 @@ const NHAN_TRANG_THAI_KHOA: Record<string, string> = {
 const TAB = [
   { ma: "tong-quan", nhan: "Tổng quan", duoi: "", quyen: ["KH-01"] },
   { ma: "tuyen-sinh", nhan: "Tuyển sinh", duoi: "/tuyen-sinh", quyen: ["KH-01"] },
+  // (bổ sung 12/10/2026 - KH-03) chỉ khóa dự thi/ôn thi (Phương thức 3)
+  { ma: "phong-thi", nhan: "Lịch thi & phòng thi", duoi: "/phong-thi", quyen: ["KH-01"] },
   { ma: "giang-day", nhan: "Giảng dạy", duoi: "/giang-day", quyen: ["KH-01"] },
   { ma: "lop-hoc", nhan: "Lớp học", duoi: "/lop-hoc", quyen: ["KH-07"] },
   // (sửa 06/10/2026) chỉ theo KQ-02 (cán bộ đào tạo): cán bộ tài chính có KQ-03 nhưng tab kết quả
@@ -25,7 +27,7 @@ const TAB = [
 ] as const;
 
 type Props = {
-  khoa: { id: string; maKhoa: string; tenKhoa?: string | null; trangThai: string; chuongTrinh: { ten: string } };
+  khoa: { id: string; maKhoa: string; tenKhoa?: string | null; trangThai: string; chuongTrinh: { ten: string; phuongThucDangKys?: string[] } };
   dangChon: (typeof TAB)[number]["ma"];
   phu?: React.ReactNode;
 };
@@ -33,7 +35,11 @@ type Props = {
 /** Đầu trang dùng chung cho trang khóa và các trang con (tuyển sinh, giảng dạy, lớp, kết quả, văn bằng, học phí). */
 export async function DauTrangKhoa({ khoa, dangChon, phu }: Props) {
   const hienTab = [];
+  // (bổ sung 12/10/2026) khóa chỉ đăng ký dự thi/ôn thi (Phương thức 3) không có giảng dạy, không chia lớp
+  const laDuThi = khoa.chuongTrinh.phuongThucDangKys?.includes("CHI_DU_THI") ?? false;
   for (const tab of TAB) {
+    if (laDuThi && (tab.ma === "giang-day" || tab.ma === "lop-hoc")) continue;
+    if (!laDuThi && tab.ma === "phong-thi") continue;
     if ((await Promise.all(tab.quyen.map(coQuyen))).some(Boolean)) hienTab.push(tab);
   }
   // đường dẫn cha: danh sách khóa (KH-01), cán bộ tài chính không có KH-01 thì về danh sách học phí theo khóa

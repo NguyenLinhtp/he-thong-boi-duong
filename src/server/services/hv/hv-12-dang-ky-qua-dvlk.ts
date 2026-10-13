@@ -68,6 +68,7 @@ export async function dangKyQuaDonViLienKet(input: DangKyQuaDonViLienKetInput) {
         trangThai: "CHO_NOP_GIAY",
         hanNopGiay,
         hopDongLienKetId: hopDongHopLe.id,
+        phuongThuc: "QUA_DON_VI_LIEN_KET",
       },
       include: {
         hocVien: true,

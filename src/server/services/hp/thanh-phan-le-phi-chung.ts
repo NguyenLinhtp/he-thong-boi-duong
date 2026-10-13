@@ -69,3 +69,23 @@ export function soDaNopPhanBatBuoc(hocPhi: { soTienDaNop: SoTien; thanhPhans?: D
   }
   return so(hocPhi.soTienDaNop);
 }
+
+export type PhuongThuc = "TRUC_TUYEN_NOP_GIAY" | "IMPORT_TU_XAC_NHAN" | "CHI_DU_THI" | "QUA_DON_VI_LIEN_KET";
+
+/** (bổ sung 11/10/2026 - HV-06/HV-07) Hồ sơ đang chờ cán bộ đào tạo duyệt (1 bước) vào danh sách chính thức. */
+export const TRANG_THAI_CHO_DUYET = ["DA_NOP_GIAY", "DA_XAC_NHAN_THAM_GIA", "CHO_DUYET", "HOP_LE"] as const;
+
+/**
+ * (bổ sung 11/10/2026) Hồ sơ phải được xác nhận học phí/lệ phí trước khi duyệt chính thức:
+ * Phương thức 1 và 3. Không áp cho hồ sơ qua đơn vị liên kết (PT4 - điều kiện tài chính là
+ * thanh lý hợp đồng, DVLK-06) và danh sách được cử đi học (PT2). Hồ sơ cán bộ thêm trực tiếp
+ * (chưa có phương thức) theo khóa: khóa có PT1 hoặc PT3 thì phải xác nhận.
+ */
+export function canXacNhanHocPhiTruoc(
+  dk: { hopDongLienKetId: string | null; phuongThuc: PhuongThuc | null },
+  phuongThucKhoa: readonly PhuongThuc[],
+) {
+  if (dk.hopDongLienKetId) return false;
+  if (dk.phuongThuc) return dk.phuongThuc === "TRUC_TUYEN_NOP_GIAY" || dk.phuongThuc === "CHI_DU_THI";
+  return phuongThucKhoa.includes("TRUC_TUYEN_NOP_GIAY") || phuongThucKhoa.includes("CHI_DU_THI");
+}

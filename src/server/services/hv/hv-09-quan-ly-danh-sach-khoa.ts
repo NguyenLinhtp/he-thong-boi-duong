@@ -1,4 +1,5 @@
 import { Prisma } from "@/generated/prisma/client";
+import { damBaoHocPhiChoDuyet } from "@/server/services/hp/hp-01-thiet-lap";
 import { prisma } from "@/lib/db/prisma";
 import { timHoacTaoHocVien, type ThongTinHocVienInput } from "@/server/services/hv/dung-chung";
 import { siSoHienTai } from "@/server/services/kh/kh-05-trang-thai-si-so";
@@ -36,9 +37,13 @@ export const NHAN_HANH_DONG_HV09: Record<string, string> = {
   [HANH_DONG_HV09.THOI_HOC]: "Thôi học",
 };
 
-export async function danhSachHocVienTheoKhoa(khoaId: string) {
+/**
+ * (bổ sung 12/10/2026) chiChinhThuc: danh sách học viên của khóa trên tab Tuyển sinh chỉ gồm người đã
+ * vào danh sách chính thức (Chính thức, Hoàn thành, Thôi học) - hồ sơ đang chờ xem ở các danh sách tuyển sinh.
+ */
+export async function danhSachHocVienTheoKhoa(khoaId: string, chiChinhThuc = false) {
   return prisma.dangKyHoc.findMany({
-    where: { khoaId },
+    where: { khoaId, ...(chiChinhThuc ? { trangThai: { in: ["CHINH_THUC", "HOAN_THANH", "THOI_HOC"] } } : {}) },
     include: INCLUDE_DANG_KY,
     orderBy: { ngayDangKy: "asc" },
   });
@@ -133,7 +138,7 @@ export async function themHocVienVaoKhoa(input: ThemHocVienVaoKhoaInput, nguoi: 
   const hocVien = await timHoacTaoHocVien(input);
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    const dangKyMoi = await prisma.$transaction(async (tx) => {
       const dangKy = await tx.dangKyHoc.create({
         data: { hocVienId: hocVien.id, khoaId: khoa.id, lyDoThayDoi: input.lyDo ?? null },
         include: INCLUDE_DANG_KY,
@@ -141,6 +146,9 @@ export async function themHocVienVaoKhoa(input: ThemHocVienVaoKhoaInput, nguoi: 
       await ghiLichSu(tx, nguoi, HANH_DONG_HV09.THEM, khoa.id, moTa(hocVien, input.lyDo));
       return dangKy;
     });
+    // (bổ sung 11/10/2026) khóa có PT1: hồ sơ phải nộp học phí trước khi duyệt chính thức
+    await damBaoHocPhiChoDuyet(khoa.id);
+    return dangKyMoi;
   } catch (error) {
     const laLoiTrungDangKy = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
     if (laLoiTrungDangKy) throw new DaDangKyKhoaNayError();
@@ -191,7 +199,7 @@ export async function chuyenHocVienSangKhoa(
   const hocPhi = await kiemTraRutKhoiKhoa(dangKy);
   const hv = moTa(dangKy.hocVien, lyDo);
 
-  return prisma.$transaction(async (tx) => {
+  const dangKyMoi = await prisma.$transaction(async (tx) => {
     if (hocPhi) await tx.hocPhi.delete({ where: { id: hocPhi.id } });
     await tx.dangKyHoc.delete({ where: { id: dangKyId } });
     const dangKyMoi = await tx.dangKyHoc.create({
@@ -202,6 +210,8 @@ export async function chuyenHocVienSangKhoa(
     await ghiLichSu(tx, nguoi, HANH_DONG_HV09.CHUYEN_DEN, khoaMoiId, `${hv} ← từ khóa ${dangKy.khoa.maKhoa}`);
     return dangKyMoi;
   });
+  await damBaoHocPhiChoDuyet(khoaMoiId);
+  return dangKyMoi;
 }
 
 /** "Ghi nhận thôi học" khác "xóa" - vẫn giữ lại hồ sơ, điểm, học phí; chỉ đổi trạng thái. */

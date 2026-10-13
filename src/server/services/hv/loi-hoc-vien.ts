@@ -133,7 +133,15 @@ export class DanhSachXetDuyetKhongHopLeError extends Error {
 // (bổ sung 06/10/2026 - HV-07) khóa dự thi: chỉ thí sinh đã xác nhận lệ phí mới vào danh sách chính thức
 export class ChuaXacNhanLePhiKhiXetDuyetError extends Error {
   constructor(public dsHoTen: string[]) {
-    super(`Khóa dự thi chỉ duyệt chính thức thí sinh đã được xác nhận lệ phí - chưa xác nhận: ${dsHoTen.join(", ")}`);
+    // (sửa 11/10/2026) áp cả hồ sơ Phương thức 1 (học phí) - không áp hồ sơ qua đơn vị liên kết, PT2
+    super(`Chỉ duyệt chính thức hồ sơ đã được xác nhận học phí/lệ phí - chưa xác nhận: ${dsHoTen.join(", ")}`);
+  }
+}
+
+// (bổ sung 11/10/2026 - HV-06/HV-07) duyệt 1 bước: hồ sơ còn thiếu minh chứng bắt buộc không vào danh sách chính thức
+export class ThieuMinhChungKhiDuyetError extends Error {
+  constructor(public dsHoTen: string[]) {
+    super(`Hồ sơ còn thiếu minh chứng bắt buộc, không duyệt chính thức được: ${dsHoTen.join(", ")}`);
   }
 }
 

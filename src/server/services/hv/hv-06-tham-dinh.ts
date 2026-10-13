@@ -50,6 +50,21 @@ export async function thamDinhHoSo(
       data: { trangThai: ketQua, ghiChuThamDinh: ghiChu ?? null },
       include: INCLUDE_DANG_KY,
     });
+    // (bổ sung 11/10/2026) hồ sơ PT1 có khoản học phí từ lúc chờ duyệt: không hợp lệ thì bỏ khoản chưa
+    // thu đồng nào (không nhắc nợ); đã nộp tiền thì giữ để cán bộ tài chính xử lý hoàn trả. Khóa dự thi giữ nguyên.
+    if (ketQua === "KHONG_HOP_LE" && !sau.khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
+      await tx.hocPhi.deleteMany({
+        where: {
+          khoaId: sau.khoaId,
+          hocVienId: sau.hocVienId,
+          soTienDaNop: 0,
+          boQuaKiemTra: false,
+          trangThai: "CHUA_NOP",
+          phieuThus: { none: {} },
+          giaoDichNganHangs: { none: {} },
+        },
+      });
+    }
     await ghiThaoTac(
       nguoi,
       "THAM_DINH_HO_SO",
