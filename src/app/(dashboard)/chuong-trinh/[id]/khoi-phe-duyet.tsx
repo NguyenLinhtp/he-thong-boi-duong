@@ -39,7 +39,7 @@ export function KhoiPheDuyet({
           </Button>
           {!tongTietKhop && (
             <span className="text-sm text-destructive">
-              Tổng số tiết học phần chưa khớp tổng thời lượng
+              Tổng số tiết học phần chưa khớp tổng thời lượng (chương trình chỉ dự thi: chọn PT3 ở mục CT-07 thì không cần học phần, thời lượng)
             </span>
           )}
           {loiTrinh && <p className="text-sm text-destructive">{loiTrinh}</p>}

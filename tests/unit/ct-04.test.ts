@@ -139,4 +139,15 @@ describe("CT-04 cập nhật/chỉnh sửa chương trình đã ban hành", () =
     const daSua = await suaChuongTrinhDaBanHanh(ct.id, { ten: "Tên mới", loaiHinhBoiDuongId: lh.id, tongThoiLuong: 10 });
     expect(daSua.ten).toBe("Tên mới");
   });
+
+  // (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3) không bắt buộc học phần/tổng thời lượng
+  it("chương trình chỉ dự thi (PT3) đổi hoặc bỏ tổng thời lượng không cần khớp số tiết học phần", async () => {
+    const { ct, lh } = await taoChuongTrinhDaBanHanh();
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKys: ["CHI_DU_THI"] } });
+
+    const daDoi = await suaChuongTrinhDaBanHanh(ct.id, { ten: "Thi CĐR", loaiHinhBoiDuongId: lh.id, tongThoiLuong: 45 });
+    expect(daDoi.tongThoiLuong).toBe(45);
+    const daBo = await suaChuongTrinhDaBanHanh(ct.id, { ten: "Thi CĐR", loaiHinhBoiDuongId: lh.id, tongThoiLuong: null });
+    expect(daBo.tongThoiLuong).toBeNull();
+  });
 });

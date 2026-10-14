@@ -17,6 +17,7 @@ export function DanhSachHocPhan({
   tongThoiLuong,
   choPhepSua,
   canLyDo = false,
+  chiDuThi = false,
 }: {
   chuongTrinhId: string;
   dsHocPhan: HocPhan[];
@@ -25,6 +26,8 @@ export function DanhSachHocPhan({
   choPhepSua: boolean;
   // (bổ sung 07/10/2026) chương trình đã ban hành: thêm/sửa/xóa học phần phải ghi lý do
   canLyDo?: boolean;
+  // (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3): học phần/tổng thời lượng không bắt buộc
+  chiDuThi?: boolean;
 }) {
   const [loi, formAction, dangXuLy] = useActionState(themHocPhanAction, undefined);
   const khop = tongThoiLuong != null && tongTiet === tongThoiLuong;
@@ -32,11 +35,17 @@ export function DanhSachHocPhan({
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-base font-bold text-ued-blue-dam">CT-02 · Học phần/chuyên đề</h2>
-      <p className={`text-sm ${khop ? "text-green-600" : "text-muted-foreground"}`}>
-        Tổng số tiết học phần: {tongTiet}
-        {tongThoiLuong != null && ` / ${tongThoiLuong} (tổng thời lượng chương trình)`}
-        {tongThoiLuong != null && !khop && (canLyDo ? " — chưa khớp tổng thời lượng chương trình" : " — chưa khớp, cần khớp trước khi trình duyệt")}
-      </p>
+      {chiDuThi ? (
+        <p className="text-sm text-muted-foreground">
+          Chương trình chỉ đăng ký dự thi (PT3): không bắt buộc học phần và tổng thời lượng, trình thẩm định không cần khớp số tiết.
+        </p>
+      ) : (
+        <p className={`text-sm ${khop ? "text-green-600" : "text-muted-foreground"}`}>
+          Tổng số tiết học phần: {tongTiet}
+          {tongThoiLuong != null && ` / ${tongThoiLuong} (tổng thời lượng chương trình)`}
+          {tongThoiLuong != null && !khop && (canLyDo ? " — chưa khớp tổng thời lượng chương trình" : " — chưa khớp, cần khớp trước khi trình duyệt")}
+        </p>
+      )}
       {choPhepSua && canLyDo && (
         <p className="text-sm text-warning">
           Chương trình đã ban hành: thêm/sửa/xóa học phần phải ghi lý do và được ghi nhật ký. Không xóa được học phần đã có buổi học, phân

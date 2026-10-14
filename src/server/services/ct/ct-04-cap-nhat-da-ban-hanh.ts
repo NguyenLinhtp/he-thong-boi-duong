@@ -68,7 +68,12 @@ export async function suaChuongTrinhDaBanHanh(
   const anhHuongKhoa = (doiThoiLuong || doiLoaiHinh) && (await coKhoaDangHoatDong(id));
   if (anhHuongKhoa && !input.lyDoSua?.trim()) throw new SuaTruongAnhHuongKhoaDangChayError();
 
-  if (input.tongThoiLuong !== undefined && input.tongThoiLuong !== chuongTrinh.tongThoiLuong) {
+  // (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3) không bắt buộc học phần - không đối chiếu số tiết
+  if (
+    input.tongThoiLuong !== undefined &&
+    input.tongThoiLuong !== chuongTrinh.tongThoiLuong &&
+    !chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")
+  ) {
     const tongTiet = await tongSoTietHocPhan(id);
     if (input.tongThoiLuong !== tongTiet) throw new ThoiLuongLechTongTietError(tongTiet);
   }

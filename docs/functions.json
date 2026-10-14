@@ -91,7 +91,7 @@
     "actor": "Cán bộ quản lý đào tạo → Hội đồng khoa học → Ban giám hiệu",
     "input": "Chương trình \"Dự thảo\", ý kiến thẩm định",
     "output": "Chương trình \"Đã ban hành\" kèm số quyết định",
-    "quy_tac_nghiep_vu": "Chỉ chương trình \"Đã ban hành\" mới được dùng để mở khóa; (bổ sung 28/09/2026) chương trình phải đã chọn phương thức đăng ký (CT-07) mới được trình thẩm định - mọi khóa kế thừa phương thức của chương trình",
+    "quy_tac_nghiep_vu": "Chỉ chương trình \"Đã ban hành\" mới được dùng để mở khóa; (bổ sung 28/09/2026) chương trình phải đã chọn phương thức đăng ký (CT-07) mới được trình thẩm định - mọi khóa kế thừa phương thức của chương trình; (bổ sung 14/10/2026) chương trình chỉ đăng ký dự thi (Phương thức 3) không có giảng dạy nên không bắt buộc học phần và tổng thời lượng: trình thẩm định không kiểm tra tổng số tiết học phần khớp tổng thời lượng, sửa tổng thời lượng sau ban hành (CT-04) cũng không đối chiếu số tiết; chương trình đào tạo (PT1, PT2, PT4) hoặc chưa chọn phương thức vẫn phải khớp",
     "do_uu_tien": "Cao",
     "giai_doan": "Đợt 1"
   },

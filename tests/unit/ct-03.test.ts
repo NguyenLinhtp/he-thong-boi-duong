@@ -98,4 +98,36 @@ describe("CT-03 trình duyệt và phê duyệt chương trình", () => {
     const daTrinhLai = await trinhThamDinh(ct.id);
     expect(daTrinhLai.trangThai).toBe("CHO_THAM_DINH");
   });
+
+  // (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3) không có học phần/tổng thời lượng
+  it("chương trình chỉ dự thi (PT3) không có học phần, không có thời lượng vẫn trình thẩm định và ban hành được", async () => {
+    const ct = await taoChuongTrinhTest(null);
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKys: ["CHI_DU_THI"] } });
+
+    const daTrinh = await trinhThamDinh(ct.id);
+    expect(daTrinh.trangThai).toBe("CHO_THAM_DINH");
+    expect((await pheDuyet(ct.id, { soQuyetDinh: "QD-PT3/2026" })).trangThai).toBe("DA_BAN_HANH");
+  });
+
+  it("chương trình chỉ dự thi (PT3) có thời lượng lệch số tiết học phần vẫn trình được", async () => {
+    const ct = await taoChuongTrinhTest(30);
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKys: ["CHI_DU_THI"] } });
+    await themHocPhan(ct.id, { ten: "Ôn thi", soTiet: 5 });
+
+    expect((await trinhThamDinh(ct.id)).trangThai).toBe("CHO_THAM_DINH");
+  });
+
+  it("chương trình đào tạo (PT1) không có thời lượng, không có học phần vẫn bị chặn trình thẩm định", async () => {
+    const ct = await taoChuongTrinhTest(null);
+
+    await expect(trinhThamDinh(ct.id)).rejects.toThrow(ChuaSanSangTrinhDuyetError);
+    expect((await prisma.chuongTrinh.findUniqueOrThrow({ where: { id: ct.id } })).trangThai).toBe("DU_THAO");
+  });
+
+  it("chương trình chưa chọn phương thức, không có học phần vẫn bị chặn (chưa xác định là chỉ dự thi)", async () => {
+    const ct = await taoChuongTrinhTest(null);
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKys: [] } });
+
+    await expect(trinhThamDinh(ct.id)).rejects.toThrow(ChuaSanSangTrinhDuyetError);
+  });
 });

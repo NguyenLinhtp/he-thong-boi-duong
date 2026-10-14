@@ -76,7 +76,9 @@ export default async function ChiTietChuongTrinhPage({
   const soKhoa = await prisma.khoa.count({ where: { chuongTrinhId: chuongTrinh.id } });
   const choPhepXoa = (await coQuyen("CT-01")) && soKhoa === 0;
   const tongTiet = chuongTrinh.hocPhans.reduce((tong, hp) => tong + hp.soTiet, 0);
-  const tongTietKhop = chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong;
+  // (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3) không bắt buộc học phần/tổng thời lượng
+  const chiDuThi = chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
+  const tongTietKhop = chiDuThi || (chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong);
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
@@ -129,6 +131,7 @@ export default async function ChiTietChuongTrinhPage({
         tongThoiLuong={chuongTrinh.tongThoiLuong}
         choPhepSua={choPhepSuaHocPhan}
         canLyDo={daBanHanh}
+        chiDuThi={chiDuThi}
       />
 
       {choPhepPheDuyet && chuongTrinh.trangThai !== "NGUNG_HIEU_LUC" && (

@@ -29,6 +29,8 @@ export class ChuaChonPhuongThucDangKyError extends Error {
  * CT-03 bước 1: Dự thảo -> Chờ thẩm định. Cổng chặn: tổng số tiết học phần
  * phải khớp tổng thời lượng chương trình (quy tắc nghiệp vụ CT-02/CT-03) -
  * đây là lúc gate được áp dụng, không chặn từng lần thêm học phần lẻ tẻ.
+ * (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3) không có giảng dạy nên
+ * không bắt buộc học phần/tổng thời lượng - bỏ qua cổng khớp số tiết.
  */
 export async function trinhThamDinh(
   chuongTrinhId: string,
@@ -42,7 +44,8 @@ export async function trinhThamDinh(
       "Chỉ chương trình ở trạng thái Dự thảo mới trình thẩm định được",
     );
   }
-  if (!(await tongTietDaKhopThoiLuong(chuongTrinhId))) {
+  const chiDuThi = chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
+  if (!chiDuThi && !(await tongTietDaKhopThoiLuong(chuongTrinhId))) {
     throw new ChuaSanSangTrinhDuyetError();
   }
   // CT-07/KH-01: mọi khóa kế thừa phương thức của chương trình - chương trình
