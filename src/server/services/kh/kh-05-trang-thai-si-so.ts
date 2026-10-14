@@ -133,6 +133,37 @@ export function daQuaHanDangKy(khoa: { hanDangKy: Date | null }, bayGio = new Da
   return khoa.hanDangKy !== null && bayGio > khoa.hanDangKy;
 }
 
+/**
+ * (bổ sung 14/10/2026) sửa ngày mở khóa / ngày thi của khóa dự thi (PT3) trên tab Tổng quan;
+ * ngày = "yyyy-mm-dd" hoặc null (xóa). Áp cùng quy tắc như khi khởi tạo (đối chiếu hạn đăng ký
+ * hiện tại), không sửa khi khóa đã kết thúc/hủy, ghi nhật ký cũ -> mới.
+ */
+export async function datNgayKhoaThi(khoaId: string, ngayMo: string | null, ngayThi: string | null, nguoi: NguoiThucHien = HE_THONG) {
+  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
+  if (!khoa) throw new KhongTimThayKhoaError();
+  if (!khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
+    throw new NgayKhoaThiKhongHopLeError("Chỉ khóa chỉ đăng ký dự thi mới sửa ngày mở khóa/ngày thi ở đây");
+  }
+  if (khoa.trangThai === "DA_KET_THUC" || khoa.trangThai === "HUY") {
+    throw new NgayKhoaThiKhongHopLeError("Khóa đã kết thúc hoặc đã hủy, không sửa ngày được");
+  }
+  for (const ngay of [ngayMo, ngayThi]) {
+    if (ngay !== null && !/^\d{4}-\d{2}-\d{2}$/.test(ngay)) throw new NgayKhoaThiKhongHopLeError("Ngày không hợp lệ");
+  }
+  kiemTraNgayKhoaThi(ngayMo, ngayThi, ngayVN(khoa.hanDangKy));
+
+  const cu = `mở khóa ${ngayVN(khoa.thoiGianKhaiGiang) ?? "—"}, ngày thi ${ngayVN(khoa.thoiGianBeGiang) ?? "—"}`;
+  const moi = `mở khóa ${ngayMo ?? "—"}, ngày thi ${ngayThi ?? "—"}`;
+  return prisma.$transaction(async (tx) => {
+    const sau = await tx.khoa.update({
+      where: { id: khoaId },
+      data: { thoiGianKhaiGiang: ngayMo ? new Date(ngayMo) : null, thoiGianBeGiang: ngayThi ? new Date(ngayThi) : null },
+    });
+    await ghiThaoTac(nguoi, "DAT_NGAY_KHOA_THI", "Khoa", khoaId, `${khoa.maKhoa}: ${cu} -> ${moi}`, tx);
+    return sau;
+  });
+}
+
 /** (bổ sung 01/10/2026) đặt/xóa hạn đăng ký của khóa; ngay = "yyyy-mm-dd" hoặc null. */
 export async function datHanDangKy(khoaId: string, ngay: string | null, nguoi: NguoiThucHien = HE_THONG) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });

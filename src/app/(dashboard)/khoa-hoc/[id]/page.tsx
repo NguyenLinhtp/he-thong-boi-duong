@@ -4,7 +4,7 @@ import { coQuyen, requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
 import { layKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { tinhTrangLinkTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
-import { tinhTrangSiSo, daQuaHanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { tinhTrangSiSo, daQuaHanDangKy, ngayVN } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { linkDangKyCongKhai } from "@/server/services/kh/kh-06-thong-bao-tuyen-sinh";
 import { Button } from "@/components/ui/button";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
@@ -14,6 +14,7 @@ import { FormHinhThuc } from "./form-hinh-thuc";
 import { FormTrangThai } from "./form-trang-thai";
 import { FormThongBao } from "./form-thong-bao";
 import { FormHanDangKy } from "./form-han-dang-ky";
+import { FormNgayKhoaThi } from "./form-ngay-khoa-thi";
 import { tuDongTaoLinkAction } from "./actions";
 import { nhanDayDuPhuongThuc } from "@/lib/phuong-thuc";
 
@@ -63,7 +64,11 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
           </dd>
         </div>
         {/* (sửa 14/10/2026) khóa dự thi: khai giảng = ngày mở khóa, bế giảng = ngày thi */}
-        {laDuThi ? (
+        {laDuThi && suaHan && !["DA_KET_THUC", "HUY"].includes(khoa.trangThai) ? (
+          <div className="sm:col-span-2">
+            <FormNgayKhoaThi khoaId={khoa.id} ngayMo={ngayVN(khoa.thoiGianKhaiGiang)} ngayThi={ngayVN(khoa.thoiGianBeGiang)} />
+          </div>
+        ) : laDuThi ? (
           <div className="flex gap-8">
             <div>
               <dt className="text-muted-foreground">Ngày mở khóa</dt>

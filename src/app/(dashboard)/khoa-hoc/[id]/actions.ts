@@ -9,7 +9,7 @@ import {
   thietLapHinhThucGiangDay,
   tuDongTaoLinkTrucTuyen,
 } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
-import { chuyenTrangThaiKhoa, datHanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { chuyenTrangThaiKhoa, datHanDangKy, datNgayKhoaThi } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   phatHanhThongBao,
   type KenhGui,
@@ -203,6 +203,25 @@ export async function datHanDangKyAction(_prev: string | undefined, formData: Fo
   const khoaId = String(formData.get("khoaId"));
   try {
     await datHanDangKy(khoaId, String(formData.get("hanDangKy") ?? "") || null, nguoiTuPhien(phien));
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
+  lamMoiKhoa(khoaId);
+  return "OK";
+}
+
+// (bổ sung 14/10/2026) khóa dự thi: sửa ngày mở khóa / ngày thi
+export async function datNgayKhoaThiAction(_prev: string | undefined, formData: FormData): Promise<string | undefined> {
+  const phien = await requirePermission("KH-05");
+  const khoaId = String(formData.get("khoaId"));
+  try {
+    await datNgayKhoaThi(
+      khoaId,
+      String(formData.get("ngayMo") ?? "") || null,
+      String(formData.get("ngayThi") ?? "") || null,
+      nguoiTuPhien(phien),
+    );
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;
