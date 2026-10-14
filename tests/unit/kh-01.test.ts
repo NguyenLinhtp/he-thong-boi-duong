@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { khoiTaoKhoa, danhSachKhoa, layKhoa, xoaKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
-import { KhongTimThayKhoaError, KhongXoaDuocKhoaError, TenKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
+import { KhongTimThayKhoaError, KhongXoaDuocKhoaError, NgayKhoaThiKhongHopLeError, TenKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
+import { datHanDangKy } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   SaiTrangThaiChuongTrinhError,
   KhongTimThayChuongTrinhError,
@@ -145,5 +146,61 @@ describe("KH-01 xóa khóa tạo sai (bổ sung 06/10/2026)", () => {
 
   it("khóa không tồn tại", async () => {
     await expect(xoaKhoa("khong-ton-tai")).rejects.toThrow(KhongTimThayKhoaError);
+  });
+});
+
+// (bổ sung 14/10/2026) khóa dự thi (PT3): ngày mở khóa (khai giảng) - ngày thi (bế giảng) - hạn đăng ký
+describe("KH-01 ngày của khóa dự thi", () => {
+  async function chuongTrinhDuThi() {
+    const ct = await taoChuongTrinh("DA_BAN_HANH");
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKys: ["CHI_DU_THI"] } });
+    return ct;
+  }
+  const NGUOI = { nguoiThucHienTen: "test KH-01" };
+
+  it("lưu ngày mở khóa, ngày thi, hạn đăng ký hợp lệ", async () => {
+    const ct = await chuongTrinhDuThi();
+    const khoa = await khoiTaoKhoa({
+      chuongTrinhId: ct.id, tenKhoa: "Thi CNTT 12/2026", siSoToiDa: 200,
+      thoiGianKhaiGiang: "2026-10-14", thoiGianBeGiang: "2026-12-20", hanDangKy: "2026-11-20",
+    });
+    khoaTaoTrongTest.push(khoa.id);
+    expect(khoa.thoiGianBeGiang?.toISOString().slice(0, 10)).toBe("2026-12-20");
+    // hạn đăng ký trùng ngày thi vẫn được
+    await datHanDangKy(khoa.id, "2026-12-20", NGUOI);
+  });
+
+  it("chặn ngày thi trước ngày mở khóa", async () => {
+    const ct = await chuongTrinhDuThi();
+    await expect(
+      khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 10, thoiGianKhaiGiang: "2026-12-01", thoiGianBeGiang: "2026-11-30" }),
+    ).rejects.toThrow(NgayKhoaThiKhongHopLeError);
+    expect(await prisma.khoa.count({ where: { chuongTrinhId: ct.id } })).toBe(0);
+  });
+
+  it("chặn hạn đăng ký sau ngày thi - cả khi khởi tạo và khi sửa hạn", async () => {
+    const ct = await chuongTrinhDuThi();
+    await expect(
+      khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 10, thoiGianBeGiang: "2026-12-20", hanDangKy: "2026-12-21" }),
+    ).rejects.toThrow("Hạn đăng ký không được sau ngày thi");
+
+    const khoa = await khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 10, thoiGianBeGiang: "2026-12-20", hanDangKy: "2026-12-01" });
+    khoaTaoTrongTest.push(khoa.id);
+    await expect(datHanDangKy(khoa.id, "2026-12-25", NGUOI)).rejects.toThrow(NgayKhoaThiKhongHopLeError);
+    expect((await prisma.khoa.findUniqueOrThrow({ where: { id: khoa.id } })).hanDangKy?.toISOString()).toBe(khoa.hanDangKy?.toISOString());
+  });
+
+  it("chưa có ngày thi thì không đối chiếu hạn đăng ký", async () => {
+    const ct = await chuongTrinhDuThi();
+    const khoa = await khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 10, hanDangKy: "2026-12-31" });
+    khoaTaoTrongTest.push(khoa.id);
+    expect(khoa.thoiGianBeGiang).toBeNull();
+  });
+
+  it("khóa đào tạo không áp quy tắc ngày của khóa dự thi", async () => {
+    const ct = await taoChuongTrinh("DA_BAN_HANH");
+    const khoa = await khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 10, thoiGianBeGiang: "2026-12-20", hanDangKy: "2026-12-25" });
+    khoaTaoTrongTest.push(khoa.id);
+    expect(khoa.hanDangKy).not.toBeNull();
   });
 });

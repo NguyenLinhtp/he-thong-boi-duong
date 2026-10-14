@@ -70,7 +70,7 @@ export default async function TrangChuongTrinhCongKhai({ params }: { params: Pro
                 <div>
                   <p className="text-xs text-muted-foreground">{laDuThi ? "Ngày thi" : "Khai giảng - bế giảng"}</p>
                   <p className="font-semibold">
-                    {laDuThi ? dinhDangNgay(k.khaiGiang, "Thông báo sau") : `${dinhDangNgay(k.khaiGiang)} - ${dinhDangNgay(k.beGiang)}`}
+                    {laDuThi ? dinhDangNgay(k.beGiang, "Thông báo sau") /* (sửa 14/10/2026) ngày thi = bế giảng */ : `${dinhDangNgay(k.khaiGiang)} - ${dinhDangNgay(k.beGiang)}`}
                   </p>
                 </div>
                 <div>

@@ -89,6 +89,7 @@ export default async function KhoaHocPage({
               id: ct.id,
               maCT: ct.maCT,
               ten: ct.ten,
+              laDuThi: ct.phuongThucDangKys.includes("CHI_DU_THI"),
             }))}
           />
         ) : (
@@ -147,8 +148,8 @@ export default async function KhoaHocPage({
           <TableRow>
             <TableHead>Mã khóa</TableHead>
             <TableHead>Tên khóa · chương trình</TableHead>
-            <TableHead>Khai giảng</TableHead>
-            <TableHead>Bế giảng</TableHead>
+            <TableHead>Khai giảng / mở khóa</TableHead>
+            <TableHead>Bế giảng / ngày thi</TableHead>
             <TableHead>Sĩ số</TableHead>
             <TableHead>Trạng thái</TableHead>
             <TableHead />
@@ -187,6 +188,10 @@ export default async function KhoaHocPage({
                 {khoa.thoiGianBeGiang
                   ? new Date(khoa.thoiGianBeGiang).toLocaleDateString("vi-VN")
                   : "—"}
+                {/* (bổ sung 14/10/2026) khóa dự thi: bế giảng = ngày thi */}
+                {khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI") && (
+                  <span className="block text-xs text-muted-foreground">ngày thi</span>
+                )}
               </TableCell>
               <TableCell>
                 <SiSo hienTai={siSo.get(khoa.id)!.siSoHienTai} toiDa={khoa.siSoToiDa} />

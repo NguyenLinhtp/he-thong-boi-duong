@@ -146,7 +146,7 @@ export async function xuatDanhSachChinhThucDuThi(khoaId: string) {
   };
   tieuDe((tenCoQuan ?? "CƠ SỞ ĐÀO TẠO, BỒI DƯỠNG").toUpperCase(), true);
   tieuDe("DANH SÁCH THÍ SINH ĐỦ ĐIỀU KIỆN DỰ THI", true, 14);
-  tieuDe(`${khoa.chuongTrinh.ten} · Mã khóa: ${khoa.maKhoa}${khoa.thoiGianKhaiGiang ? ` · Ngày thi: ${dinhDangNgay(khoa.thoiGianKhaiGiang)}` : ""}`);
+  tieuDe(`${khoa.chuongTrinh.ten} · Mã khóa: ${khoa.maKhoa}${khoa.thoiGianBeGiang ? ` · Ngày thi: ${dinhDangNgay(khoa.thoiGianBeGiang)}` : ""}`); // (sửa 14/10/2026) ngày thi = bế giảng
   tieuDe(`Tổng số: ${ds.length} thí sinh`);
   ws.addRow([]);
   const header = ws.addRow(cot.map((c) => c.tieuDe));

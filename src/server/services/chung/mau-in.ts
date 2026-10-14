@@ -34,7 +34,7 @@ type KhoaChoBien = {
   thoiGianKhaiGiang: Date | null;
   thoiGianBeGiang: Date | null;
   hanDangKy: Date | null;
-  chuongTrinh: { maCT: string; ten: string };
+  chuongTrinh: { maCT: string; ten: string; phuongThucDangKys?: string[] };
 };
 
 // db: dùng được trong transaction (CSDL dev cục bộ chỉ 1 kết nối - không gọi prisma toàn cục giữa transaction)
@@ -46,7 +46,12 @@ export async function bienCuaKhoa(khoa: KhoaChoBien, db?: Prisma.TransactionClie
     maChuongTrinh: khoa.chuongTrinh.maCT,
     tenKhoa: khoa.tenKhoa ?? khoa.chuongTrinh.ten,
     maKhoa: khoa.maKhoa,
-    ngayThi: dinhDangNgay(khoa.thoiGianKhaiGiang, ""),
+    // (sửa 14/10/2026) khóa dự thi (PT3): ngày thi = thoiGianBeGiang (khai giảng là ngày mở khóa);
+    // khóa đào tạo giữ ngày khai giảng như trước
+    ngayThi: dinhDangNgay(
+      khoa.chuongTrinh.phuongThucDangKys?.includes("CHI_DU_THI") ? khoa.thoiGianBeGiang : khoa.thoiGianKhaiGiang,
+      "",
+    ),
     ngayBeGiang: dinhDangNgay(khoa.thoiGianBeGiang, ""),
     hanDangKy: dinhDangNgay(khoa.hanDangKy, ""),
   };

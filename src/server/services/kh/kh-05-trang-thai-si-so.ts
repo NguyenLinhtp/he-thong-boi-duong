@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import type { Prisma, TrangThaiKhoa } from "@/generated/prisma/client";
-import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
+import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError, NgayKhoaThiKhongHopLeError } from "@/server/services/kh/loi-khoa";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 import { xacNhanSanSangTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
 
@@ -112,15 +112,33 @@ export function cuoiNgayVN(ngay: string): Date {
   return new Date(`${ngay}T23:59:59.999+07:00`);
 }
 
+/** Ngày (giờ Việt Nam) dạng "yyyy-mm-dd" của 1 mốc ngày; chuỗi nhập từ form giữ nguyên phần ngày. */
+export function ngayVN(v: Date | string | null | undefined): string | null {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "string") return v.slice(0, 10);
+  return new Date(v.getTime() + 7 * 3600_000).toISOString().slice(0, 10);
+}
+
+/**
+ * (bổ sung 14/10/2026) khóa dự thi (PT3) dùng thoiGianKhaiGiang = ngày mở khóa,
+ * thoiGianBeGiang = ngày thi: ngày thi không trước ngày mở khóa, hạn đăng ký
+ * không sau ngày thi. Ngày để trống thì không đối chiếu.
+ */
+export function kiemTraNgayKhoaThi(ngayMo: string | null, ngayThi: string | null, hanDangKy: string | null) {
+  if (ngayMo && ngayThi && ngayThi < ngayMo) throw new NgayKhoaThiKhongHopLeError("Ngày thi không được trước ngày mở khóa");
+  if (hanDangKy && ngayThi && hanDangKy > ngayThi) throw new NgayKhoaThiKhongHopLeError("Hạn đăng ký không được sau ngày thi");
+}
+
 export function daQuaHanDangKy(khoa: { hanDangKy: Date | null }, bayGio = new Date()) {
   return khoa.hanDangKy !== null && bayGio > khoa.hanDangKy;
 }
 
 /** (bổ sung 01/10/2026) đặt/xóa hạn đăng ký của khóa; ngay = "yyyy-mm-dd" hoặc null. */
 export async function datHanDangKy(khoaId: string, ngay: string | null, nguoi: NguoiThucHien = HE_THONG) {
-  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId } });
+  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
   if (ngay !== null && !/^\d{4}-\d{2}-\d{2}$/.test(ngay)) throw new Error("Hạn đăng ký không hợp lệ");
+  if (khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) kiemTraNgayKhoaThi(null, ngayVN(khoa.thoiGianBeGiang), ngay);
   const han = ngay ? cuoiNgayVN(ngay) : null;
   return prisma.$transaction(async (tx) => {
     const sau = await tx.khoa.update({ where: { id: khoaId }, data: { hanDangKy: han } });

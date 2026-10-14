@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { chuanHoaMauDon, docSoTien, thayBien } from "@/lib/mau-in";
 import {
+  bienCuaKhoa,
   luuMauBienLai,
   luuMauDonChuongTrinh,
   luuMauDonKhoa,
@@ -10,6 +11,7 @@ import {
   noiDungInPhieuThu,
 } from "@/server/services/chung/mau-in";
 import { lapPhieuThu } from "@/server/services/hp/hp-04-phieu-thu";
+import { dinhDangNgay } from "@/lib/dinh-dang";
 
 // (bổ sung 07/10/2026 - HV-01/HV-05/HP-04) mẫu in đơn đăng ký + biên lai thu tiền C45-BB
 
@@ -36,7 +38,7 @@ async function taoKhoa() {
   });
   chuongTrinh.push(ct.id);
   const khoa = await prisma.khoa.create({
-    data: { maKhoa: `KHMI${crypto.randomUUID().slice(0, 8)}`, tenKhoa: "Chứng chỉ CNTT cơ bản đợt thi tháng 11/2026", chuongTrinhId: ct.id, siSoToiDa: 10, thoiGianKhaiGiang: new Date("2026-11-15") },
+    data: { maKhoa: `KHMI${crypto.randomUUID().slice(0, 8)}`, tenKhoa: "Chứng chỉ CNTT cơ bản đợt thi tháng 11/2026", chuongTrinhId: ct.id, siSoToiDa: 10, thoiGianKhaiGiang: new Date("2026-10-01"), thoiGianBeGiang: new Date("2026-11-15") },
   });
   khoaIds.push(khoa.id);
   return { ct, khoa };
@@ -124,5 +126,23 @@ describe("biên lai thu tiền theo mẫu chương trình", () => {
     const { ct } = await taoKhoa();
     await expect(luuMauBienLai(ct.id, { noiDungThu: " " }, NGUOI)).rejects.toThrow(/nội dung thu/);
     await expect(luuMauBienLai(ct.id, { donVi: "{{khongCo}}" }, NGUOI)).rejects.toThrow(MauInKhongHopLeError);
+  });
+});
+
+// (sửa 14/10/2026) khóa dự thi: ngày mở khóa = khai giảng, ngày thi = bế giảng
+describe("biến {{ngayThi}} của mẫu in", () => {
+  it("khóa dự thi (PT3) lấy ngày thi = ngày bế giảng, không lấy ngày mở khóa", async () => {
+    const { khoa } = await taoKhoa();
+    const { khoa: khoaDayDu } = await mauDonHieuLuc(khoa.id);
+    const bien = await bienCuaKhoa(khoaDayDu);
+    expect(bien.ngayThi).toBe(dinhDangNgay(new Date("2026-11-15")));
+    expect(bien.ngayThi).not.toBe(dinhDangNgay(new Date("2026-10-01")));
+  });
+
+  it("khóa đào tạo giữ {{ngayThi}} = ngày khai giảng như trước", async () => {
+    const { ct, khoa } = await taoKhoa();
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKys: ["TRUC_TUYEN_NOP_GIAY"] } });
+    const { khoa: khoaDayDu } = await mauDonHieuLuc(khoa.id);
+    expect((await bienCuaKhoa(khoaDayDu)).ngayThi).toBe(dinhDangNgay(new Date("2026-10-01")));
   });
 });

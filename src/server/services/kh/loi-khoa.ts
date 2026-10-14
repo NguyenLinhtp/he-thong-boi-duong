@@ -155,3 +155,10 @@ export class KhongXoaDuocKhoaError extends Error {
     super(`Không xóa được khóa: ${lyDo}`);
   }
 }
+
+// (bổ sung 14/10/2026) khóa dự thi (PT3): ngày mở khóa - ngày thi - hạn đăng ký không hợp lệ
+export class NgayKhoaThiKhongHopLeError extends Error {
+  constructor(lyDo: string) {
+    super(lyDo);
+  }
+}

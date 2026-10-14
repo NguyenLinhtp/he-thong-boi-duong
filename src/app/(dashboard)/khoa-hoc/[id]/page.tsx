@@ -62,12 +62,24 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
             {nhanDayDuPhuongThuc(khoa.chuongTrinh.phuongThucDangKys, "Chưa thiết lập ở chương trình")}
           </dd>
         </div>
-        <div>
-          <dt className="text-muted-foreground">{laDuThi ? "Ngày thi" : "Khai giảng – bế giảng"}</dt>
-          <dd className="font-medium">
-            {laDuThi ? dinhDangNgay(khoa.thoiGianKhaiGiang) : `${dinhDangNgay(khoa.thoiGianKhaiGiang)} – ${dinhDangNgay(khoa.thoiGianBeGiang)}`}
-          </dd>
-        </div>
+        {/* (sửa 14/10/2026) khóa dự thi: khai giảng = ngày mở khóa, bế giảng = ngày thi */}
+        {laDuThi ? (
+          <div className="flex gap-8">
+            <div>
+              <dt className="text-muted-foreground">Ngày mở khóa</dt>
+              <dd className="font-medium">{dinhDangNgay(khoa.thoiGianKhaiGiang)}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Ngày thi</dt>
+              <dd className="font-medium">{dinhDangNgay(khoa.thoiGianBeGiang)}</dd>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <dt className="text-muted-foreground">Khai giảng – bế giảng</dt>
+            <dd className="font-medium">{`${dinhDangNgay(khoa.thoiGianKhaiGiang)} – ${dinhDangNgay(khoa.thoiGianBeGiang)}`}</dd>
+          </div>
+        )}
         <div>
           <dt className="text-muted-foreground">Sĩ số</dt>
           <dd className="font-medium">

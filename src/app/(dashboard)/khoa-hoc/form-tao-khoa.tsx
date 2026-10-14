@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { khoiTaoKhoaAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,12 @@ import { Label } from "@/components/ui/label";
 export function FormTaoKhoa({
   dsChuongTrinh,
 }: {
-  dsChuongTrinh: { id: string; maCT: string; ten: string }[];
+  dsChuongTrinh: { id: string; maCT: string; ten: string; laDuThi: boolean }[];
 }) {
   const [loi, formAction, dangXuLy] = useActionState(khoiTaoKhoaAction, undefined);
+  const [chuongTrinhId, setChuongTrinhId] = useState(dsChuongTrinh[0]?.id ?? "");
+  // (bổ sung 14/10/2026) khóa dự thi (PT3): khai giảng = ngày mở khóa, bế giảng = ngày thi
+  const laDuThi = dsChuongTrinh.find((ct) => ct.id === chuongTrinhId)?.laDuThi ?? false;
 
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
@@ -21,6 +24,8 @@ export function FormTaoKhoa({
           id="chuongTrinhId"
           name="chuongTrinhId"
           required
+          value={chuongTrinhId}
+          onChange={(e) => setChuongTrinhId(e.target.value)}
           className="h-8 rounded-lg border px-2 text-sm"
         >
           {dsChuongTrinh.map((ct) => (
@@ -45,11 +50,11 @@ export function FormTaoKhoa({
         <Input id="siSoToiDa" name="siSoToiDa" type="number" min={1} required className="w-28" />
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="thoiGianKhaiGiang">Ngày khai giảng</Label>
+        <Label htmlFor="thoiGianKhaiGiang">{laDuThi ? "Ngày mở khóa" : "Ngày khai giảng"}</Label>
         <Input id="thoiGianKhaiGiang" name="thoiGianKhaiGiang" type="date" className="w-40" />
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="thoiGianBeGiang">Ngày bế giảng</Label>
+        <Label htmlFor="thoiGianBeGiang">{laDuThi ? "Ngày thi" : "Ngày bế giảng"}</Label>
         <Input id="thoiGianBeGiang" name="thoiGianBeGiang" type="date" className="w-40" />
       </div>
       <div className="flex flex-col gap-1.5">

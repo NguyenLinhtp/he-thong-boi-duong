@@ -148,7 +148,8 @@ export default async function TrangDangKyCongKhaiKhoa({
             {laDuThi ? (
               <div>
                 <dt className="text-white/70">Ngày thi</dt>
-                <dd className="text-base font-bold">{dinhDangNgay(khoa.thoiGianKhaiGiang, "Thông báo sau")}</dd>
+                {/* (sửa 14/10/2026) khóa dự thi: ngày thi = bế giảng, khai giảng là ngày mở khóa */}
+                <dd className="text-base font-bold">{dinhDangNgay(khoa.thoiGianBeGiang, "Thông báo sau")}</dd>
               </div>
             ) : (
               <>
