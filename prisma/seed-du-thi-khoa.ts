@@ -129,7 +129,7 @@ async function taoDuLieu(maKhoa: string, so: number, soOn: number, choGuiEmail: 
 
   // ---- HV-05: đăng ký dự thi; soOn thí sinh chọn thêm phần ôn thi ----
   const chonOn = new Set(tronDs([...Array(so).keys()]).slice(0, soOn));
-  const daDangKy: { dangKyId: string; hocVienId: string; coOn: boolean }[] = [];
+  const daDangKy: { dangKyId: string; hocVienId: string; coOn: boolean; laSV: boolean }[] = [];
   let soTuDo = 0;
   for (let i = 0; daDangKy.length < so; i++) {
     let ts = thiSinh[i];
@@ -153,7 +153,7 @@ async function taoDuLieu(maKhoa: string, so: number, soOn: number, choGuiEmail: 
       });
       // ngày đăng ký rải trong 12 ngày gần đây
       await prisma.dangKyHoc.update({ where: { id: dk.id }, data: { ngayDangKy: new Date(Date.now() - Math.floor(ngauNhien() * 12 * 86_400_000)) } });
-      daDangKy.push({ dangKyId: dk.id, hocVienId: dk.hocVienId, coOn });
+      daDangKy.push({ dangKyId: dk.id, hocVienId: dk.hocVienId, coOn, laSV: ts.loai === "SV" });
       if (daDangKy.length % 25 === 0) console.log(`  đã đăng ký ${daDangKy.length}/${so}`);
     } catch (e) {
       console.warn(`  bỏ qua ${ts.loai === "SV" ? `SV ${ts.maSinhVien}` : ts.hoTen}: ${e instanceof Error ? e.message : e}`);
@@ -183,8 +183,10 @@ async function taoDuLieu(maKhoa: string, so: number, soOn: number, choGuiEmail: 
   if (dsDuyet.length) await duyetHoSoChinhThuc(khoa.id, dsDuyet, CB);
 
   const daOn = daDangKy.filter((d) => d.coOn).length;
+  // đếm theo hồ sơ tạo thành công (sinh viên bị bỏ qua do lỗi được thay bằng thí sinh tự do)
+  const soSVThuc = daDangKy.filter((d) => d.laSV).length;
   console.log(
-    `Xong ${maKhoa}: ${daDangKy.length} thí sinh (${soSV} sinh viên, ${daDangKy.length - soSV} tự do), ${daOn} đăng ký ôn, ` +
+    `Xong ${maKhoa}: ${daDangKy.length} thí sinh (${soSVThuc} sinh viên, ${daDangKy.length - soSVThuc} tự do), ${daOn} đăng ký ôn, ` +
       `${dsDong.length} đã đóng lệ phí, ${dsDuyet.length} đã duyệt chính thức.`,
   );
 }
