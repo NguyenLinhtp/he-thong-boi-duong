@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { requirePermission, apiRoute } from "@/lib/auth/guard";
 import {
   trinhThamDinh,
-  ChuaSanSangTrinhDuyetError,
   ChuaChonPhuongThucDangKyError,
 } from "@/server/services/ct/ct-03-phe-duyet";
 import {
@@ -23,7 +22,6 @@ export const POST = apiRoute(async (req: Request, { params }: Params) => {
   } catch (error) {
     if (
       error instanceof SaiTrangThaiChuongTrinhError ||
-      error instanceof ChuaSanSangTrinhDuyetError ||
       error instanceof ChuaChonPhuongThucDangKyError
     ) {
       return NextResponse.json({ message: error.message }, { status: 400 });

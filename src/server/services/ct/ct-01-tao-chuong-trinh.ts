@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
-import type { LoaiVanBang } from "@/generated/prisma/client";
+import type { DonViThoiLuong, LoaiVanBang } from "@/generated/prisma/client";
 import { taoChuongTrinhVoiMaTuSinh } from "@/server/services/ct/dung-chung";
 import { xoaTep } from "@/server/services/gd/luu-tru-hoc-lieu";
 import {
@@ -14,6 +14,8 @@ export type TaoChuongTrinhInput = {
   mucTieu?: string | null;
   doiTuongApDung?: string | null;
   tongThoiLuong?: number | null;
+  // (bổ sung 19/10/2026) đơn vị tính thời lượng: tiết (mặc định) / tín chỉ / buổi
+  donViThoiLuong?: DonViThoiLuong;
   loaiHinhBoiDuongId: string;
   // bổ sung 26/09/2026: chứng chỉ hay giấy chứng nhận (mặc định chứng chỉ)
   loaiVanBang?: LoaiVanBang;
@@ -42,6 +44,7 @@ export type SuaChuongTrinhInput = {
   mucTieu?: string | null;
   doiTuongApDung?: string | null;
   tongThoiLuong?: number | null;
+  donViThoiLuong?: DonViThoiLuong;
   loaiHinhBoiDuongId: string;
 };
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { dinhDangThoiLuong } from "@/lib/don-vi-thoi-luong";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
@@ -38,7 +39,7 @@ export default async function HocPhanNhapDiemPage() {
             <TableHead>Chương trình</TableHead>
             <TableHead>Học phần</TableHead>
             <TableHead>Lớp phụ trách</TableHead>
-            <TableHead>Số tiết</TableHead>
+            <TableHead>Thời lượng</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -49,7 +50,7 @@ export default async function HocPhanNhapDiemPage() {
               <TableCell>{pc.khoa.chuongTrinh.ten}</TableCell>
               <TableCell>{pc.hocPhan.ten}</TableCell>
               <TableCell>{pc.tenLops.join(", ")}</TableCell>
-              <TableCell>{pc.hocPhan.soTiet}</TableCell>
+              <TableCell>{dinhDangThoiLuong(pc.hocPhan.soTiet, pc.khoa.chuongTrinh.donViThoiLuong)}</TableCell>
               <TableCell>
                 <Link href={`/giang-vien/nhap-diem/${pc.khoaId}/${pc.hocPhanId}`} className="text-sm underline">
                   Nhập điểm

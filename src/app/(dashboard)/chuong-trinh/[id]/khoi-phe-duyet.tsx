@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, type FormEvent } from "react";
 import { trinhThamDinhAction, pheDuyetAction, traVeDuThaoAction } from "./phe-duyet-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,32 +16,33 @@ type ChuongTrinhPheDuyet = {
 
 export function KhoiPheDuyet({
   chuongTrinh,
-  tongTietKhop,
+  canhBao,
 }: {
   chuongTrinh: ChuongTrinhPheDuyet;
-  tongTietKhop: boolean;
+  // (sửa 19/10/2026) tổng thời lượng học phần lệch tổng thời lượng chương trình: chỉ cảnh báo, không chặn
+  canhBao: string | null;
 }) {
   const [loiTrinh, trinhAction, dangTrinh] = useActionState(trinhThamDinhAction, undefined);
   const [loiDuyet, duyetAction, dangDuyet] = useActionState(pheDuyetAction, undefined);
+  const xacNhanCanhBao = (e: FormEvent<HTMLFormElement>) => {
+    if (canhBao && !confirm(`${canhBao}.\n\nVẫn tiếp tục?`)) e.preventDefault();
+  };
+  const dongCanhBao = canhBao && <p className="text-sm text-amber-600">Cảnh báo: {canhBao}.</p>;
 
   if (chuongTrinh.trangThai === "DU_THAO") {
     return (
       <section className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
         <h2 className="text-base font-bold text-ued-blue-dam">CT-03 · Trình thẩm định</h2>
-        <form action={trinhAction} className="flex flex-wrap items-end gap-3">
+        {dongCanhBao}
+        <form action={trinhAction} onSubmit={xacNhanCanhBao} className="flex flex-wrap items-end gap-3">
           <input type="hidden" name="id" value={chuongTrinh.id} />
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="yKienThamDinh">Ý kiến (tùy chọn)</Label>
             <Input id="yKienThamDinh" name="yKienThamDinh" className="w-72" />
           </div>
-          <Button type="submit" disabled={dangTrinh || !tongTietKhop}>
+          <Button type="submit" disabled={dangTrinh}>
             {dangTrinh ? "Đang trình..." : "Trình thẩm định"}
           </Button>
-          {!tongTietKhop && (
-            <span className="text-sm text-destructive">
-              Tổng số tiết học phần chưa khớp tổng thời lượng (chương trình chỉ dự thi: chọn PT3 ở mục CT-07 thì không cần học phần, thời lượng)
-            </span>
-          )}
           {loiTrinh && <p className="text-sm text-destructive">{loiTrinh}</p>}
         </form>
       </section>
@@ -55,7 +56,8 @@ export function KhoiPheDuyet({
         {chuongTrinh.yKienThamDinh && (
           <p className="text-sm text-muted-foreground">Ý kiến: {chuongTrinh.yKienThamDinh}</p>
         )}
-        <form action={duyetAction} className="flex flex-wrap items-end gap-3">
+        {dongCanhBao}
+        <form action={duyetAction} onSubmit={xacNhanCanhBao} className="flex flex-wrap items-end gap-3">
           <input type="hidden" name="id" value={chuongTrinh.id} />
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="soQuyetDinh">Số quyết định ban hành</Label>

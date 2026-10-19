@@ -15,6 +15,7 @@ export function DanhSachHocPhan({
   dsHocPhan,
   tongTiet,
   tongThoiLuong,
+  donVi = "tiết",
   choPhepSua,
   canLyDo = false,
   chiDuThi = false,
@@ -23,6 +24,8 @@ export function DanhSachHocPhan({
   dsHocPhan: HocPhan[];
   tongTiet: number;
   tongThoiLuong: number | null;
+  // (bổ sung 19/10/2026) đơn vị thời lượng của chương trình: tiết/tín chỉ/buổi
+  donVi?: string;
   choPhepSua: boolean;
   // (bổ sung 07/10/2026) chương trình đã ban hành: thêm/sửa/xóa học phần phải ghi lý do
   canLyDo?: boolean;
@@ -37,19 +40,19 @@ export function DanhSachHocPhan({
       <h2 className="text-base font-bold text-ued-blue-dam">CT-02 · Học phần/chuyên đề</h2>
       {chiDuThi ? (
         <p className="text-sm text-muted-foreground">
-          Chương trình chỉ đăng ký dự thi (PT3): không bắt buộc học phần và tổng thời lượng, trình thẩm định không cần khớp số tiết.
+          Chương trình chỉ đăng ký dự thi (PT3): không bắt buộc học phần và tổng thời lượng.
         </p>
       ) : (
-        <p className={`text-sm ${khop ? "text-green-600" : "text-muted-foreground"}`}>
-          Tổng số tiết học phần: {tongTiet}
-          {tongThoiLuong != null && ` / ${tongThoiLuong} (tổng thời lượng chương trình)`}
-          {tongThoiLuong != null && !khop && (canLyDo ? " — chưa khớp tổng thời lượng chương trình" : " — chưa khớp, cần khớp trước khi trình duyệt")}
+        <p className={`text-sm ${khop ? "text-green-600" : "text-amber-600"}`}>
+          Tổng thời lượng học phần: {tongTiet} {donVi}
+          {tongThoiLuong != null && ` / ${tongThoiLuong} ${donVi} (tổng thời lượng chương trình)`}
+          {!khop && " — chưa khớp tổng thời lượng chương trình (chỉ cảnh báo, vẫn trình duyệt được)"}
         </p>
       )}
       {choPhepSua && canLyDo && (
         <p className="text-sm text-warning">
           Chương trình đã ban hành: thêm/sửa/xóa học phần phải ghi lý do và được ghi nhật ký. Không xóa được học phần đã có buổi học, phân
-          công giảng viên, tài liệu, kết quả hoặc bài làm ở khóa nào; không đổi số tiết học phần đã có kết quả học tập.
+          công giảng viên, tài liệu, kết quả hoặc bài làm ở khóa nào; không đổi thời lượng học phần đã có kết quả học tập.
         </p>
       )}
 
@@ -58,7 +61,7 @@ export function DanhSachHocPhan({
           <TableRow>
             <TableHead>Thứ tự</TableHead>
             <TableHead>Tên học phần</TableHead>
-            <TableHead>Số tiết</TableHead>
+            <TableHead>Thời lượng ({donVi})</TableHead>
             {choPhepSua && <TableHead>Hành động</TableHead>}
           </TableRow>
         </TableHeader>
@@ -92,7 +95,7 @@ export function DanhSachHocPhan({
             <Input id="ten" name="ten" required className="w-64" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="soTiet">Số tiết</Label>
+            <Label htmlFor="soTiet">Thời lượng ({donVi})</Label>
             <Input id="soTiet" name="soTiet" type="number" min={1} required className="w-28" />
           </div>
           {canLyDo && (

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
-import { tongTietDaKhopThoiLuong } from "@/server/services/ct/ct-02-hoc-phan";
+import { canhBaoThoiLuong } from "@/server/services/ct/ct-02-hoc-phan";
 import {
   SaiTrangThaiChuongTrinhError,
   KhongTimThayChuongTrinhError,
@@ -11,14 +11,6 @@ const DOI_TUONG = "ChuongTrinh";
 const moTa = (ct: { maCT: string; ten: string }, yKien?: string | null) =>
   `${ct.maCT} - ${ct.ten}${yKien ? ` - ý kiến: ${yKien}` : ""}`;
 
-export class ChuaSanSangTrinhDuyetError extends Error {
-  constructor() {
-    super(
-      "Tổng số tiết học phần chưa khớp tổng thời lượng chương trình, chưa thể trình duyệt",
-    );
-  }
-}
-
 export class ChuaChonPhuongThucDangKyError extends Error {
   constructor() {
     super("Chương trình chưa chọn phương thức đăng ký (CT-07), chưa thể trình duyệt");
@@ -26,11 +18,9 @@ export class ChuaChonPhuongThucDangKyError extends Error {
 }
 
 /**
- * CT-03 bước 1: Dự thảo -> Chờ thẩm định. Cổng chặn: tổng số tiết học phần
- * phải khớp tổng thời lượng chương trình (quy tắc nghiệp vụ CT-02/CT-03) -
- * đây là lúc gate được áp dụng, không chặn từng lần thêm học phần lẻ tẻ.
- * (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3) không có giảng dạy nên
- * không bắt buộc học phần/tổng thời lượng - bỏ qua cổng khớp số tiết.
+ * CT-03 bước 1: Dự thảo -> Chờ thẩm định. (sửa 19/10/2026) tổng thời lượng học
+ * phần lệch tổng thời lượng chương trình (tiết/tín chỉ/buổi) chỉ cảnh báo - màn
+ * hình hiện trước khi trình, nhật ký ghi kèm; chương trình chỉ dự thi (PT3) không xét.
  */
 export async function trinhThamDinh(
   chuongTrinhId: string,
@@ -44,20 +34,17 @@ export async function trinhThamDinh(
       "Chỉ chương trình ở trạng thái Dự thảo mới trình thẩm định được",
     );
   }
-  const chiDuThi = chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
-  if (!chiDuThi && !(await tongTietDaKhopThoiLuong(chuongTrinhId))) {
-    throw new ChuaSanSangTrinhDuyetError();
-  }
   // CT-07/KH-01: mọi khóa kế thừa phương thức của chương trình - chương trình
   // ban hành mà chưa có phương thức thì khóa mở ra không đăng ký được
   if (chuongTrinh.phuongThucDangKys.length === 0) throw new ChuaChonPhuongThucDangKyError();
+  const canhBao = await canhBaoThoiLuong(chuongTrinhId);
 
   return prisma.$transaction(async (tx) => {
     const sau = await tx.chuongTrinh.update({
       where: { id: chuongTrinhId },
       data: { trangThai: "CHO_THAM_DINH", yKienThamDinh },
     });
-    await ghiThaoTac(nguoi, "TRINH_THAM_DINH_CHUONG_TRINH", DOI_TUONG, chuongTrinhId, moTa(sau, yKienThamDinh), tx);
+    await ghiThaoTac(nguoi, "TRINH_THAM_DINH_CHUONG_TRINH", DOI_TUONG, chuongTrinhId, moTa(sau, yKienThamDinh) + (canhBao ? ` - cảnh báo: ${canhBao}` : ""), tx);
     return sau;
   });
 }
@@ -76,6 +63,7 @@ export async function pheDuyet(chuongTrinhId: string, input: PheDuyetInput, nguo
   if (!input.soQuyetDinh?.trim()) {
     throw new Error("Số quyết định ban hành là bắt buộc");
   }
+  const canhBao = await canhBaoThoiLuong(chuongTrinhId);
 
   return prisma.$transaction(async (tx) => {
     const sau = await tx.chuongTrinh.update({
@@ -87,7 +75,7 @@ export async function pheDuyet(chuongTrinhId: string, input: PheDuyetInput, nguo
         ngayBanHanh: new Date(),
       },
     });
-    await ghiThaoTac(nguoi, "PHE_DUYET_CHUONG_TRINH", DOI_TUONG, chuongTrinhId, `${moTa(sau)} - QĐ ${input.soQuyetDinh}`, tx);
+    await ghiThaoTac(nguoi, "PHE_DUYET_CHUONG_TRINH", DOI_TUONG, chuongTrinhId, `${moTa(sau)} - QĐ ${input.soQuyetDinh}` + (canhBao ? ` - cảnh báo: ${canhBao}` : ""), tx);
     return sau;
   });
 }

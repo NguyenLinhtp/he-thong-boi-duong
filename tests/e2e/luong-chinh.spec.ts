@@ -77,7 +77,7 @@ test.describe("Nghiệp vụ qua giao diện", () => {
     await page.getByRole("button", { name: "Thêm chương trình" }).click();
     await page.getByLabel("Tên chương trình").fill(ten);
     await page.getByLabel("Loại hình").selectOption({ label: LOAI_HINH_E2E.ten });
-    await page.getByLabel("Tổng thời lượng (tiết)").fill("30");
+    await page.getByLabel("Tổng thời lượng", { exact: true }).fill("30");
     await page.getByRole("button", { name: "Tạo chương trình (Dự thảo)" }).click();
 
     const the = page.getByRole("listitem").filter({ hasText: ten });

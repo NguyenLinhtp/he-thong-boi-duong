@@ -5,6 +5,8 @@ import { suaChuongTrinhDaBanHanhAction } from "./cap-nhat-ban-hanh-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OTongThoiLuong } from "../o-tong-thoi-luong";
+import type { DonViThoiLuong } from "@/generated/prisma/client";
 
 type ChuongTrinhSua = {
   id: string;
@@ -12,6 +14,7 @@ type ChuongTrinhSua = {
   mucTieu: string | null;
   doiTuongApDung: string | null;
   tongThoiLuong: number | null;
+  donViThoiLuong: DonViThoiLuong;
   loaiHinhBoiDuongId: string;
   phienBanHienTai: number;
 };
@@ -34,8 +37,8 @@ export function FormCapNhatBanHanh({
       </h2>
       {coKhoaDangHoatDong && (
         <p className="text-sm text-amber-600">
-          Chương trình đang có khóa hoạt động - các khóa dùng ngay nội dung mới (kể cả loại hình, tổng thời lượng). Đổi loại hình hoặc
-          tổng thời lượng phải nhập lý do sửa.
+          Chương trình đang có khóa hoạt động - các khóa dùng ngay nội dung mới (kể cả loại hình, tổng thời lượng). Đổi loại hình,
+          tổng thời lượng hoặc đơn vị thời lượng phải nhập lý do sửa.
         </p>
       )}
       {/* key theo giá trị đang lưu: React 19 tự reset form sau action về giá trị lúc mount */}
@@ -75,17 +78,7 @@ export function FormCapNhatBanHanh({
             ))}
           </select>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="tongThoiLuong">Tổng thời lượng (tiết)</Label>
-          <Input
-            id="tongThoiLuong"
-            name="tongThoiLuong"
-            type="number"
-            min={0}
-            defaultValue={chuongTrinh.tongThoiLuong ?? undefined}
-            className="w-32"
-          />
-        </div>
+        <OTongThoiLuong tongThoiLuong={chuongTrinh.tongThoiLuong} donViThoiLuong={chuongTrinh.donViThoiLuong} />
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="lyDoSua">

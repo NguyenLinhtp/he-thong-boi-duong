@@ -4,7 +4,6 @@ import {
   suaChuongTrinhDaBanHanh,
   lichSuPhienBan,
   SuaTruongAnhHuongKhoaDangChayError,
-  ThoiLuongLechTongTietError,
 } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
 import {
   SaiTrangThaiChuongTrinhError,
@@ -30,8 +29,7 @@ export const PATCH = apiRoute(async (req: Request, { params }: Params) => {
   } catch (error) {
     if (
       error instanceof SaiTrangThaiChuongTrinhError ||
-      error instanceof SuaTruongAnhHuongKhoaDangChayError ||
-      error instanceof ThoiLuongLechTongTietError
+      error instanceof SuaTruongAnhHuongKhoaDangChayError
     ) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }

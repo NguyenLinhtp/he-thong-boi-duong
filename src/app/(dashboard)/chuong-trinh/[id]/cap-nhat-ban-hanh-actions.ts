@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { docDonViThoiLuong } from "@/lib/don-vi-thoi-luong";
 import { requirePermission } from "@/lib/auth/guard";
 import {
   suaChuongTrinhDaBanHanh,
@@ -22,6 +23,7 @@ export async function suaChuongTrinhDaBanHanhAction(
       mucTieu: (formData.get("mucTieu") as string) || null,
       doiTuongApDung: (formData.get("doiTuongApDung") as string) || null,
       tongThoiLuong: tongThoiLuongRaw ? Number(tongThoiLuongRaw) : null,
+      donViThoiLuong: docDonViThoiLuong(formData.get("donViThoiLuong")),
       loaiHinhBoiDuongId: String(formData.get("loaiHinhBoiDuongId")),
       lyDoSua: (formData.get("lyDoSua") as string) || null,
     }, nguoiTuPhien(phien));

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { tenDonViThoiLuong } from "@/lib/don-vi-thoi-luong";
 import { notFound, redirect } from "next/navigation";
 import { ArrowDown, ArrowUp, FileText, Info, Presentation, PlayCircle, Trash2 } from "lucide-react";
 import { requirePermission, coQuyen } from "@/lib/auth/guard";
@@ -77,7 +78,7 @@ export default async function HocLieuChuongTrinhPage({ params }: { params: Promi
             </span>
             <span className="font-bold text-ued-blue-dam">{hp.ten}</span>
             <span className="text-sm text-muted-foreground">
-              {hp.soTiet} tiết · {hp.hocLieus.length} học liệu · {hp.baiTracNghiems.length} bài trắc nghiệm · {hp.yeuCauSanPhams.length} sản phẩm
+              {hp.soTiet} {tenDonViThoiLuong(chuongTrinh.donViThoiLuong)} · {hp.hocLieus.length} học liệu · {hp.baiTracNghiems.length} bài trắc nghiệm · {hp.yeuCauSanPhams.length} sản phẩm
             </span>
           </summary>
 

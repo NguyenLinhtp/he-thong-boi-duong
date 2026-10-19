@@ -1,11 +1,10 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
-import { themHocPhan } from "@/server/services/ct/ct-02-hoc-phan";
+import { themHocPhan, canhBaoThoiLuong } from "@/server/services/ct/ct-02-hoc-phan";
 import {
   trinhThamDinh,
   pheDuyet,
   traVeDuThao,
-  ChuaSanSangTrinhDuyetError,
   ChuaChonPhuongThucDangKyError,
 } from "@/server/services/ct/ct-03-phe-duyet";
 import { SaiTrangThaiChuongTrinhError } from "@/server/services/ct/loi-chuong-trinh";
@@ -39,11 +38,29 @@ async function taoChuongTrinhTest(tongThoiLuong: number | null = 10) {
 }
 
 describe("CT-03 trình duyệt và phê duyệt chương trình", () => {
-  it("chặn trình thẩm định khi tổng số tiết học phần chưa khớp tổng thời lượng", async () => {
+  // (sửa 19/10/2026) thời lượng tính theo tiết/tín chỉ/buổi - lệch chỉ cảnh báo, không chặn
+  it("tổng thời lượng học phần lệch tổng thời lượng: vẫn trình thẩm định, phê duyệt được và nhật ký ghi cảnh báo", async () => {
     const ct = await taoChuongTrinhTest(10);
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { donViThoiLuong: "TIN_CHI" } });
     await themHocPhan(ct.id, { ten: "A", soTiet: 5 });
 
-    await expect(trinhThamDinh(ct.id)).rejects.toThrow(ChuaSanSangTrinhDuyetError);
+    expect(await canhBaoThoiLuong(ct.id)).toBe(
+      "Tổng thời lượng học phần (5 tín chỉ) chưa khớp tổng thời lượng chương trình (10 tín chỉ)",
+    );
+    expect((await trinhThamDinh(ct.id)).trangThai).toBe("CHO_THAM_DINH");
+    const nk = await prisma.nhatKyThaoTac.findFirst({ where: { hanhDong: "TRINH_THAM_DINH_CHUONG_TRINH", doiTuongId: ct.id } });
+    expect(nk?.chiTiet).toContain("cảnh báo: Tổng thời lượng học phần (5 tín chỉ)");
+    expect((await pheDuyet(ct.id, { soQuyetDinh: "QD-LECH/2026" })).trangThai).toBe("DA_BAN_HANH");
+  });
+
+  it("thời lượng khớp thì không cảnh báo, nhật ký không ghi cảnh báo", async () => {
+    const ct = await taoChuongTrinhTest(10);
+    await themHocPhan(ct.id, { ten: "A", soTiet: 10 });
+
+    expect(await canhBaoThoiLuong(ct.id)).toBeNull();
+    await trinhThamDinh(ct.id);
+    const nk = await prisma.nhatKyThaoTac.findFirst({ where: { hanhDong: "TRINH_THAM_DINH_CHUONG_TRINH", doiTuongId: ct.id } });
+    expect(nk?.chiTiet).not.toContain("cảnh báo");
   });
 
   it("chặn trình thẩm định khi chưa chọn phương thức đăng ký (CT-07) - khóa mở ra sẽ không đăng ký được", async () => {
@@ -117,17 +134,17 @@ describe("CT-03 trình duyệt và phê duyệt chương trình", () => {
     expect((await trinhThamDinh(ct.id)).trangThai).toBe("CHO_THAM_DINH");
   });
 
-  it("chương trình đào tạo (PT1) không có thời lượng, không có học phần vẫn bị chặn trình thẩm định", async () => {
+  it("chương trình đào tạo (PT1) chưa nhập tổng thời lượng: cảnh báo nhưng vẫn trình thẩm định được", async () => {
     const ct = await taoChuongTrinhTest(null);
 
-    await expect(trinhThamDinh(ct.id)).rejects.toThrow(ChuaSanSangTrinhDuyetError);
-    expect((await prisma.chuongTrinh.findUniqueOrThrow({ where: { id: ct.id } })).trangThai).toBe("DU_THAO");
+    expect(await canhBaoThoiLuong(ct.id)).toBe("Chương trình chưa nhập tổng thời lượng (học phần: 0 tiết)");
+    expect((await trinhThamDinh(ct.id)).trangThai).toBe("CHO_THAM_DINH");
   });
 
-  it("chương trình chưa chọn phương thức, không có học phần vẫn bị chặn (chưa xác định là chỉ dự thi)", async () => {
+  it("chương trình chỉ dự thi (PT3) không cảnh báo thời lượng", async () => {
     const ct = await taoChuongTrinhTest(null);
-    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKys: [] } });
+    await prisma.chuongTrinh.update({ where: { id: ct.id }, data: { phuongThucDangKys: ["CHI_DU_THI"] } });
 
-    await expect(trinhThamDinh(ct.id)).rejects.toThrow(ChuaSanSangTrinhDuyetError);
+    expect(await canhBaoThoiLuong(ct.id)).toBeNull();
   });
 });

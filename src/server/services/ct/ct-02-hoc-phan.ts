@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { tenDonViThoiLuong } from "@/lib/don-vi-thoi-luong";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import { xoaTep } from "@/server/services/gd/luu-tru-hoc-lieu";
 import {
@@ -33,7 +34,7 @@ function kiemTraNoiDung(input: { ten: string; soTiet: number }) {
   const ten = (input.ten ?? "").trim().replace(/\s+/g, " ");
   if (!ten) throw new SaiTrangThaiChuongTrinhError("Chưa nhập tên học phần");
   if (ten.length > 300) throw new SaiTrangThaiChuongTrinhError("Tên học phần tối đa 300 ký tự");
-  if (!Number.isInteger(input.soTiet) || input.soTiet < 1) throw new SaiTrangThaiChuongTrinhError("Số tiết phải là số nguyên từ 1 trở lên");
+  if (!Number.isInteger(input.soTiet) || input.soTiet < 1) throw new SaiTrangThaiChuongTrinhError("Thời lượng học phần phải là số nguyên từ 1 trở lên");
   return { ten, soTiet: input.soTiet };
 }
 
@@ -86,6 +87,22 @@ export async function tongTietDaKhopThoiLuong(chuongTrinhId: string): Promise<bo
 
   const tongTiet = await tongSoTietHocPhan(chuongTrinhId);
   return tongTiet === chuongTrinh.tongThoiLuong;
+}
+
+/**
+ * (sửa 19/10/2026 - CT-03) chương trình tính thời lượng theo tiết/tín chỉ/buổi nên tổng thời lượng
+ * học phần lệch tổng thời lượng chương trình chỉ CẢNH BÁO khi trình thẩm định/phê duyệt, không chặn.
+ * Trả về nội dung cảnh báo, null nếu khớp hoặc chương trình chỉ dự thi (PT3 - không bắt buộc học phần).
+ */
+export async function canhBaoThoiLuong(chuongTrinhId: string): Promise<string | null> {
+  const chuongTrinh = await prisma.chuongTrinh.findUnique({ where: { id: chuongTrinhId } });
+  if (!chuongTrinh) throw new KhongTimThayChuongTrinhError();
+  if (chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) return null;
+  const dv = tenDonViThoiLuong(chuongTrinh.donViThoiLuong);
+  const tong = await tongSoTietHocPhan(chuongTrinhId);
+  if (chuongTrinh.tongThoiLuong == null) return `Chương trình chưa nhập tổng thời lượng (học phần: ${tong} ${dv})`;
+  if (tong === chuongTrinh.tongThoiLuong) return null;
+  return `Tổng thời lượng học phần (${tong} ${dv}) chưa khớp tổng thời lượng chương trình (${chuongTrinh.tongThoiLuong} ${dv})`;
 }
 
 export type ThemHocPhanInput = { ten: string; soTiet: number; lyDo?: string | null };

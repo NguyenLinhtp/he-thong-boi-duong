@@ -4,7 +4,6 @@ import {
   suaChuongTrinhDaBanHanh,
   lichSuPhienBan,
   SuaTruongAnhHuongKhoaDangChayError,
-  ThoiLuongLechTongTietError,
 } from "@/server/services/ct/ct-04-cap-nhat-da-ban-hanh";
 import { SaiTrangThaiChuongTrinhError } from "@/server/services/ct/loi-chuong-trinh";
 
@@ -124,20 +123,43 @@ describe("CT-04 cập nhật/chỉnh sửa chương trình đã ban hành", () =
     expect(nk?.chiTiet).toContain("áp dụng cho các khóa đang hoạt động");
   });
 
-  it("chặn đổi tổng thời lượng lệch tổng số tiết học phần (CT-02) - học phần đã khóa sau ban hành", async () => {
+  // (sửa 19/10/2026) thời lượng tính theo tiết/tín chỉ/buổi - lệch tổng thời lượng học phần chỉ cảnh báo
+  it("đổi tổng thời lượng và đơn vị lệch tổng thời lượng học phần vẫn lưu, phiên bản cũ giữ đơn vị cũ", async () => {
     const { ct, lh } = await taoChuongTrinhDaBanHanh();
     await prisma.hocPhan.create({ data: { chuongTrinhId: ct.id, ten: "HP 1", soTiet: 6, thuTu: 1 } });
     await prisma.hocPhan.create({ data: { chuongTrinhId: ct.id, ten: "HP 2", soTiet: 4, thuTu: 2 } });
 
-    await expect(
-      suaChuongTrinhDaBanHanh(ct.id, { ten: "X", loaiHinhBoiDuongId: lh.id, tongThoiLuong: 12 }),
-    ).rejects.toThrow(ThoiLuongLechTongTietError);
-    const sau = await prisma.chuongTrinh.findUniqueOrThrow({ where: { id: ct.id } });
-    expect([sau.tongThoiLuong, sau.phienBanHienTai]).toEqual([10, ct.phienBanHienTai]);
+    const daSua = await suaChuongTrinhDaBanHanh(ct.id, {
+      ten: "X",
+      loaiHinhBoiDuongId: lh.id,
+      tongThoiLuong: 3,
+      donViThoiLuong: "TIN_CHI",
+    });
+    expect([daSua.tongThoiLuong, daSua.donViThoiLuong]).toEqual([3, "TIN_CHI"]);
+    const [pb] = await lichSuPhienBan(ct.id);
+    expect([pb.tongThoiLuong, pb.donViThoiLuong]).toEqual([10, "TIET"]);
+    const nk = await prisma.nhatKyThaoTac.findFirst({ where: { hanhDong: "SUA_CHUONG_TRINH_DA_BAN_HANH", doiTuongId: ct.id }, orderBy: { thoiGian: "desc" } });
+    expect(nk?.chiTiet).toContain("tổng thời lượng 10 tiết -> 3 tín chỉ");
+  });
 
-    // giữ nguyên thời lượng (khớp 10 tiết) vẫn sửa được các trường khác
-    const daSua = await suaChuongTrinhDaBanHanh(ct.id, { ten: "Tên mới", loaiHinhBoiDuongId: lh.id, tongThoiLuong: 10 });
-    expect(daSua.ten).toBe("Tên mới");
+  it("chương trình có khóa hoạt động: chỉ đổi đơn vị thời lượng cũng bắt buộc lý do", async () => {
+    const { ct, lh } = await taoChuongTrinhDaBanHanh();
+    const khoa = await prisma.khoa.create({
+      data: { maKhoa: `KH_CT04_DV_${crypto.randomUUID()}`, chuongTrinhId: ct.id, siSoToiDa: 30, trangThai: "DANG_DIEN_RA" },
+    });
+    khoaTaoTrongTest.push(khoa.id);
+
+    await expect(
+      suaChuongTrinhDaBanHanh(ct.id, { ten: ct.ten, loaiHinhBoiDuongId: lh.id, tongThoiLuong: 10, donViThoiLuong: "BUOI" }),
+    ).rejects.toThrow(SuaTruongAnhHuongKhoaDangChayError);
+    const daSua = await suaChuongTrinhDaBanHanh(ct.id, {
+      ten: ct.ten,
+      loaiHinhBoiDuongId: lh.id,
+      tongThoiLuong: 10,
+      donViThoiLuong: "BUOI",
+      lyDoSua: "Tính theo buổi",
+    });
+    expect(daSua.donViThoiLuong).toBe("BUOI");
   });
 
   // (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3) không bắt buộc học phần/tổng thời lượng

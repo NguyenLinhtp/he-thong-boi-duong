@@ -107,8 +107,8 @@ describe("CT-02 quản lý học phần/chuyên đề trong chương trình", ()
   it("chặn tên trống, số tiết không phải số nguyên dương", async () => {
     const ct = await taoChuongTrinhTest();
     await expect(themHocPhan(ct.id, { ten: "  ", soTiet: 5 })).rejects.toThrow(/tên học phần/);
-    await expect(themHocPhan(ct.id, { ten: "A", soTiet: 0 })).rejects.toThrow(/Số tiết/);
-    await expect(themHocPhan(ct.id, { ten: "A", soTiet: 1.5 })).rejects.toThrow(/Số tiết/);
+    await expect(themHocPhan(ct.id, { ten: "A", soTiet: 0 })).rejects.toThrow(/Thời lượng học phần/);
+    await expect(themHocPhan(ct.id, { ten: "A", soTiet: 1.5 })).rejects.toThrow(/Thời lượng học phần/);
   });
 
   it("(07/10/2026) chương trình đã ban hành: thêm/sửa/xóa bắt buộc lý do và ghi nhật ký; sắp xếp không cần lý do", async () => {

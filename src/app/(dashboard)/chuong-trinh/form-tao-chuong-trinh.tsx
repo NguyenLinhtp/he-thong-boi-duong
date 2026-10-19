@@ -5,6 +5,7 @@ import { taoChuongTrinhAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OTongThoiLuong } from "./o-tong-thoi-luong";
 
 export function FormTaoChuongTrinh({
   dsLoaiHinh,
@@ -41,10 +42,7 @@ export function FormTaoChuongTrinh({
           <option value="CHUNG_NHAN">Giấy chứng nhận</option>
         </select>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="tongThoiLuong">Tổng thời lượng (tiết)</Label>
-        <Input id="tongThoiLuong" name="tongThoiLuong" type="number" min={0} className="w-32" />
-      </div>
+      <OTongThoiLuong />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="doiTuongApDung">Đối tượng áp dụng</Label>
         <Input id="doiTuongApDung" name="doiTuongApDung" className="w-56" />

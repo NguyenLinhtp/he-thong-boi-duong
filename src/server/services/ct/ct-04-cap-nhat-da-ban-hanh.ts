@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
-import { tongSoTietHocPhan } from "@/server/services/ct/ct-02-hoc-phan";
+import type { DonViThoiLuong } from "@/generated/prisma/client";
+import { tenDonViThoiLuong } from "@/lib/don-vi-thoi-luong";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import {
   SaiTrangThaiChuongTrinhError,
@@ -10,15 +11,7 @@ import {
 // trình nên cập nhật theo) - nhưng bắt buộc ghi lý do
 export class SuaTruongAnhHuongKhoaDangChayError extends Error {
   constructor() {
-    super("Chương trình đang có khóa hoạt động - đổi tổng thời lượng hoặc loại hình cần nhập lý do sửa (các khóa sẽ dùng giá trị mới)");
-  }
-}
-
-// CT-02 "Tổng số tiết học phần phải khớp tổng thời lượng chương trình": học
-// phần đã khóa sau ban hành nên thời lượng mới phải bằng tổng tiết hiện có
-export class ThoiLuongLechTongTietError extends Error {
-  constructor(tongTiet: number) {
-    super(`Tổng thời lượng phải khớp tổng số tiết các học phần (${tongTiet} tiết)`);
+    super("Chương trình đang có khóa hoạt động - đổi tổng thời lượng, đơn vị thời lượng hoặc loại hình cần nhập lý do sửa (các khóa sẽ dùng giá trị mới)");
   }
 }
 
@@ -40,6 +33,7 @@ export type SuaChuongTrinhDaBanHanhInput = {
   mucTieu?: string | null;
   doiTuongApDung?: string | null;
   tongThoiLuong?: number | null;
+  donViThoiLuong?: DonViThoiLuong;
   loaiHinhBoiDuongId: string;
   lyDoSua?: string | null;
 };
@@ -64,19 +58,12 @@ export async function suaChuongTrinhDaBanHanh(
   }
 
   const doiThoiLuong = input.tongThoiLuong !== undefined && input.tongThoiLuong !== chuongTrinh.tongThoiLuong;
+  const doiDonVi = input.donViThoiLuong !== undefined && input.donViThoiLuong !== chuongTrinh.donViThoiLuong;
   const doiLoaiHinh = input.loaiHinhBoiDuongId !== chuongTrinh.loaiHinhBoiDuongId;
-  const anhHuongKhoa = (doiThoiLuong || doiLoaiHinh) && (await coKhoaDangHoatDong(id));
+  const anhHuongKhoa = (doiThoiLuong || doiDonVi || doiLoaiHinh) && (await coKhoaDangHoatDong(id));
   if (anhHuongKhoa && !input.lyDoSua?.trim()) throw new SuaTruongAnhHuongKhoaDangChayError();
-
-  // (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3) không bắt buộc học phần - không đối chiếu số tiết
-  if (
-    input.tongThoiLuong !== undefined &&
-    input.tongThoiLuong !== chuongTrinh.tongThoiLuong &&
-    !chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")
-  ) {
-    const tongTiet = await tongSoTietHocPhan(id);
-    if (input.tongThoiLuong !== tongTiet) throw new ThoiLuongLechTongTietError(tongTiet);
-  }
+  // (sửa 19/10/2026) không còn bắt tổng thời lượng khớp tổng thời lượng học phần - màn hình Khung
+  // chương trình và CT-03 chỉ cảnh báo khi lệch (chương trình tính theo tiết/tín chỉ/buổi)
 
   return prisma.$transaction(async (tx) => {
     await tx.chuongTrinhPhienBan.create({
@@ -87,6 +74,7 @@ export async function suaChuongTrinhDaBanHanh(
         mucTieu: chuongTrinh.mucTieu,
         doiTuongApDung: chuongTrinh.doiTuongApDung,
         tongThoiLuong: chuongTrinh.tongThoiLuong,
+        donViThoiLuong: chuongTrinh.donViThoiLuong,
         loaiHinhBoiDuongId: chuongTrinh.loaiHinhBoiDuongId,
         lyDoSua: input.lyDoSua,
       },
@@ -99,6 +87,7 @@ export async function suaChuongTrinhDaBanHanh(
         mucTieu: input.mucTieu,
         doiTuongApDung: input.doiTuongApDung,
         tongThoiLuong: input.tongThoiLuong,
+        donViThoiLuong: input.donViThoiLuong,
         loaiHinhBoiDuongId: input.loaiHinhBoiDuongId,
         phienBanHienTai: chuongTrinh.phienBanHienTai + 1,
       },
@@ -109,7 +98,9 @@ export async function suaChuongTrinhDaBanHanh(
       "ChuongTrinh",
       id,
       `${sau.maCT}: phiên bản ${chuongTrinh.phienBanHienTai} -> ${sau.phienBanHienTai}` +
-        (doiThoiLuong ? `; tổng thời lượng ${chuongTrinh.tongThoiLuong ?? "—"} -> ${input.tongThoiLuong ?? "—"}` : "") +
+        (doiThoiLuong || doiDonVi
+          ? `; tổng thời lượng ${chuongTrinh.tongThoiLuong ?? "—"} ${tenDonViThoiLuong(chuongTrinh.donViThoiLuong)} -> ${sau.tongThoiLuong ?? "—"} ${tenDonViThoiLuong(sau.donViThoiLuong)}`
+          : "") +
         (doiLoaiHinh ? "; đổi loại hình" : "") +
         (anhHuongKhoa ? "; áp dụng cho các khóa đang hoạt động" : "") +
         (input.lyDoSua ? ` - lý do: ${input.lyDoSua}` : ""),

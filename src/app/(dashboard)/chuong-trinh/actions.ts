@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { docDonViThoiLuong } from "@/lib/don-vi-thoi-luong";
 import { requirePermission } from "@/lib/auth/guard";
 import { taoChuongTrinh, xoaChuongTrinh } from "@/server/services/ct/ct-01-tao-chuong-trinh";
 import { KhongXoaDuocChuongTrinhError, KhongTimThayChuongTrinhError } from "@/server/services/ct/loi-chuong-trinh";
@@ -20,6 +21,7 @@ export async function taoChuongTrinhAction(
     mucTieu: (formData.get("mucTieu") as string) || null,
     doiTuongApDung: (formData.get("doiTuongApDung") as string) || null,
     tongThoiLuong: tongThoiLuongRaw ? Number(tongThoiLuongRaw) : null,
+    donViThoiLuong: docDonViThoiLuong(formData.get("donViThoiLuong")),
     loaiHinhBoiDuongId: String(formData.get("loaiHinhBoiDuongId")),
     loaiVanBang: formData.get("loaiVanBang") === "CHUNG_NHAN" ? "CHUNG_NHAN" : ("CHUNG_CHI" as LoaiVanBang),
   }, nguoiTuPhien(phien));

@@ -9,6 +9,8 @@ import { DauTrangChuongTrinh } from "@/components/chuong-trinh/dau-trang-chuong-
 import { FormSuaChuongTrinh } from "./form-sua-chuong-trinh";
 import { DanhSachHocPhan } from "./danh-sach-hoc-phan";
 import { KhoiPheDuyet } from "./khoi-phe-duyet";
+import { canhBaoThoiLuong } from "@/server/services/ct/ct-02-hoc-phan";
+import { dinhDangThoiLuong, tenDonViThoiLuong } from "@/lib/don-vi-thoi-luong";
 import { FormCapNhatBanHanh } from "./form-cap-nhat-ban-hanh";
 import { LichSuPhienBan } from "./lich-su-phien-ban";
 import { KhoiPhuongThucDangKy } from "./khoi-phuong-thuc-dang-ky";
@@ -78,7 +80,8 @@ export default async function ChiTietChuongTrinhPage({
   const tongTiet = chuongTrinh.hocPhans.reduce((tong, hp) => tong + hp.soTiet, 0);
   // (bổ sung 14/10/2026) chương trình chỉ dự thi (PT3) không bắt buộc học phần/tổng thời lượng
   const chiDuThi = chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI");
-  const tongTietKhop = chiDuThi || (chuongTrinh.tongThoiLuong != null && tongTiet === chuongTrinh.tongThoiLuong);
+  // (sửa 19/10/2026 - CT-03) lệch tổng thời lượng chỉ cảnh báo khi trình thẩm định/phê duyệt
+  const canhBao = await canhBaoThoiLuong(chuongTrinh.id);
 
   return (
     <main className="flex flex-col gap-6 p-4 md:p-6 lg:px-8">
@@ -92,6 +95,7 @@ export default async function ChiTietChuongTrinhPage({
             mucTieu: chuongTrinh.mucTieu,
             doiTuongApDung: chuongTrinh.doiTuongApDung,
             tongThoiLuong: chuongTrinh.tongThoiLuong,
+            donViThoiLuong: chuongTrinh.donViThoiLuong,
             loaiHinhBoiDuongId: chuongTrinh.loaiHinhBoiDuongId,
           }}
           dsLoaiHinh={(await danhSachLoaiHinhBoiDuong()).map((lh) => ({
@@ -107,6 +111,7 @@ export default async function ChiTietChuongTrinhPage({
             mucTieu: chuongTrinh.mucTieu,
             doiTuongApDung: chuongTrinh.doiTuongApDung,
             tongThoiLuong: chuongTrinh.tongThoiLuong,
+            donViThoiLuong: chuongTrinh.donViThoiLuong,
             loaiHinhBoiDuongId: chuongTrinh.loaiHinhBoiDuongId,
             phienBanHienTai: chuongTrinh.phienBanHienTai,
           }}
@@ -120,7 +125,7 @@ export default async function ChiTietChuongTrinhPage({
         <div className="rounded-lg border bg-card p-4 shadow-sm text-sm">
           <p>Mục tiêu: {chuongTrinh.mucTieu ?? "—"}</p>
           <p>Đối tượng áp dụng: {chuongTrinh.doiTuongApDung ?? "—"}</p>
-          <p>Tổng thời lượng: {chuongTrinh.tongThoiLuong ?? "—"}</p>
+          <p>Tổng thời lượng: {dinhDangThoiLuong(chuongTrinh.tongThoiLuong, chuongTrinh.donViThoiLuong)}</p>
         </div>
       )}
 
@@ -129,6 +134,7 @@ export default async function ChiTietChuongTrinhPage({
         dsHocPhan={chuongTrinh.hocPhans}
         tongTiet={tongTiet}
         tongThoiLuong={chuongTrinh.tongThoiLuong}
+        donVi={tenDonViThoiLuong(chuongTrinh.donViThoiLuong)}
         choPhepSua={choPhepSuaHocPhan}
         canLyDo={daBanHanh}
         chiDuThi={chiDuThi}
@@ -143,7 +149,7 @@ export default async function ChiTietChuongTrinhPage({
             soQuyetDinh: chuongTrinh.soQuyetDinh,
             ngayBanHanh: chuongTrinh.ngayBanHanh,
           }}
-          tongTietKhop={tongTietKhop}
+          canhBao={canhBao}
         />
       )}
 

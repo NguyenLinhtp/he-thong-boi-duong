@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { dinhDangThoiLuong } from "@/lib/don-vi-thoi-luong";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
@@ -87,7 +88,7 @@ export default async function ChuongTrinhPage({
                 <span className="font-bold text-ued-blue-dam group-hover:underline">{ct.ten}</span>
                 <span className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   <span>{ct.loaiHinhBoiDuong.ten}</span>
-                  <span>{ct.tongThoiLuong ? `${ct.tongThoiLuong} tiết` : "Chưa có thời lượng"}</span>
+                  <span>{ct.tongThoiLuong ? dinhDangThoiLuong(ct.tongThoiLuong, ct.donViThoiLuong) : "Chưa có thời lượng"}</span>
                   {ct.doiTuongApDung && <span>Đối tượng: {ct.doiTuongApDung}</span>}
                 </span>
               </Link>

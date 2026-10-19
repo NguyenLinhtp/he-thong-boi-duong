@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { tenDonViThoiLuong } from "@/lib/don-vi-thoi-luong";
 import { notFound, redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/guard";
 import { ChuaDangNhapError, KhongCoQuyenError } from "@/lib/auth/loi";
@@ -65,7 +66,7 @@ export default async function QuaTrinhHocTapPage({ params }: { params: Promise<{
                       MD{i + 1}: {cd.ten}
                     </span>
                     <span className="mt-1 block text-sm text-muted-foreground">
-                      {cd.soTiet} tiết · {cd.soXong}/{cd.dsMuc.length} mục đã hoàn thành
+                      {cd.soTiet} {tenDonViThoiLuong(ct.khoa.chuongTrinh.donViThoiLuong)} · {cd.soXong}/{cd.dsMuc.length} mục đã hoàn thành
                     </span>
                   </Link>
                 </div>

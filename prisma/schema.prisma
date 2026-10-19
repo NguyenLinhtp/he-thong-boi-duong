@@ -35,6 +35,13 @@ enum PhuongThucDangKy {
   QUA_DON_VI_LIEN_KET
 }
 
+// (bổ sung 19/10/2026 - CT-01) đơn vị tính tổng thời lượng chương trình và thời lượng học phần
+enum DonViThoiLuong {
+  TIET
+  TIN_CHI
+  BUOI
+}
+
 enum TrangThaiChuongTrinh {
   DU_THAO
   CHO_THAM_DINH
@@ -294,6 +301,8 @@ model ChuongTrinh {
   mucTieu            String?
   doiTuongApDung     String?
   tongThoiLuong      Int?
+  // (bổ sung 19/10/2026 - CT-01) đơn vị tính thời lượng của chương trình và học phần: tiết/tín chỉ/buổi
+  donViThoiLuong     DonViThoiLuong       @default(TIET)
   loaiHinhBoiDuongId String
   loaiHinhBoiDuong   LoaiHinhBoiDuong     @relation(fields: [loaiHinhBoiDuongId], references: [id])
   // CT-07: mỗi chương trình gắn đúng 1 trong 4 phương thức đăng ký;
@@ -353,6 +362,7 @@ model ChuongTrinhPhienBan {
   mucTieu            String?
   doiTuongApDung     String?
   tongThoiLuong      Int?
+  donViThoiLuong     DonViThoiLuong?
   loaiHinhBoiDuongId String
   lyDoSua            String?
   luuLucAt           DateTime    @default(now())

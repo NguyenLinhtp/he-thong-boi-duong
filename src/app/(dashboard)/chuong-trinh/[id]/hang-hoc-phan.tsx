@@ -40,7 +40,7 @@ export function HangHocPhan({
             <input type="hidden" name="id" value={hocPhan.id} />
             <input type="hidden" name="chuongTrinhId" value={chuongTrinhId} />
             <Input name="ten" defaultValue={hocPhan.ten} required className="w-72" aria-label="Tên học phần" />
-            <Input name="soTiet" type="number" min={1} defaultValue={hocPhan.soTiet} required className="w-24" aria-label="Số tiết" />
+            <Input name="soTiet" type="number" min={1} defaultValue={hocPhan.soTiet} required className="w-24" aria-label="Thời lượng" />
             {canLyDo && <Input name="lyDo" required placeholder="Lý do sửa (bắt buộc)" className="w-64" aria-label="Lý do sửa" />}
             <Button size="sm" type="submit" disabled={dangXuLy}>
               Lưu

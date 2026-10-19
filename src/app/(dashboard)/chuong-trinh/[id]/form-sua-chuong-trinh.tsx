@@ -5,6 +5,8 @@ import { suaChuongTrinhAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OTongThoiLuong } from "../o-tong-thoi-luong";
+import type { DonViThoiLuong } from "@/generated/prisma/client";
 
 type ChuongTrinhSua = {
   id: string;
@@ -12,6 +14,7 @@ type ChuongTrinhSua = {
   mucTieu: string | null;
   doiTuongApDung: string | null;
   tongThoiLuong: number | null;
+  donViThoiLuong: DonViThoiLuong;
   loaiHinhBoiDuongId: string;
 };
 
@@ -48,17 +51,7 @@ export function FormSuaChuongTrinh({
           ))}
         </select>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="tongThoiLuong">Tổng thời lượng (tiết)</Label>
-        <Input
-          id="tongThoiLuong"
-          name="tongThoiLuong"
-          type="number"
-          min={0}
-          defaultValue={chuongTrinh.tongThoiLuong ?? undefined}
-          className="w-32"
-        />
-      </div>
+      <OTongThoiLuong tongThoiLuong={chuongTrinh.tongThoiLuong} donViThoiLuong={chuongTrinh.donViThoiLuong} />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="doiTuongApDung">Đối tượng áp dụng</Label>
         <Input

@@ -1,3 +1,5 @@
+import { dinhDangThoiLuong } from "@/lib/don-vi-thoi-luong";
+import type { DonViThoiLuong } from "@/generated/prisma/client";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 
 type PhienBan = {
@@ -5,6 +7,7 @@ type PhienBan = {
   phienBan: number;
   ten: string;
   tongThoiLuong: number | null;
+  donViThoiLuong: DonViThoiLuong | null;
   lyDoSua: string | null;
   luuLucAt: Date;
 };
@@ -30,7 +33,7 @@ export function LichSuPhienBan({ danhSach }: { danhSach: PhienBan[] }) {
             <TableRow key={pb.id}>
               <TableCell>{pb.phienBan}</TableCell>
               <TableCell>{pb.ten}</TableCell>
-              <TableCell>{pb.tongThoiLuong ?? "—"}</TableCell>
+              <TableCell>{dinhDangThoiLuong(pb.tongThoiLuong, pb.donViThoiLuong)}</TableCell>
               <TableCell>{pb.lyDoSua ?? "—"}</TableCell>
               <TableCell>{new Date(pb.luuLucAt).toLocaleString("vi-VN")}</TableCell>
             </TableRow>
