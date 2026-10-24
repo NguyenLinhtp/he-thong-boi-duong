@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { khoiTaoKhoa, danhSachKhoa, layKhoa, xoaKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 import { KhongTimThayKhoaError, KhongXoaDuocKhoaError, NgayKhoaThiKhongHopLeError, TenKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
-import { datHanDangKy, datNgayKhoaThi } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { datHanDangKy, datNgayKhaiBeGiang, datNgayKhoaThi } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   SaiTrangThaiChuongTrinhError,
   KhongTimThayChuongTrinhError,
@@ -240,5 +240,59 @@ describe("KH-01 ngày của khóa dự thi", () => {
     const khoaDaoTao = await khoiTaoKhoa({ chuongTrinhId: ctDaoTao.id, siSoToiDa: 10 });
     khoaTaoTrongTest.push(khoaDaoTao.id);
     await expect(datNgayKhoaThi(khoaDaoTao.id, null, "2026-12-20", NGUOI)).rejects.toThrow(NgayKhoaThiKhongHopLeError);
+  });
+});
+
+// (bổ sung 24/10/2026) khóa đào tạo sửa ngày khai giảng / bế giảng trên tab Tổng quan
+describe("KH-01 khóa đào tạo: ngày khai giảng - bế giảng", () => {
+  const NGUOI = { nguoiThucHienTen: "test KH-01" };
+  it("khởi tạo khóa đào tạo chặn bế giảng trước khai giảng", async () => {
+    const ct = await taoChuongTrinh("DA_BAN_HANH");
+    await expect(
+      khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 10, thoiGianKhaiGiang: "2026-11-10", thoiGianBeGiang: "2026-11-01" }),
+    ).rejects.toThrow("Ngày bế giảng không được trước ngày khai giảng");
+  });
+
+  it("sửa khai giảng / bế giảng, ghi nhật ký cũ -> mới, báo số buổi học nằm ngoài khoảng mới", async () => {
+    const ct = await taoChuongTrinh("DA_BAN_HANH");
+    const khoa = await khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 10, thoiGianKhaiGiang: "2026-10-31", thoiGianBeGiang: "2026-12-31" });
+    khoaTaoTrongTest.push(khoa.id);
+    await prisma.buoiHoc.createMany({
+      data: [
+        { khoaId: khoa.id, ngayHoc: new Date("2026-11-05") },
+        { khoaId: khoa.id, ngayHoc: new Date("2026-11-20") },
+        { khoaId: khoa.id, ngayHoc: new Date("2026-12-31") },
+        { khoaId: khoa.id, ngayHoc: new Date("2026-11-02"), daHuy: true },
+      ],
+    });
+
+    const { khoa: sau, soBuoiNgoaiKhoang } = await datNgayKhaiBeGiang(khoa.id, "2026-11-10", "2026-12-31", NGUOI);
+    expect(sau.thoiGianKhaiGiang?.toISOString().slice(0, 10)).toBe("2026-11-10");
+    // buổi 05/11 nằm trước khai giảng mới; buổi đã hủy không tính; buổi đúng ngày bế giảng vẫn trong khoảng
+    expect(soBuoiNgoaiKhoang).toBe(1);
+    const nk = await prisma.nhatKyThaoTac.findFirst({ where: { doiTuongId: khoa.id, hanhDong: "DAT_NGAY_KHAI_BE_GIANG" } });
+    expect(nk?.chiTiet).toContain("khai giảng 2026-10-31, bế giảng 2026-12-31 -> khai giảng 2026-11-10, bế giảng 2026-12-31");
+
+    // để trống = chưa xác định
+    expect((await datNgayKhaiBeGiang(khoa.id, "2026-11-10", null, NGUOI)).khoa.thoiGianBeGiang).toBeNull();
+  });
+
+  it("chặn bế giảng trước khai giảng, ngày sai định dạng, khóa đã kết thúc/hủy và khóa dự thi - không đổi dữ liệu", async () => {
+    const ct = await taoChuongTrinh("DA_BAN_HANH");
+    const khoa = await khoiTaoKhoa({ chuongTrinhId: ct.id, siSoToiDa: 10, thoiGianKhaiGiang: "2026-10-31", thoiGianBeGiang: "2026-12-31" });
+    khoaTaoTrongTest.push(khoa.id);
+
+    await expect(datNgayKhaiBeGiang(khoa.id, "2026-12-01", "2026-11-01", NGUOI)).rejects.toThrow("Ngày bế giảng không được trước ngày khai giảng");
+    await expect(datNgayKhaiBeGiang(khoa.id, "31/10/2026", null, NGUOI)).rejects.toThrow(NgayKhoaThiKhongHopLeError);
+    expect((await prisma.khoa.findUniqueOrThrow({ where: { id: khoa.id } })).thoiGianKhaiGiang?.toISOString().slice(0, 10)).toBe("2026-10-31");
+
+    await prisma.khoa.update({ where: { id: khoa.id }, data: { trangThai: "DA_KET_THUC" } });
+    await expect(datNgayKhaiBeGiang(khoa.id, "2026-11-01", null, NGUOI)).rejects.toThrow(/đã kết thúc hoặc đã hủy/);
+
+    const ctDuThi = await taoChuongTrinh("DA_BAN_HANH");
+    await prisma.chuongTrinh.update({ where: { id: ctDuThi.id }, data: { phuongThucDangKys: ["CHI_DU_THI"] } });
+    const khoaDuThi = await khoiTaoKhoa({ chuongTrinhId: ctDuThi.id, siSoToiDa: 10 });
+    khoaTaoTrongTest.push(khoaDuThi.id);
+    await expect(datNgayKhaiBeGiang(khoaDuThi.id, "2026-11-01", null, NGUOI)).rejects.toThrow(NgayKhoaThiKhongHopLeError);
   });
 });

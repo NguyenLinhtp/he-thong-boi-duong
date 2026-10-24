@@ -9,7 +9,7 @@ import {
   thietLapHinhThucGiangDay,
   tuDongTaoLinkTrucTuyen,
 } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
-import { chuyenTrangThaiKhoa, datHanDangKy, datNgayKhoaThi } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { chuyenTrangThaiKhoa, datHanDangKy, datNgayKhaiBeGiang, datNgayKhoaThi } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   phatHanhThongBao,
   type KenhGui,
@@ -215,19 +215,25 @@ export async function datHanDangKyAction(_prev: string | undefined, formData: Fo
 export async function datNgayKhoaThiAction(_prev: string | undefined, formData: FormData): Promise<string | undefined> {
   const phien = await requirePermission("KH-05");
   const khoaId = String(formData.get("khoaId"));
+  const ngayDau = String(formData.get("ngayMo") ?? "") || null;
+  const ngayCuoi = String(formData.get("ngayThi") ?? "") || null;
+  let ketQua = "OK";
   try {
-    await datNgayKhoaThi(
-      khoaId,
-      String(formData.get("ngayMo") ?? "") || null,
-      String(formData.get("ngayThi") ?? "") || null,
-      nguoiTuPhien(phien),
-    );
+    if (formData.get("loai") === "DAO_TAO") {
+      // (bổ sung 24/10/2026) khóa đào tạo: ngày khai giảng / bế giảng
+      const { soBuoiNgoaiKhoang } = await datNgayKhaiBeGiang(khoaId, ngayDau, ngayCuoi, nguoiTuPhien(phien));
+      if (soBuoiNgoaiKhoang > 0) {
+        ketQua = `OK:Đã lưu. Lưu ý: ${soBuoiNgoaiKhoang} buổi học trong thời khóa biểu nằm ngoài khoảng khai giảng – bế giảng mới, rà lại ở tab Giảng dạy.`;
+      }
+    } else {
+      await datNgayKhoaThi(khoaId, ngayDau, ngayCuoi, nguoiTuPhien(phien));
+    }
   } catch (error) {
     if (error instanceof Error) return error.message;
     throw error;
   }
   lamMoiKhoa(khoaId);
-  return "OK";
+  return ketQua;
 }
 
 export type TrangThaiPhatHanhThongBao = { loi?: string; ketQua?: ThongBaoDaPhatHanh };

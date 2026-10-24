@@ -164,6 +164,47 @@ export async function datNgayKhoaThi(khoaId: string, ngayMo: string | null, ngay
   });
 }
 
+/** (bổ sung 24/10/2026 - KH-01) khóa đào tạo: bế giảng không trước khai giảng (ngày "yyyy-mm-dd"; trống thì không đối chiếu). */
+export function kiemTraNgayKhaiBeGiang(khaiGiang: string | null, beGiang: string | null) {
+  if (khaiGiang && beGiang && beGiang < khaiGiang) throw new NgayKhoaThiKhongHopLeError("Ngày bế giảng không được trước ngày khai giảng");
+}
+
+/**
+ * (bổ sung 24/10/2026) sửa ngày khai giảng / bế giảng của khóa đào tạo (PT1, PT2, PT4) trên tab Tổng quan;
+ * ngày = "yyyy-mm-dd" hoặc null (chưa xác định). Không sửa khi khóa đã kết thúc/hủy; ghi nhật ký cũ -> mới.
+ * Trả kèm số buổi học (chưa hủy) nằm ngoài khoảng mới để màn hình nhắc rà lại thời khóa biểu (KH-03/GD-03).
+ */
+export async function datNgayKhaiBeGiang(khoaId: string, khaiGiang: string | null, beGiang: string | null, nguoi: NguoiThucHien = HE_THONG) {
+  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
+  if (!khoa) throw new KhongTimThayKhoaError();
+  if (khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
+    throw new NgayKhoaThiKhongHopLeError("Khóa chỉ đăng ký dự thi sửa ngày mở khóa/ngày thi");
+  }
+  if (khoa.trangThai === "DA_KET_THUC" || khoa.trangThai === "HUY") {
+    throw new NgayKhoaThiKhongHopLeError("Khóa đã kết thúc hoặc đã hủy, không sửa ngày được");
+  }
+  for (const ngay of [khaiGiang, beGiang]) {
+    if (ngay !== null && !/^\d{4}-\d{2}-\d{2}$/.test(ngay)) throw new NgayKhoaThiKhongHopLeError("Ngày không hợp lệ");
+  }
+  kiemTraNgayKhaiBeGiang(khaiGiang, beGiang);
+
+  const cu = `khai giảng ${ngayVN(khoa.thoiGianKhaiGiang) ?? "—"}, bế giảng ${ngayVN(khoa.thoiGianBeGiang) ?? "—"}`;
+  const moi = `khai giảng ${khaiGiang ?? "—"}, bế giảng ${beGiang ?? "—"}`;
+  const sau = await prisma.$transaction(async (tx) => {
+    const capNhat = await tx.khoa.update({
+      where: { id: khoaId },
+      data: { thoiGianKhaiGiang: khaiGiang ? new Date(khaiGiang) : null, thoiGianBeGiang: beGiang ? new Date(beGiang) : null },
+    });
+    await ghiThaoTac(nguoi, "DAT_NGAY_KHAI_BE_GIANG", "Khoa", khoaId, `${khoa.maKhoa}: ${cu} -> ${moi}`, tx);
+    return capNhat;
+  });
+  const ngoaiKhoang: Prisma.BuoiHocWhereInput[] = [];
+  if (khaiGiang) ngoaiKhoang.push({ ngayHoc: { lt: new Date(khaiGiang) } });
+  if (beGiang) ngoaiKhoang.push({ ngayHoc: { gte: new Date(new Date(beGiang).getTime() + 86_400_000) } });
+  const soBuoiNgoaiKhoang = ngoaiKhoang.length ? await prisma.buoiHoc.count({ where: { khoaId, daHuy: false, OR: ngoaiKhoang } }) : 0;
+  return { khoa: sau, soBuoiNgoaiKhoang };
+}
+
 /** (bổ sung 01/10/2026) đặt/xóa hạn đăng ký của khóa; ngay = "yyyy-mm-dd" hoặc null. */
 export async function datHanDangKy(khoaId: string, ngay: string | null, nguoi: NguoiThucHien = HE_THONG) {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });

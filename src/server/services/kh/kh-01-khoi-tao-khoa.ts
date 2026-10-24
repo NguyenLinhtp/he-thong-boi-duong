@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
-import { cuoiNgayVN, kiemTraNgayKhoaThi, ngayVN } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { cuoiNgayVN, kiemTraNgayKhaiBeGiang, kiemTraNgayKhoaThi, ngayVN } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { taoKhoaVoiMaTuSinh } from "@/server/services/kh/dung-chung";
 import {
   SaiTrangThaiChuongTrinhError,
@@ -43,6 +43,8 @@ export async function khoiTaoKhoa(input: KhoiTaoKhoaInput, nguoi: NguoiThucHien 
   // (bổ sung 14/10/2026) khóa dự thi (PT3): khai giảng = ngày mở khóa, bế giảng = ngày thi
   if (chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
     kiemTraNgayKhoaThi(ngayVN(input.thoiGianKhaiGiang), ngayVN(input.thoiGianBeGiang), input.hanDangKy ?? null);
+  } else {
+    kiemTraNgayKhaiBeGiang(ngayVN(input.thoiGianKhaiGiang), ngayVN(input.thoiGianBeGiang));
   }
 
   const khoa = await taoKhoaVoiMaTuSinh((maKhoa) =>

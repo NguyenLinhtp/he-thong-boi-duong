@@ -160,3 +160,45 @@ describe("KH-04 thiết lập hình thức giảng dạy", () => {
     expect((await chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA")).trangThai).toBe("DANG_DIEN_RA");
   });
 });
+
+// (bổ sung 24/10/2026) trực tiếp kết hợp trực tuyến: buổi không gán phòng học là buổi trực tuyến, cần link
+describe("KH-04 hình thức trực tiếp kết hợp trực tuyến", () => {
+  const phongTaoTrongTest: string[] = [];
+  afterAll(async () => {
+    await prisma.buoiHoc.deleteMany({ where: { phongHocId: { in: phongTaoTrongTest } } });
+    await prisma.phongHoc.deleteMany({ where: { id: { in: phongTaoTrongTest } } });
+  });
+
+  async function taoPhong() {
+    const phong = await prisma.phongHoc.create({ data: { ma: `P_KH04_${crypto.randomUUID()}`, ten: "Phòng test KH-04" } });
+    phongTaoTrongTest.push(phong.id);
+    return phong;
+  }
+
+  it("chỉ đòi link cho buổi không gán phòng học; tự động tạo link không đụng buổi có phòng", async () => {
+    const khoa = await taoKhoa();
+    expect((await thietLapHinhThucGiangDay(khoa.id, "KET_HOP")).hinhThucGiangDay).toBe("KET_HOP");
+    const phong = await taoPhong();
+    const buoiTrucTiep = await prisma.buoiHoc.create({ data: { khoaId: khoa.id, ngayHoc: new Date("2026-11-02"), phongHocId: phong.id } });
+    await prisma.buoiHoc.create({ data: { khoaId: khoa.id, ngayHoc: new Date("2026-11-03") } });
+
+    expect(await tinhTrangLinkTrucTuyen(khoa.id)).toMatchObject({ apDung: true, ketHop: true, tongBuoi: 1, buoiThieuLink: 1, daDu: false });
+    await expect(xacNhanSanSangTrucTuyen(khoa.id)).rejects.toThrow(ThieuLinkTrucTuyenError);
+
+    expect(await tuDongTaoLinkTrucTuyen(khoa.id)).toBe(1);
+    expect((await prisma.buoiHoc.findUniqueOrThrow({ where: { id: buoiTrucTiep.id } })).linkTrucTuyen).toBeNull();
+    expect(await tinhTrangLinkTrucTuyen(khoa.id)).toMatchObject({ buoiThieuLink: 0, daDu: true });
+    await expect(xacNhanSanSangTrucTuyen(khoa.id)).resolves.toBeUndefined();
+  });
+
+  it("khóa kết hợp mà mọi buổi đều có phòng học thì khai giảng được không cần link", async () => {
+    const khoa = await taoKhoa();
+    await thietLapHinhThucGiangDay(khoa.id, "KET_HOP");
+    const phong = await taoPhong();
+    await prisma.buoiHoc.create({ data: { khoaId: khoa.id, ngayHoc: new Date("2026-11-02"), phongHocId: phong.id } });
+
+    expect(await tinhTrangLinkTrucTuyen(khoa.id)).toMatchObject({ tongBuoi: 0, daDu: true });
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
+    expect((await chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA")).trangThai).toBe("DANG_DIEN_RA");
+  });
+});

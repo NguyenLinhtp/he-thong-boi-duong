@@ -79,6 +79,10 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
               <dd className="font-medium">{dinhDangNgay(khoa.thoiGianBeGiang)}</dd>
             </div>
           </div>
+        ) : suaHan && !["DA_KET_THUC", "HUY"].includes(khoa.trangThai) ? (
+          <div className="sm:col-span-2">
+            <FormNgayKhoaThi khoaId={khoa.id} ngayMo={ngayVN(khoa.thoiGianKhaiGiang)} ngayThi={ngayVN(khoa.thoiGianBeGiang)} laDuThi={false} />
+          </div>
         ) : (
           <div>
             <dt className="text-muted-foreground">Khai giảng – bế giảng</dt>
@@ -122,15 +126,23 @@ export default async function ChiTietKhoaPage({ params }: { params: Promise<{ id
         <h2 className="text-base font-bold text-ued-blue-dam">KH-04 · Hình thức giảng dạy</h2>
 
         <FormHinhThuc khoaId={khoa.id} hinhThucHienTai={khoa.hinhThucGiangDay} />
+        {khoa.hinhThucGiangDay === "KET_HOP" && (
+          <p className="text-sm text-muted-foreground">
+            Trực tiếp kết hợp trực tuyến: ở thời khóa biểu (tab Giảng dạy), buổi gán phòng học là buổi học trực tiếp; buổi không gán phòng học là buổi
+            trực tuyến và phải có link trước ngày khai giảng.
+          </p>
+        )}
 
         {tinhTrangLink.apDung && (
           <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-4 shadow-sm text-sm">
             <p>
-              {tinhTrangLink.daDu
-                ? "Mọi buổi học đã có link trực tuyến."
-                : tinhTrangLink.tongBuoi === 0
-                  ? "Khóa trực tuyến chưa có buổi học nào trong thời khóa biểu (KH-03) để gán link."
-                  : `Còn ${tinhTrangLink.buoiThieuLink}/${tinhTrangLink.tongBuoi} buổi học chưa có link - phải hoàn tất trước ngày khai giảng.`}
+              {tinhTrangLink.ketHop && tinhTrangLink.tongBuoi === 0
+                ? "Chưa có buổi học trực tuyến nào (mọi buổi đều đã gán phòng học)."
+                : tinhTrangLink.daDu
+                  ? `Mọi buổi học ${tinhTrangLink.ketHop ? "trực tuyến " : ""}đã có link trực tuyến.`
+                  : tinhTrangLink.tongBuoi === 0
+                    ? "Khóa trực tuyến chưa có buổi học nào trong thời khóa biểu (KH-03) để gán link."
+                    : `Còn ${tinhTrangLink.buoiThieuLink}/${tinhTrangLink.tongBuoi} buổi học ${tinhTrangLink.ketHop ? "trực tuyến (không gán phòng học) " : ""}chưa có link - phải hoàn tất trước ngày khai giảng.`}
             </p>
             {!tinhTrangLink.daDu && tinhTrangLink.buoiThieuLink > 0 && (
               <form action={tuDongTaoLinkAction.bind(null, khoa.id)}>

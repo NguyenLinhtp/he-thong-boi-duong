@@ -28,6 +28,7 @@ export function FormHinhThuc({
         >
           <option value="TRUC_TIEP">Trực tiếp</option>
           <option value="TRUC_TUYEN">Trực tuyến</option>
+          <option value="KET_HOP">Trực tiếp kết hợp trực tuyến</option>
         </select>
       </div>
       <Button type="submit" disabled={dangXuLy}>

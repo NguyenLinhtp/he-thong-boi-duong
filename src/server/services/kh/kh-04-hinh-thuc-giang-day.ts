@@ -1,10 +1,21 @@
 import { prisma } from "@/lib/db/prisma";
-import type { HinhThucGiangDay } from "@/generated/prisma/client";
+import type { HinhThucGiangDay, Prisma } from "@/generated/prisma/client";
 import {
   KhongTimThayKhoaError,
   KhoaKhongPhaiTrucTuyenError,
   ThieuLinkTrucTuyenError,
 } from "@/server/services/kh/loi-khoa";
+
+// (bổ sung 24/10/2026) hình thức có buổi học trực tuyến (cần link)
+const CO_TRUC_TUYEN: HinhThucGiangDay[] = ["TRUC_TUYEN", "KET_HOP"];
+
+/**
+ * Điều kiện "buổi học trực tuyến" của khóa: khóa trực tuyến = mọi buổi; khóa trực tiếp kết hợp trực
+ * tuyến (bổ sung 24/10/2026) = buổi không gán phòng học (buổi có phòng học học trực tiếp, không cần link).
+ */
+function buoiTrucTuyen(hinhThuc: HinhThucGiangDay): Prisma.BuoiHocWhereInput {
+  return hinhThuc === "KET_HOP" ? { phongHocId: null } : {};
+}
 
 /**
  * KH-04: khóa trực tiếp gán phòng học/địa điểm (đã có ở KH-03, mỗi buổi học
@@ -34,10 +45,10 @@ function sinhLinkGiuCho(): string {
 export async function tuDongTaoLinkTrucTuyen(khoaId: string): Promise<number> {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  if (khoa.hinhThucGiangDay !== "TRUC_TUYEN") throw new KhoaKhongPhaiTrucTuyenError();
+  if (!CO_TRUC_TUYEN.includes(khoa.hinhThucGiangDay)) throw new KhoaKhongPhaiTrucTuyenError();
 
   const buoiChuaCoLink = await prisma.buoiHoc.findMany({
-    where: { khoaId, linkTrucTuyen: null, daHuy: false },
+    where: { khoaId, linkTrucTuyen: null, daHuy: false, ...buoiTrucTuyen(khoa.hinhThucGiangDay) },
   });
   if (buoiChuaCoLink.length === 0) return 0;
 
@@ -51,28 +62,32 @@ export async function tuDongTaoLinkTrucTuyen(khoaId: string): Promise<number> {
 
 export type TinhTrangLinkTrucTuyen =
   | { apDung: false }
-  | { apDung: true; tongBuoi: number; buoiThieuLink: number; daDu: boolean };
+  | { apDung: true; ketHop: boolean; tongBuoi: number; buoiThieuLink: number; daDu: boolean };
 
 // Buổi đã hủy (GD-03) không cần link; khóa chỉ dự thi (Phương thức 3) không
 // có giảng dạy nên không áp dụng.
 export async function tinhTrangLinkTrucTuyen(khoaId: string): Promise<TinhTrangLinkTrucTuyen> {
   const khoa = await prisma.khoa.findUnique({ where: { id: khoaId }, include: { chuongTrinh: true } });
   if (!khoa) throw new KhongTimThayKhoaError();
-  if (khoa.hinhThucGiangDay !== "TRUC_TUYEN" || khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
+  if (!CO_TRUC_TUYEN.includes(khoa.hinhThucGiangDay) || khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) {
     return { apDung: false };
   }
 
+  const ketHop = khoa.hinhThucGiangDay === "KET_HOP";
+  const dieuKien = { khoaId, daHuy: false, ...buoiTrucTuyen(khoa.hinhThucGiangDay) };
   const [tongBuoi, buoiThieuLink] = await Promise.all([
-    prisma.buoiHoc.count({ where: { khoaId, daHuy: false } }),
-    prisma.buoiHoc.count({ where: { khoaId, daHuy: false, linkTrucTuyen: null } }),
+    prisma.buoiHoc.count({ where: dieuKien }),
+    prisma.buoiHoc.count({ where: { ...dieuKien, linkTrucTuyen: null } }),
   ]);
-  return { apDung: true, tongBuoi, buoiThieuLink, daDu: tongBuoi > 0 && buoiThieuLink === 0 };
+  // khóa kết hợp chưa có buổi trực tuyến nào (mọi buổi đều có phòng học) thì không thiếu link
+  return { apDung: true, ketHop, tongBuoi, buoiThieuLink, daDu: ketHop ? buoiThieuLink === 0 : tongBuoi > 0 && buoiThieuLink === 0 };
 }
 
 /**
  * KH-04: "Khóa trực tuyến bắt buộc phải có link trước ngày khai giảng" -
  * KH-05 gọi khi chuyển khóa sang Đang diễn ra (khai giảng): khóa trực tuyến
- * phải có thời khóa biểu và mọi buổi còn hiệu lực đều đã có link.
+ * phải có thời khóa biểu và mọi buổi còn hiệu lực đều đã có link; khóa kết hợp
+ * (bổ sung 24/10/2026) thì mọi buổi không gán phòng học đều đã có link.
  */
 export async function xacNhanSanSangTrucTuyen(khoaId: string): Promise<void> {
   const tinhTrang = await tinhTrangLinkTrucTuyen(khoaId);

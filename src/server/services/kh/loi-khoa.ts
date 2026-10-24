@@ -42,13 +42,13 @@ export class TrungPhongHocError extends Error {
 
 export class KhoaKhongPhaiTrucTuyenError extends Error {
   constructor() {
-    super("Khóa không ở hình thức trực tuyến");
+    super("Khóa không ở hình thức trực tuyến hoặc trực tiếp kết hợp trực tuyến");
   }
 }
 
 export class ThieuLinkTrucTuyenError extends Error {
   constructor() {
-    super("Khóa trực tuyến còn buổi học chưa có link - phải hoàn tất trước ngày khai giảng");
+    super("Khóa còn buổi học trực tuyến chưa có link - phải hoàn tất trước ngày khai giảng");
   }
 }
 

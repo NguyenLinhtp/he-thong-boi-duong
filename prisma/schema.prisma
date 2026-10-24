@@ -52,6 +52,8 @@ enum TrangThaiChuongTrinh {
 enum HinhThucGiangDay {
   TRUC_TIEP
   TRUC_TUYEN
+  // (bổ sung 24/10/2026 - KH-04) trực tiếp kết hợp trực tuyến: buổi có phòng học học trực tiếp, buổi không gán phòng học trực tuyến (cần link)
+  KET_HOP
 }
 
 enum TrangThaiKhoa {
