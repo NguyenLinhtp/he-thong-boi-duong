@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChonTep } from "@/components/chung/chon-tep";
 import { Input } from "@/components/ui/input";
+import { GOI_Y_XEM_TRUC_TIEP } from "@/lib/tep/goi-y-xem-tep";
 
 type PhanCong = { giaTri: string; nhan: string };
 
@@ -80,6 +81,7 @@ export function FormDangTaiLieu({ dsPhanCong, toiDaMb }: { dsPhanCong: PhanCong[
         ) : (
           <Input name="duongLink" type="url" required placeholder="https://..." className="w-80" />
         )}
+        {kieu === "tep" && <p className="w-full text-xs text-muted-foreground">{GOI_Y_XEM_TRUC_TIEP}</p>}
         <Button type="submit" size="sm" disabled={dangGui}>
           {dangGui ? "Đang tải lên..." : "Đăng tài liệu"}
         </Button>

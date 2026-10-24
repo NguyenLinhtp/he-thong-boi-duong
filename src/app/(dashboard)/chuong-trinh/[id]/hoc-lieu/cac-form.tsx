@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChonTep } from "@/components/chung/chon-tep";
 import { Input } from "@/components/ui/input";
 import type { KetQuaThaoTac } from "./actions";
+import { GOI_Y_XEM_TRUC_TIEP } from "@/lib/tep/goi-y-xem-tep";
 
 const NHAN_LOAI = { TAI_LIEU: "Tài liệu (docx, pdf…)", SLIDE: "Slide bài giảng", THONG_TIN: "Thông tin (info)", VIDEO: "Video" } as const;
 type Loai = keyof typeof NHAN_LOAI;
@@ -96,6 +97,7 @@ export function FormThemHocLieu({ hocPhanId }: { hocPhanId: string }) {
         )}
       </div>
       {kieu === "tep" && <ChonTep name="tep" required accept={ACCEPT[loai]} goiY={ACCEPT[loai]} className="max-w-xl" />}
+      {kieu === "tep" && loai !== "VIDEO" && <p className="text-xs text-muted-foreground">{GOI_Y_XEM_TRUC_TIEP}</p>}
       {kieu === "link" && <Input name="duongLink" type="url" required placeholder="https://..." className="max-w-xl" />}
       {kieu === "noiDung" && <textarea name="noiDung" required rows={4} className="rounded-lg border p-2 text-sm" placeholder="Nội dung thông tin" />}
       <div className="flex items-center gap-2">

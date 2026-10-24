@@ -12,10 +12,13 @@ import { dinhDangNgay } from "@/lib/dinh-dang";
 import { ThanhTrai } from "./thanh-trai";
 import { ThanhPhai } from "./thanh-phai";
 import { LamTracNghiem, LienKetTaiVe, NopSanPham, NutDanhDau, TuDongHoanThanh, VideoTheoDoi } from "./noi-dung-muc";
+import { XemDocx, XemPdf } from "./xem-tai-lieu";
 
 export const metadata: Metadata = { title: "Học tập" };
 
 const DUOI_XEM_PDF = [".pdf"];
+// (bổ sung 24/10/2026) Word 2007+ dựng trang ngay trên màn hình học; .doc (Word cũ), PPT/Excel vẫn tải về
+const DUOI_DOCX = [".docx"];
 const DUOI_ANH = [".png", ".jpg", ".jpeg"];
 const DUOI_VIDEO = [".mp4", ".webm"];
 const duoi = (ten: string | null) => (ten ? ten.slice(ten.lastIndexOf(".")).toLowerCase() : "");
@@ -31,7 +34,7 @@ function diaChiNhung(link: string): string | null {
 
 type NoiDung = Awaited<ReturnType<typeof noiDungMuc>>;
 
-/** Hiển thị 1 tệp/link học liệu theo định dạng: PDF cuộn được, ảnh, video, nhúng YouTube/Drive, còn lại tải về. */
+/** Hiển thị 1 tệp/link học liệu theo định dạng: PDF cuộn được, DOCX, ảnh, video, nhúng YouTube/Drive, còn lại tải về. */
 function XemTep({
   api,
   tenFile,
@@ -71,10 +74,23 @@ function XemTep({
   const d = duoi(tenFile);
   if (DUOI_XEM_PDF.includes(d)) {
     return (
-      <>
+      <XemPdf api={api} tenFile={tenFile ?? "Tài liệu"}>
         {tuDong}
-        <iframe src={`${api}?xem=1#view=FitH`} title={tenFile ?? "Tài liệu"} className="h-full min-h-[70vh] w-full rounded-lg border bg-white" />
-      </>
+      </XemPdf>
+    );
+  }
+  if (DUOI_DOCX.includes(d)) {
+    return (
+      <XemDocx
+        api={api}
+        taiVe={
+          <LienKetTaiVe href={api} khoaId={khoaId} mucKey={mucKey} capNhat={capNhat && !hoanThanh}>
+            Tải về
+          </LienKetTaiVe>
+        }
+      >
+        {tuDong}
+      </XemDocx>
     );
   }
   if (DUOI_ANH.includes(d)) {
@@ -91,7 +107,7 @@ function XemTep({
     <div className="flex flex-col items-start gap-3 rounded-lg border bg-white p-6">
       <p className="font-medium">{tenFile}</p>
       <p className="text-sm text-muted-foreground">
-        Định dạng này không xem trực tiếp được trên trình duyệt - tải về để mở bằng Word/PowerPoint/Excel.
+        Định dạng này không xem trực tiếp được trên trình duyệt - tải về để mở bằng Word/PowerPoint/Excel (tệp Word .docx và PDF xem ngay được trên trang).
       </p>
       <LienKetTaiVe href={api} khoaId={khoaId} mucKey={mucKey} capNhat={capNhat && !hoanThanh}>
         Tải về

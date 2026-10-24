@@ -18,7 +18,20 @@ export async function phanHoiTep(req: Request, tep: { khoaLuuTru: string; tenFil
   const ten = tep.tenFile ?? "tep";
   const duoi = ten.slice(ten.lastIndexOf(".")).toLowerCase();
   const xem = new URL(req.url).searchParams.get("xem") === "1" && duoi in KIEU_XEM_TRUC_TIEP;
-  const tong = await kichThuocTep(tep.khoaLuuTru);
+  let tong: number;
+  try {
+    tong = await kichThuocTep(tep.khoaLuuTru);
+  } catch (error) {
+    // (bổ sung 24/10/2026) bản ghi còn nhưng tệp không còn trên đĩa (vd. bản demo Vercel lưu /tmp,
+    // khôi phục CSDL thiếu thư mục tệp) - báo rõ để cán bộ tải lại, không trả lỗi 500
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return Response.json(
+        { message: "Tệp không còn trên máy chủ - liên hệ cán bộ phụ trách để tải lại tệp.", maLoi: "TEP_KHONG_CON" },
+        { status: 404 },
+      );
+    }
+    throw error;
+  }
   const tieuDeChung: Record<string, string> = {
     "Content-Type": xem ? KIEU_XEM_TRUC_TIEP[duoi] : "application/octet-stream",
     "Content-Disposition": `${xem ? "inline" : "attachment"}; filename="${ten.replace(/[^\w.-]/g, "_")}"; filename*=UTF-8''${encodeURIComponent(ten)}`,
