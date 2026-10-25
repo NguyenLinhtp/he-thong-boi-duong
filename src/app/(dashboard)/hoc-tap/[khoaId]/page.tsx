@@ -8,6 +8,7 @@ import { KhongDuocXemTaiLieuError } from "@/server/services/gd/loi-giang-day";
 import { KhongCoQuyen } from "@/components/chung/khong-co-quyen";
 import { cn } from "@/lib/utils";
 import { VongTienDo } from "../vong-tien-do";
+import { tenHienThiKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 
 // GD-04 (bổ sung 29/09/2026): "Quá trình học tập" - dòng thời gian các chuyên đề kèm % tiến độ
 export default async function QuaTrinhHocTapPage({ params }: { params: Promise<{ khoaId: string }> }) {
@@ -37,7 +38,7 @@ export default async function QuaTrinhHocTapPage({ params }: { params: Promise<{
         <div>
           <h1 className="text-xl font-bold text-ued-blue-dam">Quá trình học tập</h1>
           <p className="text-sm text-muted-foreground">
-            {ct.khoa.maKhoa} · {ct.khoa.chuongTrinh.ten}
+            {ct.khoa.maKhoa} · {tenHienThiKhoa(ct.khoa)}
           </p>
         </div>
         <div className="flex items-center gap-3">

@@ -51,6 +51,8 @@ export async function bangDiemCaNhan(nguoiDungId: string) {
       khoaId: dk.khoaId,
       maKhoa: dk.khoa.maKhoa,
       tenChuongTrinh: dk.khoa.chuongTrinh.ten,
+      // (sửa 25/10/2026) tên khóa (KH-01) hiển thị cho học viên, khóa chưa đặt tên thì theo tên chương trình
+      tenKhoa: dk.khoa.tenKhoa ?? dk.khoa.chuongTrinh.ten,
       trangThaiDangKy: dk.trangThai,
       diemHocPhan: dsDiemHocPhan.filter((d) => d.khoaId === dk.khoaId),
       ketQuaKhoa: dsKetQuaKhoa.find((kq) => kq.khoaId === dk.khoaId) ?? null,

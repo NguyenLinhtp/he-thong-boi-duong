@@ -13,6 +13,7 @@ import { ThanhTrai } from "./thanh-trai";
 import { ThanhPhai } from "./thanh-phai";
 import { LamTracNghiem, LienKetTaiVe, NopSanPham, NutDanhDau, TuDongHoanThanh, VideoTheoDoi } from "./noi-dung-muc";
 import { XemDocx, XemPdf } from "./xem-tai-lieu";
+import { tenHienThiKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 
 export const metadata: Metadata = { title: "Học tập" };
 
@@ -295,7 +296,7 @@ export default async function ManHinhHocPage({
         </Link>
         <Image src="/logo-ued.png" alt="Trường ĐHSP - ĐHĐN" width={116} height={24} className="hidden sm:block" />
         <h1 className="min-w-0 truncate font-bold text-ued-blue-dam">
-          {khoa.maKhoa}: {khoa.chuongTrinh.ten}
+          {khoa.maKhoa}: {tenHienThiKhoa(khoa)}
         </h1>
         {!ct.capNhatTienDo && ct.laHocVien && (
           <span className="shrink-0 rounded border border-destructive/40 bg-destructive/5 px-2 py-0.5 text-xs text-destructive">Chỉ xem lại</span>

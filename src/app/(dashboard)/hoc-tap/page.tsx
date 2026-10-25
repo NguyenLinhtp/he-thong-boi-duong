@@ -8,6 +8,7 @@ import { TrangThaiRong } from "@/components/chung/trang-thai-rong";
 import { NhanTrangThai } from "@/components/chung/nhan-trang-thai";
 import { dinhDangNgay } from "@/lib/dinh-dang";
 import { VongTienDo } from "./vong-tien-do";
+import { tenHienThiKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
 
 const NHAN_TRANG_THAI_KHOA: Record<string, string> = {
   CHUAN_BI: "Chuẩn bị",
@@ -50,7 +51,10 @@ export default async function KhoaHocCuaToiPage() {
                     <span className="font-mono text-xs text-muted-foreground">{khoa.maKhoa}</span>
                     <NhanTrangThai ma={khoa.trangThai}>{NHAN_TRANG_THAI_KHOA[khoa.trangThai] ?? khoa.trangThai}</NhanTrangThai>
                   </span>
-                  <span className="font-bold text-ued-blue-dam group-hover:underline">{khoa.chuongTrinh.ten}</span>
+                  <span className="font-bold text-ued-blue-dam group-hover:underline">{tenHienThiKhoa(khoa)}</span>
+                  {khoa.tenKhoa && khoa.tenKhoa !== khoa.chuongTrinh.ten && (
+                    <span className="text-sm text-muted-foreground">Chương trình: {khoa.chuongTrinh.ten}</span>
+                  )}
                   <span className="text-sm text-muted-foreground">
                     {dinhDangNgay(khoa.thoiGianKhaiGiang)} – {dinhDangNgay(khoa.thoiGianBeGiang)} · {soMucXong}/{tongMuc} mục
                   </span>

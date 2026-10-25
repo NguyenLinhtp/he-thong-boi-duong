@@ -37,7 +37,7 @@ export default async function TraCuuDiemPage() {
       {bang.khoas.map((k) => (
         <section key={k.khoaId} className="flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm">
           <h2 className="text-sm font-bold text-ued-blue-dam">
-            {k.maKhoa} · {k.tenChuongTrinh}
+            {k.maKhoa} · {k.tenKhoa}
           </h2>
           {k.diemHocPhan.length > 0 && (
             <Table>
