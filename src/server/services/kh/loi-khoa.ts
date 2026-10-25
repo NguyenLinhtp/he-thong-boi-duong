@@ -162,3 +162,10 @@ export class NgayKhoaThiKhongHopLeError extends Error {
     super(lyDo);
   }
 }
+
+// (bổ sung 25/10/2026) mở lại khóa đã hủy bắt buộc lý do
+export class LyDoMoLaiKhoaError extends Error {
+  constructor() {
+    super("Nhập lý do mở lại khóa");
+  }
+}

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { ghiThaoTac, HE_THONG, type NguoiThucHien } from "@/server/services/qt/qt-03-nhat-ky";
 import type { Prisma, TrangThaiKhoa } from "@/generated/prisma/client";
-import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError, NgayKhoaThiKhongHopLeError } from "@/server/services/kh/loi-khoa";
+import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError, LyDoMoLaiKhoaError, NgayKhoaThiKhongHopLeError } from "@/server/services/kh/loi-khoa";
 import { guiThongBao } from "@/server/services/hv/hv-10-thong-bao";
 import { xacNhanSanSangTrucTuyen } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
 
@@ -57,6 +57,43 @@ export async function chuyenTrangThaiKhoa(
   }
 
   return ketQua;
+}
+
+/**
+ * (bổ sung 25/10/2026) mở lại khóa đã hủy (cán bộ lỡ bấm hủy): khóa trở về đúng trạng thái ngay trước
+ * khi hủy, lấy từ nhật ký thao tác (QT-03, không sửa/xóa được) lần chuyển gần nhất "X -> HUY"; không tìm
+ * thấy thì về Chuẩn bị mở. Bắt buộc lý do, ghi nhật ký. Hủy khóa không xóa/đổi hồ sơ, học phí, buổi học
+ * nên mở lại không cần khôi phục dữ liệu khác.
+ */
+export async function moLaiKhoa(khoaId: string, lyDo: string, nguoi: NguoiThucHien = HE_THONG) {
+  const khoa = await prisma.khoa.findUnique({ where: { id: khoaId } });
+  if (!khoa) throw new KhongTimThayKhoaError();
+  if (khoa.trangThai !== "HUY") throw new ChuyenTrangThaiKhoaKhongHopLeError(khoa.trangThai, "mở lại");
+  if (!lyDo.trim()) throw new LyDoMoLaiKhoaError();
+
+  const lanHuy = await prisma.nhatKyThaoTac.findFirst({
+    where: { hanhDong: "CHUYEN_TRANG_THAI_KHOA", doiTuongId: khoaId, chiTiet: { endsWith: "-> HUY" } },
+    orderBy: { thoiGian: "desc" },
+  });
+  const truoc = /: (\w+) -> HUY$/.exec(lanHuy?.chiTiet ?? "")?.[1];
+  const trangThaiMoi: TrangThaiKhoa =
+    truoc === "CHUAN_BI" || truoc === "DANG_TUYEN_SINH" || truoc === "DANG_DIEN_RA" ? truoc : "CHUAN_BI";
+
+  return prisma.$transaction(async (tx) => {
+    const sau = await tx.khoa.update({ where: { id: khoaId }, data: { trangThai: trangThaiMoi } });
+    await ghiThaoTac(nguoi, "MO_LAI_KHOA", "Khoa", khoaId, `${khoa.maKhoa}: HUY -> ${trangThaiMoi} - lý do: ${lyDo.trim()}`, tx);
+    return sau;
+  });
+}
+
+/**
+ * (bổ sung 25/10/2026 - GD-04) đã qua ngày bế giảng (hết ngày, giờ Việt Nam): học viên chỉ xem lại -
+ * không làm trắc nghiệm, không nộp sản phẩm, không ghi tiến độ. Muốn cho làm tiếp thì gia hạn bế giảng
+ * (KH-01, tab Tổng quan). Khóa chưa có ngày bế giảng thì không khóa theo ngày.
+ */
+export function daQuaBeGiang(khoa: { thoiGianBeGiang: Date | null }, moc: Date = new Date()) {
+  const ngay = ngayVN(khoa.thoiGianBeGiang);
+  return ngay !== null && moc > cuoiNgayVN(ngay);
 }
 
 /**

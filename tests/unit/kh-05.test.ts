@@ -6,6 +6,8 @@ import {
   siSoHienTai,
   tinhTrangSiSo,
   coTheNhanDangKy,
+  moLaiKhoa,
+  daQuaBeGiang,
 } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import { KhongTimThayKhoaError, ChuyenTrangThaiKhoaKhongHopLeError } from "@/server/services/kh/loi-khoa";
 
@@ -150,5 +152,39 @@ describe("KH-05 quản lý trạng thái và sĩ số khóa", () => {
 
     await taoHocVienVaDangKy(khoa.id, "CHINH_THUC");
     expect(await coTheNhanDangKy(khoa.id)).toBe(false);
+  });
+});
+
+// (bổ sung 25/10/2026) mở lại khóa đã hủy nhầm
+describe("KH-05 mở lại khóa đã hủy", () => {
+  it("về đúng trạng thái trước khi hủy, bắt buộc lý do, ghi nhật ký", async () => {
+    const khoa = await taoKhoa();
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_TUYEN_SINH");
+    await chuyenTrangThaiKhoa(khoa.id, "HUY");
+
+    await expect(moLaiKhoa(khoa.id, "  ")).rejects.toThrow("Nhập lý do mở lại khóa");
+    const sau = await moLaiKhoa(khoa.id, "Hủy nhầm");
+    expect(sau.trangThai).toBe("DANG_TUYEN_SINH");
+    const nk = await prisma.nhatKyThaoTac.findFirst({ where: { doiTuongId: khoa.id, hanhDong: "MO_LAI_KHOA" } });
+    expect(nk?.chiTiet).toContain("HUY -> DANG_TUYEN_SINH - lý do: Hủy nhầm");
+
+    // hủy lại lần nữa từ Đang tuyển sinh rồi mở lại vẫn về đúng trạng thái gần nhất
+    await chuyenTrangThaiKhoa(khoa.id, "DANG_DIEN_RA");
+    await chuyenTrangThaiKhoa(khoa.id, "HUY");
+    expect((await moLaiKhoa(khoa.id, "Hủy nhầm lần 2")).trangThai).toBe("DANG_DIEN_RA");
+  });
+
+  it("chỉ mở lại khóa đang ở trạng thái Hủy; không có nhật ký hủy thì về Chuẩn bị mở", async () => {
+    const khoa = await taoKhoa();
+    await expect(moLaiKhoa(khoa.id, "x")).rejects.toThrow(ChuyenTrangThaiKhoaKhongHopLeError);
+    await prisma.khoa.update({ where: { id: khoa.id }, data: { trangThai: "HUY" } });
+    expect((await moLaiKhoa(khoa.id, "dữ liệu cũ")).trangThai).toBe("CHUAN_BI");
+  });
+
+  it("mốc bế giảng tính hết ngày giờ Việt Nam; chưa có ngày bế giảng thì không khóa", () => {
+    const beGiang = new Date("2026-10-31T00:00:00.000Z");
+    expect(daQuaBeGiang({ thoiGianBeGiang: beGiang }, new Date("2026-10-31T16:59:00.000Z"))).toBe(false);
+    expect(daQuaBeGiang({ thoiGianBeGiang: beGiang }, new Date("2026-10-31T17:00:01.000Z"))).toBe(true);
+    expect(daQuaBeGiang({ thoiGianBeGiang: null })).toBe(false);
   });
 });

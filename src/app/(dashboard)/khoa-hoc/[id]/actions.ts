@@ -9,7 +9,7 @@ import {
   thietLapHinhThucGiangDay,
   tuDongTaoLinkTrucTuyen,
 } from "@/server/services/kh/kh-04-hinh-thuc-giang-day";
-import { chuyenTrangThaiKhoa, datHanDangKy, datNgayKhaiBeGiang, datNgayKhoaThi } from "@/server/services/kh/kh-05-trang-thai-si-so";
+import { chuyenTrangThaiKhoa, datHanDangKy, datNgayKhaiBeGiang, datNgayKhoaThi, moLaiKhoa } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   phatHanhThongBao,
   type KenhGui,
@@ -192,6 +192,21 @@ export async function chuyenTrangThaiAction(
     throw error;
   }
 
+  lamMoiKhoa(khoaId);
+  revalidatePath("/khoa-hoc");
+  return undefined;
+}
+
+// (bổ sung 25/10/2026) mở lại khóa đã hủy - về trạng thái trước khi hủy
+export async function moLaiKhoaAction(_prevState: string | undefined, formData: FormData): Promise<string | undefined> {
+  const phien = await requirePermission("KH-05");
+  const khoaId = String(formData.get("khoaId"));
+  try {
+    await moLaiKhoa(khoaId, String(formData.get("lyDo") ?? ""), nguoiTuPhien(phien));
+  } catch (error) {
+    if (error instanceof Error) return error.message;
+    throw error;
+  }
   lamMoiKhoa(khoaId);
   revalidatePath("/khoa-hoc");
   return undefined;

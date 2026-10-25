@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { chuyenTrangThaiAction } from "./actions";
+import { chuyenTrangThaiAction, moLaiKhoaAction } from "./actions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const NHAN_TRANG_THAI: Record<string, string> = {
@@ -21,9 +22,36 @@ const CHUYEN_TIEP_HOP_LE: Record<string, string[]> = {
   HUY: [],
 };
 
+// (bổ sung 25/10/2026) khóa đã hủy: mở lại về trạng thái trước khi hủy, bắt buộc lý do
+function FormMoLaiKhoa({ khoaId }: { khoaId: string }) {
+  const [loi, formAction, dangXuLy] = useActionState(moLaiKhoaAction, undefined);
+  return (
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        if (!confirm("Mở lại khóa đã hủy? Khóa sẽ trở về trạng thái ngay trước khi hủy.")) e.preventDefault();
+      }}
+      className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm"
+    >
+      <input type="hidden" name="khoaId" value={khoaId} />
+      <p className="w-full text-sm text-muted-foreground">Khóa đã hủy. Nếu hủy nhầm, mở lại để khóa trở về trạng thái ngay trước khi hủy.</p>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="lyDoMoLai">Lý do mở lại</Label>
+        <Input id="lyDoMoLai" name="lyDo" required className="w-80" placeholder="Bắt buộc, vd. hủy nhầm" />
+      </div>
+      <Button type="submit" disabled={dangXuLy}>
+        {dangXuLy ? "Đang mở lại..." : "Mở lại khóa"}
+      </Button>
+      {loi && <p className="w-full text-sm text-destructive">{loi}</p>}
+    </form>
+  );
+}
+
 export function FormTrangThai({ khoaId, trangThaiHienTai }: { khoaId: string; trangThaiHienTai: string }) {
   const [loi, formAction, dangXuLy] = useActionState(chuyenTrangThaiAction, undefined);
   const cacTrangThaiCoTheChuyen = CHUYEN_TIEP_HOP_LE[trangThaiHienTai] ?? [];
+
+  if (trangThaiHienTai === "HUY") return <FormMoLaiKhoa khoaId={khoaId} />;
 
   if (cacTrangThaiCoTheChuyen.length === 0) {
     return (
@@ -35,7 +63,14 @@ export function FormTrangThai({ khoaId, trangThaiHienTai }: { khoaId: string; tr
   }
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        const chon = new FormData(e.currentTarget).get("trangThai");
+        if (chon === "HUY" && !confirm("Hủy khóa học? Có thể mở lại nếu hủy nhầm.")) e.preventDefault();
+      }}
+      className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm"
+    >
       <input type="hidden" name="khoaId" value={khoaId} />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="trangThai">Chuyển sang trạng thái</Label>
