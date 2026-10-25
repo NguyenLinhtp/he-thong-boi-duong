@@ -526,6 +526,7 @@ model HocVien {
   lanLamTracNghiems LanLamTracNghiem[]
   baiNopSanPhams    BaiNopSanPham[]
   tienDoHocTaps     TienDoHocTap[]
+  giaHanDanhGias    GiaHanDanhGia[]
 
   @@map("hoc_vien")
 }
@@ -1356,6 +1357,29 @@ model TienDoHocTap {
 
   @@unique([khoaId, hocVienId, mucKey])
   @@map("tien_do_hoc_tap")
+}
+
+/// (bổ sung 25/10/2026 - GD-04) gia hạn riêng cho 1 học viên ở 1 bài đánh giá của khóa: thêm lượt làm bài
+/// trắc nghiệm (TN-<id>) hoặc mở nộp lại sản phẩm (SP-<id>), kèm hạn được làm sau ngày bế giảng.
+/// Chỉ học viên được mở mới làm lại được; cấp nhiều lần thì cộng dồn lượt, hạn lấy theo lần cấp mới nhất.
+model GiaHanDanhGia {
+  id         String    @id @default(cuid())
+  khoaId     String
+  hocVienId  String
+  hocVien    HocVien   @relation(fields: [hocVienId], references: [id])
+  mucKey     String
+  // TN: số lượt làm thêm ngoài số lần tối đa của bài
+  soLanThem  Int       @default(0)
+  // SP: được nộp lại 1 lần kể cả khi đã chấm (nộp lại thì xóa điểm cũ chờ chấm lại, dùng hết lượt mở)
+  moNopLai   Boolean   @default(false)
+  // được làm/nộp đến hết ngày này (giờ Việt Nam) kể cả khi đã qua ngày bế giảng; null = theo ngày bế giảng
+  hanDen     DateTime?
+  lyDo       String
+  nguoiCap   String
+  capNhatLuc DateTime  @updatedAt
+
+  @@unique([khoaId, hocVienId, mucKey])
+  @@map("gia_han_danh_gia")
 }
 
 model ThaoLuanHocTap {

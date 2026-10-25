@@ -14,6 +14,7 @@ import { ThanhPhai } from "./thanh-phai";
 import { LamTracNghiem, LienKetTaiVe, NopSanPham, NutDanhDau, TuDongHoanThanh, VideoTheoDoi } from "./noi-dung-muc";
 import { XemDocx, XemPdf } from "./xem-tai-lieu";
 import { tenHienThiKhoa } from "@/server/services/kh/kh-01-khoi-tao-khoa";
+import { daQuaBeGiang } from "@/server/services/kh/kh-05-trang-thai-si-so";
 
 export const metadata: Metadata = { title: "Học tập" };
 
@@ -34,6 +35,17 @@ function diaChiNhung(link: string): string | null {
 }
 
 type NoiDung = Awaited<ReturnType<typeof noiDungMuc>>;
+
+/** (bổ sung 25/10/2026) học viên được cán bộ gia hạn riêng cho bài này. */
+function GhiChuGiaHan({ giaHan }: { giaHan: { soLanThem: number; moNopLai: boolean; hanDen: Date | null } | null }) {
+  if (!giaHan || (!giaHan.soLanThem && !giaHan.moNopLai && !giaHan.hanDen)) return null;
+  const phan = [
+    giaHan.soLanThem > 0 && `thêm ${giaHan.soLanThem} lượt làm bài`,
+    giaHan.moNopLai && "được nộp lại sản phẩm (bài nộp lại sẽ được chấm lại)",
+    giaHan.hanDen && `làm/nộp đến hết ngày ${dinhDangNgay(giaHan.hanDen)}`,
+  ].filter(Boolean);
+  return <p className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 text-sm">Bạn được gia hạn: {phan.join("; ")}.</p>;
+}
 
 /** Hiển thị 1 tệp/link học liệu theo định dạng: PDF cuộn được, DOCX, ảnh, video, nhúng YouTube/Drive, còn lại tải về. */
 function XemTep({
@@ -150,10 +162,10 @@ function KhungGiua({ nd, khoaId, mucKey, capNhat, hoanThanh }: { nd: NoiDung; kh
     );
   }
   if (nd.loai === "TN") {
-    const { bai, dsLan } = nd;
+    const { bai, dsLan, giaHan, soLanToiDa } = nd;
     const daNop = dsLan.filter((l) => l.nopLuc);
     const diemCaoNhat = daNop.length ? Math.max(...daNop.map((l) => Number(l.diem))) : null;
-    const conLuot = !bai.soLanToiDa || dsLan.length < bai.soLanToiDa || dsLan.some((l) => !l.nopLuc);
+    const conLuot = !soLanToiDa || dsLan.length < soLanToiDa || dsLan.some((l) => !l.nopLuc);
     return (
       <div className="flex flex-col gap-4">
         <div className="grid gap-3 rounded-lg border bg-white p-4 text-sm sm:grid-cols-4">
@@ -169,7 +181,7 @@ function KhungGiua({ nd, khoaId, mucKey, capNhat, hoanThanh }: { nd: NoiDung; kh
             <span className="block text-muted-foreground">Lượt đã làm</span>
             <b>
               {dsLan.length}
-              {bai.soLanToiDa ? `/${bai.soLanToiDa}` : ""}
+              {soLanToiDa ? `/${soLanToiDa}` : ""}
             </b>
           </p>
           <p>
@@ -179,11 +191,12 @@ function KhungGiua({ nd, khoaId, mucKey, capNhat, hoanThanh }: { nd: NoiDung; kh
           </p>
         </div>
         {bai.moTa && <p className="text-sm whitespace-pre-line">{bai.moTa}</p>}
-        <LamTracNghiem khoaId={khoaId} baiId={bai.id} duocLam={capNhat} conLuot={conLuot} />
+        <GhiChuGiaHan giaHan={giaHan} />
+        <LamTracNghiem khoaId={khoaId} baiId={bai.id} duocLam={nd.duocLam} conLuot={conLuot} />
       </div>
     );
   }
-  const { yc, baiNop } = nd;
+  const { yc, baiNop, giaHan } = nd;
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-white p-4">
@@ -205,7 +218,8 @@ function KhungGiua({ nd, khoaId, mucKey, capNhat, hoanThanh }: { nd: NoiDung; kh
           )}
         </div>
       )}
-      <NopSanPham khoaId={khoaId} yeuCauId={yc.id} duocNop={capNhat && baiNop?.diem == null} />
+      <GhiChuGiaHan giaHan={giaHan} />
+      <NopSanPham khoaId={khoaId} yeuCauId={yc.id} duocNop={nd.duocLam && (baiNop?.diem == null || Boolean(giaHan?.moNopLai))} />
     </div>
   );
 }
@@ -312,7 +326,9 @@ export default async function ManHinhHocPage({
         <p className="shrink-0 border-b bg-red-50 px-4 py-2 text-center text-sm text-red-800">
           {khoa.trangThai === "DANG_TUYEN_SINH" || khoa.trangThai === "CHUAN_BI"
             ? "Khóa học chưa bắt đầu. Bạn có thể xem trước học liệu nhưng tiến độ chưa được ghi nhận."
-            : "Khóa học đã kết thúc hoặc kết quả đã được phê duyệt. Bạn có thể xem lại bài học nhưng tiến độ sẽ không được cập nhật."}
+            : daQuaBeGiang(khoa)
+              ? `Đã quá ngày bế giảng (${dinhDangNgay(khoa.thoiGianBeGiang)}). Bạn có thể xem lại bài học nhưng không làm trắc nghiệm, nộp sản phẩm hay ghi tiến độ được nữa.`
+              : "Khóa học đã kết thúc hoặc kết quả đã được phê duyệt. Bạn có thể xem lại bài học nhưng tiến độ sẽ không được cập nhật."}
         </p>
       )}
 

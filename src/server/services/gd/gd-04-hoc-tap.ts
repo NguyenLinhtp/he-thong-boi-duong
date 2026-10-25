@@ -2,8 +2,9 @@ import path from "node:path";
 import { prisma } from "@/lib/db/prisma";
 import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
 import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
-import { ketQuaKhoaDaPheDuyet } from "@/server/services/gd/gd-04-danh-gia";
+import { ketQuaKhoaDaPheDuyet, giaHanCuaHocVien, trongHanGiaHan, soLanToiDaCuaHocVien } from "@/server/services/gd/gd-04-danh-gia";
 import { DanhGiaKhongHopLeError, KhongDuocXemTaiLieuError } from "@/server/services/gd/loi-giang-day";
+import { daQuaBeGiang } from "@/server/services/kh/kh-05-trang-thai-si-so";
 
 /**
  * GD-04 (bổ sung 29/09/2026): màn hình học theo mẫu taphuan - cấu trúc khóa
@@ -62,12 +63,30 @@ async function nguoiTrongKhoa(nguoiDungId: string, khoaId: string) {
   throw new KhongDuocXemTaiLieuError();
 }
 
-/** Học viên còn được cập nhật tiến độ/làm bài (khóa đang học hoặc đã kết thúc nhưng chưa phê duyệt kết quả). */
+/**
+ * Học viên còn được cập nhật tiến độ/làm bài (khóa đang học hoặc đã kết thúc nhưng chưa phê duyệt kết quả);
+ * (bổ sung 25/10/2026) và chưa qua ngày bế giảng - gia hạn bế giảng thì học viên học tiếp được.
+ */
 async function duocCapNhatTienDo(ng: Awaited<ReturnType<typeof nguoiTrongKhoa>>) {
   return Boolean(
     ng.hocVien &&
       ng.dangKy?.trangThai === "CHINH_THUC" &&
       (TRANG_THAI_KHOA_HOC as readonly string[]).includes(ng.khoa.trangThai) &&
+      !daQuaBeGiang(ng.khoa) &&
+      !(await ketQuaKhoaDaPheDuyet(ng.khoa.id)),
+  );
+}
+
+/**
+ * (bổ sung 25/10/2026) học viên làm/nộp được 1 bài trắc nghiệm/sản phẩm: như điều kiện cập nhật tiến độ, riêng
+ * mốc bế giảng thì học viên được gia hạn riêng cho bài đó còn làm được đến hết ngày gia hạn.
+ */
+async function duocLamMuc(ng: Awaited<ReturnType<typeof nguoiTrongKhoa>>, giaHan: { hanDen: Date | null } | null) {
+  return Boolean(
+    ng.hocVien &&
+      ng.dangKy?.trangThai === "CHINH_THUC" &&
+      (TRANG_THAI_KHOA_HOC as readonly string[]).includes(ng.khoa.trangThai) &&
+      (!daQuaBeGiang(ng.khoa) || trongHanGiaHan(giaHan)) &&
       !(await ketQuaKhoaDaPheDuyet(ng.khoa.id)),
   );
 }
@@ -172,14 +191,16 @@ export async function noiDungMuc(nguoiDungId: string, khoaId: string, mucKey: st
     const dsLan = ng.hocVien
       ? await prisma.lanLamTracNghiem.findMany({ where: { baiId: bai.id, khoaId, hocVienId: ng.hocVien.id }, orderBy: { batDauLuc: "desc" } })
       : [];
-    return { loai: "TN" as const, bai, dsLan };
+    const giaHan = ng.hocVien ? await giaHanCuaHocVien(khoaId, ng.hocVien.id, mucKey) : null;
+    return { loai: "TN" as const, bai, dsLan, giaHan, soLanToiDa: soLanToiDaCuaHocVien(bai.soLanToiDa, giaHan), duocLam: await duocLamMuc(ng, giaHan) };
   }
   const yc = await prisma.yeuCauSanPham.findUnique({ where: { id: muc.id } });
   if (!yc || !(await thuocChuongTrinh(yc.hocPhanId))) throw new KhongDuocXemTaiLieuError();
   const baiNop = ng.hocVien
     ? await prisma.baiNopSanPham.findUnique({ where: { yeuCauId_khoaId_hocVienId: { yeuCauId: yc.id, khoaId, hocVienId: ng.hocVien.id } } })
     : null;
-  return { loai: "SP" as const, yc, baiNop };
+  const giaHan = ng.hocVien ? await giaHanCuaHocVien(khoaId, ng.hocVien.id, mucKey) : null;
+  return { loai: "SP" as const, yc, baiNop, giaHan, duocLam: await duocLamMuc(ng, giaHan) };
 }
 
 /**

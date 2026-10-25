@@ -59,6 +59,7 @@ export const THU_TU_BANG = [
   "lanLamTracNghiem",
   "baiNopSanPham",
   "tienDoHocTap",
+  "giaHanDanhGia",
   "thaoLuanHocTap",
   "ghiChepHocTap",
   "ketQuaHocTap",
@@ -154,7 +155,8 @@ export async function chayBackupNgay(
         ketQua[ten] = await layDelegate(tx, ten).findMany();
       }
       return ketQua;
-    });
+      // (sửa 25/10/2026) đọc toàn bộ bảng mất nhiều hơn 5 giây mặc định khi dữ liệu lớn - dùng cùng giới hạn với phục hồi
+    }, { timeout: 120_000, maxWait: 15_000 });
 
     const noiDung: NoiDungSaoLuu = {
       phienBan: 1,

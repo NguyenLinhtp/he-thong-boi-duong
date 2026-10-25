@@ -6,6 +6,7 @@ import { hocVienCuaTaiKhoan } from "@/server/services/kq/kq-05-tra-cuu";
 import { giangVienCuaTaiKhoan } from "@/server/services/gd/dung-chung";
 import { timGiangVienChoHocPhan } from "@/server/services/kh/kh-03-thoi-khoa-bieu";
 import { luuTep, xoaTep } from "@/server/services/gd/luu-tru-hoc-lieu";
+import { cuoiNgayVN, daQuaBeGiang, ngayVN } from "@/server/services/kh/kh-05-trang-thai-si-so";
 import {
   DaChamKhongNopLaiError,
   DanhGiaKhongHopLeError,
@@ -42,7 +43,22 @@ export async function ketQuaKhoaDaPheDuyet(khoaId: string) {
  * đang diễn ra/đã kết thúc, kết quả chưa phê duyệt, học phần thuộc chương
  * trình của khóa.
  */
-async function kiemTraDuocLam(nguoiDungId: string, khoaId: string, hocPhanId: string) {
+/** (bổ sung 25/10/2026) gia hạn riêng của học viên cho 1 bài (mucKey TN-<id> / SP-<id>), null nếu chưa được mở. */
+export async function giaHanCuaHocVien(khoaId: string, hocVienId: string, mucKey: string) {
+  return prisma.giaHanDanhGia.findUnique({ where: { khoaId_hocVienId_mucKey: { khoaId, hocVienId, mucKey } } });
+}
+
+/** Gia hạn còn hiệu lực về thời gian: có hạn và chưa qua hết ngày hạn (giờ Việt Nam). */
+export function trongHanGiaHan(gh: { hanDen: Date | null } | null, moc: Date = new Date()) {
+  const ngay = ngayVN(gh?.hanDen ?? null);
+  return ngay !== null && moc <= cuoiNgayVN(ngay);
+}
+
+/** Số lần làm tối đa của học viên = số lần của bài + lượt được gia hạn thêm (bài không giới hạn thì null). */
+export const soLanToiDaCuaHocVien = (soLanToiDa: number | null, gh: { soLanThem: number } | null) =>
+  soLanToiDa ? soLanToiDa + (gh?.soLanThem ?? 0) : null;
+
+async function kiemTraDuocLam(nguoiDungId: string, khoaId: string, hocPhanId: string, moc: Date = new Date(), mucKey?: string) {
   const hocVien = await hocVienCuaTaiKhoan(nguoiDungId);
   if (!hocVien) throw new KhongDuocLamDanhGiaError("Tài khoản chưa gắn với hồ sơ học viên");
   const dangKy = await prisma.dangKyHoc.findUnique({
@@ -53,6 +69,11 @@ async function kiemTraDuocLam(nguoiDungId: string, khoaId: string, hocPhanId: st
   const { khoa } = dangKy;
   if (khoa.chuongTrinh.phuongThucDangKys.includes("CHI_DU_THI")) throw new KhongDuocLamDanhGiaError("Khóa chỉ dự thi (Phương thức 3) không áp dụng học liệu/đánh giá trực tuyến");
   if (!(TRANG_THAI_KHOA_LAM_BAI as readonly string[]).includes(khoa.trangThai)) throw new KhongDuocLamDanhGiaError("Khóa chưa vào giai đoạn học");
+  // (bổ sung 25/10/2026) thời gian làm trắc nghiệm, nộp sản phẩm kết thúc theo ngày bế giảng của khóa
+  // học viên được gia hạn riêng (cán bộ mở ở tab Bài làm trực tuyến) làm/nộp được đến hết ngày gia hạn
+  if (daQuaBeGiang(khoa, moc) && !(mucKey && trongHanGiaHan(await giaHanCuaHocVien(khoaId, hocVien.id, mucKey), moc))) {
+    throw new KhongDuocLamDanhGiaError("Đã quá ngày bế giảng của khóa - không nhận bài làm/sản phẩm nữa (liên hệ cán bộ đào tạo nếu cần gia hạn)");
+  }
   if (await ketQuaKhoaDaPheDuyet(khoaId)) throw new KhongDuocLamDanhGiaError("Kết quả khóa đã phê duyệt - không nhận bài làm/sản phẩm nữa");
   const hocPhan = await prisma.hocPhan.findUnique({ where: { id: hocPhanId } });
   if (!hocPhan || hocPhan.chuongTrinhId !== khoa.chuongTrinhId) throw new KhongDuocLamDanhGiaError("Học phần không thuộc chương trình của khóa");
@@ -72,14 +93,16 @@ export async function batDauLamBai(nguoiDungId: string, khoaId: string, baiId: s
   const bai = await prisma.baiTracNghiem.findUnique({ where: { id: baiId }, include: { cauHois: { orderBy: { thuTu: "asc" } } } });
   if (!bai) throw new DanhGiaKhongHopLeError("không tìm thấy bài trắc nghiệm");
   if (bai.cauHois.length === 0) throw new KhongDuocLamDanhGiaError("Bài trắc nghiệm chưa có câu hỏi");
-  const { hocVien } = await kiemTraDuocLam(nguoiDungId, khoaId, bai.hocPhanId);
+  const { hocVien } = await kiemTraDuocLam(nguoiDungId, khoaId, bai.hocPhanId, new Date(), `TN-${baiId}`);
 
   const dsLan = await prisma.lanLamTracNghiem.findMany({ where: { baiId, khoaId, hocVienId: hocVien.id }, orderBy: { batDauLuc: "desc" } });
+  // (bổ sung 25/10/2026) lượt được gia hạn thêm cộng vào số lần tối đa của bài
+  const toiDa = soLanToiDaCuaHocVien(bai.soLanToiDa, await giaHanCuaHocVien(khoaId, hocVien.id, `TN-${baiId}`));
   const dangLam = dsLan.find((l) => !l.nopLuc && (!bai.thoiGianPhut || hetHanLuc(l.batDauLuc, bai.thoiGianPhut)! > new Date()));
   const lan =
     dangLam ??
     (await (async () => {
-      if (bai.soLanToiDa && dsLan.length >= bai.soLanToiDa) throw new HetLuotLamBaiError(bai.soLanToiDa);
+      if (toiDa && dsLan.length >= toiDa) throw new HetLuotLamBaiError(toiDa);
       return prisma.lanLamTracNghiem.create({ data: { baiId, khoaId, hocVienId: hocVien.id } });
     })());
   return {
@@ -132,7 +155,8 @@ export async function nopBaiTracNghiem(nguoiDungId: string, lanLamId: string, tr
   const lan = await layLanLamDangDo(nguoiDungId, lanLamId);
   if (lan.nopLuc) throw new KhongDuocLamDanhGiaError("Lần làm bài này đã nộp");
   const bai = await prisma.baiTracNghiem.findUniqueOrThrow({ where: { id: lan.baiId }, include: { cauHois: true } });
-  await kiemTraDuocLam(nguoiDungId, lan.khoaId, bai.hocPhanId);
+  // lần làm bắt đầu trước khi hết ngày bế giảng vẫn nộp được trong thời gian làm bài của nó
+  await kiemTraDuocLam(nguoiDungId, lan.khoaId, bai.hocPhanId, lan.batDauLuc, `TN-${bai.id}`);
   const han = hetHanLuc(lan.batDauLuc, bai.thoiGianPhut);
   if (han && Date.now() > han.getTime() + GIA_HAN_NOP_GIAY * 1000) throw new HetGioLamBaiError();
 
@@ -156,7 +180,7 @@ export type NopSanPhamInput = { khoaId: string; yeuCauId: string; ghiChu?: strin
 export async function nopSanPham(nguoiDungId: string, input: NopSanPhamInput) {
   const yeuCau = await prisma.yeuCauSanPham.findUnique({ where: { id: input.yeuCauId } });
   if (!yeuCau) throw new DanhGiaKhongHopLeError("không tìm thấy yêu cầu sản phẩm");
-  const { hocVien, khoa } = await kiemTraDuocLam(nguoiDungId, input.khoaId, yeuCau.hocPhanId);
+  const { hocVien, khoa } = await kiemTraDuocLam(nguoiDungId, input.khoaId, yeuCau.hocPhanId, new Date(), `SP-${yeuCau.id}`);
   const tep = input.tep;
   if (!tep || tep.noiDung.length === 0) throw new TaiLieuKhongHopLeError("chưa chọn tệp sản phẩm");
   const duoi = path.extname(tep.ten).toLowerCase();
@@ -167,7 +191,10 @@ export async function nopSanPham(nguoiDungId: string, input: NopSanPhamInput) {
   const cu = await prisma.baiNopSanPham.findUnique({
     where: { yeuCauId_khoaId_hocVienId: { yeuCauId: yeuCau.id, khoaId: khoa.id, hocVienId: hocVien.id } },
   });
-  if (cu?.diem != null) throw new DaChamKhongNopLaiError();
+  // (bổ sung 25/10/2026) bài đã chấm chỉ nộp lại khi được cán bộ mở nộp lại: dùng hết lượt mở, xóa điểm cũ chờ chấm lại
+  const giaHan = await giaHanCuaHocVien(khoa.id, hocVien.id, `SP-${yeuCau.id}`);
+  const nopLaiSauCham = cu?.diem != null;
+  if (nopLaiSauCham && !giaHan?.moNopLai) throw new DaChamKhongNopLaiError();
 
   const khoaLuuTru = await luuTep(tep.noiDung, duoi);
   const duLieu = {
@@ -177,6 +204,7 @@ export async function nopSanPham(nguoiDungId: string, input: NopSanPhamInput) {
     khoaLuuTru,
     ghiChu: input.ghiChu?.trim() || null,
     nopLuc: new Date(),
+    ...(nopLaiSauCham ? { diem: null, nhanXet: null, nguoiCham: null, chamLuc: null } : {}),
   };
   try {
     const baiNop = await prisma.$transaction(async (tx) => {
@@ -185,6 +213,7 @@ export async function nopSanPham(nguoiDungId: string, input: NopSanPhamInput) {
         create: { yeuCauId: yeuCau.id, khoaId: khoa.id, hocVienId: hocVien.id, ...duLieu },
         update: duLieu,
       });
+      if (nopLaiSauCham) await tx.giaHanDanhGia.update({ where: { id: giaHan!.id }, data: { moNopLai: false } });
       await ghiNhatKy(
         {
           nguoiThucHienId: nguoiDungId,
@@ -192,7 +221,9 @@ export async function nopSanPham(nguoiDungId: string, input: NopSanPhamInput) {
           hanhDong: cu ? "NOP_LAI_SAN_PHAM" : "NOP_SAN_PHAM",
           doiTuong: "BaiNopSanPham",
           doiTuongId: bn.id,
-          chiTiet: `Khóa ${khoa.maKhoa}: ${yeuCau.tieuDe} - ${duLieu.tenFile}`,
+          chiTiet:
+            `Khóa ${khoa.maKhoa}: ${yeuCau.tieuDe} - ${duLieu.tenFile}` +
+            (nopLaiSauCham ? ` (nộp lại theo gia hạn, bỏ điểm cũ ${Number(cu!.diem)})` : ""),
         },
         tx,
       );
@@ -247,7 +278,10 @@ export async function hocTapCuaHocVien(nguoiDungId: string) {
         ketQuaKhoaDaPheDuyet(dk.khoaId),
       ]);
       const duocLam =
-        dk.trangThai === "CHINH_THUC" && (TRANG_THAI_KHOA_LAM_BAI as readonly string[]).includes(dk.khoa.trangThai) && !daPheDuyet;
+        dk.trangThai === "CHINH_THUC" &&
+        (TRANG_THAI_KHOA_LAM_BAI as readonly string[]).includes(dk.khoa.trangThai) &&
+        !daQuaBeGiang(dk.khoa) &&
+        !daPheDuyet;
       return {
         khoa: dk.khoa,
         lop: dk.lop,

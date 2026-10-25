@@ -21,6 +21,8 @@ const TAB = [
   { ma: "lop-hoc", nhan: "Lớp học", duoi: "/lop-hoc", quyen: ["KH-07"] },
   // (sửa 06/10/2026) chỉ theo KQ-02 (cán bộ đào tạo): cán bộ tài chính có KQ-03 nhưng tab kết quả
   // học tập không liên quan công việc của họ
+  // (bổ sung 25/10/2026 - GD-04) bài trắc nghiệm, sản phẩm cuối khóa: tình hình làm/nộp/chấm/đạt, gia hạn
+  { ma: "danh-gia", nhan: "Bài làm trực tuyến", duoi: "/danh-gia", quyen: ["KQ-02"] },
   { ma: "ket-qua", nhan: "Kết quả học tập", duoi: "/ket-qua", quyen: ["KQ-02"] },
   { ma: "chung-chi", nhan: "Văn bằng", duoi: "/chung-chi", quyen: ["CC-01"] },
   { ma: "hoc-phi", nhan: "Học phí", duoi: "/hoc-phi", quyen: ["HP-01"] },
@@ -38,7 +40,7 @@ export async function DauTrangKhoa({ khoa, dangChon, phu }: Props) {
   // (bổ sung 12/10/2026) khóa chỉ đăng ký dự thi/ôn thi (Phương thức 3) không có giảng dạy, không chia lớp
   const laDuThi = khoa.chuongTrinh.phuongThucDangKys?.includes("CHI_DU_THI") ?? false;
   for (const tab of TAB) {
-    if (laDuThi && (tab.ma === "giang-day" || tab.ma === "lop-hoc")) continue;
+    if (laDuThi && (tab.ma === "giang-day" || tab.ma === "lop-hoc" || tab.ma === "danh-gia")) continue;
     if (!laDuThi && tab.ma === "phong-thi") continue;
     if ((await Promise.all(tab.quyen.map(coQuyen))).some(Boolean)) hienTab.push(tab);
   }

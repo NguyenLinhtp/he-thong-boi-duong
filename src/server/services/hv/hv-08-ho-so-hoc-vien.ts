@@ -294,6 +294,7 @@ export async function xoaHocVien(id: string, phamVi: PhamViHoSoHocVien, nguoi: N
   const chiHocVien = !!tk && tk.vaiTros.every((v) => v.vaiTro.ma === "HOC_VIEN");
   await prisma.$transaction(async (tx) => {
     await tx.tienDoHocTap.deleteMany({ where: { hocVienId: id } });
+    await tx.giaHanDanhGia.deleteMany({ where: { hocVienId: id } });
     await tx.hocVien.delete({ where: { id } });
     if (tk && chiHocVien) await tx.nguoiDung.delete({ where: { id: tk.id } });
     await ghiThaoTac(

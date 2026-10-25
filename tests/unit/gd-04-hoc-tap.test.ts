@@ -179,3 +179,32 @@ describe("GD-04 thảo luận và ghi chép", () => {
     await expect(luuGhiChep(nguoiLa.id, f.khoa.id, muc, "x")).rejects.toThrow(KhongDuocXemTaiLieuError);
   });
 });
+
+// (bổ sung 25/10/2026) thời gian làm trắc nghiệm, nộp sản phẩm, ghi tiến độ khóa theo ngày bế giảng của khóa
+describe("GD-04 khóa làm bài theo ngày bế giảng", () => {
+  it("qua ngày bế giảng: chỉ xem lại, không làm bài/nộp sản phẩm/ghi tiến độ; gia hạn bế giảng thì làm tiếp được", async () => {
+    const f = await taoKhoaHoc();
+    const { nd } = await taoHocVien(f.khoa.id);
+    // lần làm bắt đầu trước khi hết hạn vẫn nộp được trong thời gian làm bài
+    const lanDangDo = await batDauLamBai(nd.id, f.khoa.id, f.bai.id);
+
+    const homQua = new Date(Date.now() - 2 * 86_400_000);
+    await prisma.khoa.update({ where: { id: f.khoa.id }, data: { thoiGianBeGiang: homQua } });
+
+    expect((await cauTrucKhoaHoc(nd.id, f.khoa.id)).capNhatTienDo).toBe(false);
+    expect(await danhDauHoanThanh(nd.id, f.khoa.id, `HL-${f.info.id}`)).toBe(false);
+    await expect(batDauLamBai(nd.id, f.khoa.id, f.bai.id)).rejects.toThrow(/quá ngày bế giảng/);
+    await expect(
+      nopSanPham(nd.id, { khoaId: f.khoa.id, yeuCauId: f.yc.id, tep: { ten: "sp.pdf", loai: "application/pdf", noiDung: Buffer.from("x") } }),
+    ).rejects.toThrow(/quá ngày bế giảng/);
+    await prisma.lanLamTracNghiem.update({ where: { id: lanDangDo.lanLamId }, data: { batDauLuc: new Date(homQua.getTime() - 3600_000) } });
+    await expect(nopBaiTracNghiem(nd.id, lanDangDo.lanLamId, { [f.cau.id]: [0] })).resolves.toMatchObject({ soCauDung: 1 });
+
+    // gia hạn bế giảng (KH-01 tab Tổng quan) - đúng ngày bế giảng vẫn còn làm được đến hết ngày
+    await prisma.khoa.update({ where: { id: f.khoa.id }, data: { thoiGianBeGiang: new Date() } });
+    expect((await cauTrucKhoaHoc(nd.id, f.khoa.id)).capNhatTienDo).toBe(true);
+    await expect(
+      nopSanPham(nd.id, { khoaId: f.khoa.id, yeuCauId: f.yc.id, tep: { ten: "sp.pdf", loai: "application/pdf", noiDung: Buffer.from("x") } }),
+    ).resolves.toBeTruthy();
+  });
+});
