@@ -21,6 +21,7 @@ export type MucBai = {
   soLanToiDa: number | null;
   diemDat: number | null;
   tinhDiem: boolean;
+  thangDiem: number;
 };
 
 export type TrangThaiO = "CHUA_LAM" | "DANG_LAM" | "CHUA_CHAM" | "DAT" | "CHUA_DAT" | "CO_DIEM";
@@ -75,11 +76,11 @@ export async function bangDanhGiaKhoa(khoaId: string) {
   const dsMuc: MucBai[] = dsHp.flatMap((hp) => [
     ...hp.baiTracNghiems.map((b) => ({
       key: `TN-${b.id}`, loai: "TN" as const, id: b.id, ten: b.tieuDe, hocPhanId: hp.id, hocPhan: hp.ten,
-      soLanToiDa: b.soLanToiDa, diemDat: b.diemDat == null ? null : Number(b.diemDat), tinhDiem: b.tinhDiem,
+      soLanToiDa: b.soLanToiDa, diemDat: b.diemDat == null ? null : Number(b.diemDat), tinhDiem: b.tinhDiem, thangDiem: b.thangDiem,
     })),
     ...hp.yeuCauSanPhams.map((y) => ({
       key: `SP-${y.id}`, loai: "SP" as const, id: y.id, ten: y.tieuDe, hocPhanId: hp.id, hocPhan: hp.ten,
-      soLanToiDa: null, diemDat: y.diemDat == null ? null : Number(y.diemDat), tinhDiem: y.tinhDiem,
+      soLanToiDa: null, diemDat: y.diemDat == null ? null : Number(y.diemDat), tinhDiem: y.tinhDiem, thangDiem: y.thangDiem,
     })),
   ]);
   const dsHocVienId = dsDangKy.map((d) => d.hocVienId);
@@ -116,7 +117,7 @@ export async function bangDanhGiaKhoa(khoaId: string) {
         const t = o[m.key].trangThai;
         if (t === "CHUA_LAM" || t === "DANG_LAM") chuaDat.push(`${m.loai === "TN" ? "Chưa làm" : "Chưa nộp"}: ${m.ten}`);
         else if (t === "CHUA_CHAM") chuaDat.push(`Chưa chấm: ${m.ten}`);
-        else if (t === "CHUA_DAT") chuaDat.push(`${m.ten} ${o[m.key].diem} < ${m.diemDat}`);
+        else if (t === "CHUA_DAT") chuaDat.push(`${m.ten} ${o[m.key].diem}/${m.thangDiem} < ${m.diemDat}`);
       }
     }
     return {

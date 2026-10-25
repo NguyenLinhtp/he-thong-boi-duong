@@ -10,10 +10,13 @@ export function FormCham({
   diem,
   nhanXet,
   khoa,
+  thangDiem = 10,
 }: {
   baiNopId: string;
   diem: number | null;
   nhanXet: string | null;
+  // (bổ sung 25/10/2026) thang điểm cấu hình của yêu cầu sản phẩm ở chương trình
+  thangDiem?: number;
   // kết quả khóa đã phê duyệt (KQ-04) - không chấm/sửa
   khoa: boolean;
 }) {
@@ -27,14 +30,16 @@ export function FormCham({
         name="diem"
         type="number"
         min={0}
-        max={10}
-        step={0.1}
+        max={thangDiem}
+        step={0.01}
         defaultValue={diem ?? ""}
-        placeholder="Điểm"
-        aria-label="Điểm (0-10)"
-        className="w-20"
+        placeholder={`0-${thangDiem}`}
+        aria-label={`Điểm (thang ${thangDiem})`}
+        title={`Nhập điểm thang ${thangDiem} (0-${thangDiem})`}
+        className="w-24"
         required
       />
+      <span className="self-center text-xs text-muted-foreground">/ {thangDiem}</span>
       <Input name="nhanXet" defaultValue={nhanXet ?? ""} placeholder="Nhận xét (không bắt buộc)" aria-label="Nhận xét" className="w-56" />
       <Button type="submit" size="sm" disabled={dangLuu}>
         {dangLuu ? "Đang lưu..." : diem == null ? "Chấm" : "Sửa điểm"}

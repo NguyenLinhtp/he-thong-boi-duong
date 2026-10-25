@@ -186,13 +186,16 @@ function KhungGiua({ nd, khoaId, mucKey, capNhat, hoanThanh }: { nd: NoiDung; kh
           </p>
           <p>
             <span className="block text-muted-foreground">Điểm cao nhất</span>
-            <b>{diemCaoNhat == null ? "—" : diemCaoNhat.toLocaleString("vi-VN")}</b>
-            <span className="block text-xs text-muted-foreground">{bai.tinhDiem ? `tính điểm, hệ số ${Number(bai.heSo)}` : "tự kiểm tra"}</span>
+            <b>{diemCaoNhat == null ? "—" : `${diemCaoNhat.toLocaleString("vi-VN")}/${bai.thangDiem}`}</b>
+            <span className="block text-xs text-muted-foreground">
+              thang {bai.thangDiem} · {bai.tinhDiem ? `tính điểm, hệ số ${Number(bai.heSo)}` : "tự kiểm tra"}
+              {bai.diemDat != null && ` · đạt ≥ ${Number(bai.diemDat)}`}
+            </span>
           </p>
         </div>
         {bai.moTa && <p className="text-sm whitespace-pre-line">{bai.moTa}</p>}
         <GhiChuGiaHan giaHan={giaHan} />
-        <LamTracNghiem khoaId={khoaId} baiId={bai.id} duocLam={nd.duocLam} conLuot={conLuot} />
+        <LamTracNghiem khoaId={khoaId} baiId={bai.id} duocLam={nd.duocLam} conLuot={conLuot} thangDiem={bai.thangDiem} />
       </div>
     );
   }
@@ -202,7 +205,10 @@ function KhungGiua({ nd, khoaId, mucKey, capNhat, hoanThanh }: { nd: NoiDung; kh
       <div className="rounded-lg border bg-white p-4">
         <p className="text-sm font-bold text-ued-blue-dam">Yêu cầu sản phẩm</p>
         <p className="mt-1 whitespace-pre-line">{yc.moTa ?? "Nộp sản phẩm theo hướng dẫn của giảng viên."}</p>
-        <p className="mt-2 text-xs text-muted-foreground">{yc.tinhDiem ? `Tính điểm, hệ số ${Number(yc.heSo)}` : "Không tính điểm"}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Chấm thang {yc.thangDiem} điểm · {yc.tinhDiem ? `tính điểm, hệ số ${Number(yc.heSo)}` : "không tính điểm"}
+          {yc.diemDat != null && ` · đạt ≥ ${Number(yc.diemDat)}`}
+        </p>
       </div>
       {baiNop && (
         <div className="rounded-lg border bg-white p-4 text-sm">
@@ -211,7 +217,7 @@ function KhungGiua({ nd, khoaId, mucKey, capNhat, hoanThanh }: { nd: NoiDung; kh
           </p>
           {baiNop.diem != null ? (
             <p className="mt-1 font-medium text-success">
-              Điểm: {Number(baiNop.diem).toLocaleString("vi-VN")} {baiNop.nhanXet && <span className="font-normal text-foreground">· Nhận xét: {baiNop.nhanXet}</span>}
+              Điểm: {Number(baiNop.diem).toLocaleString("vi-VN")}/{yc.thangDiem} {baiNop.nhanXet && <span className="font-normal text-foreground">· Nhận xét: {baiNop.nhanXet}</span>}
             </p>
           ) : (
             <p className="mt-1 text-muted-foreground">Chờ giảng viên chấm - có thể nộp lại để thay tệp.</p>

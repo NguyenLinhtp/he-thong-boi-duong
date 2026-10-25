@@ -150,7 +150,7 @@ export function chamCau(dapAnDung: number[], chon: number[]) {
   return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
-/** Nộp bài: chấm tự động, điểm thang 10 làm tròn 2 chữ số. */
+/** Nộp bài: chấm tự động, điểm theo thang điểm của bài (chia đều theo số câu), làm tròn 2 chữ số. */
 export async function nopBaiTracNghiem(nguoiDungId: string, lanLamId: string, traLoi: Record<string, number[]>) {
   const lan = await layLanLamDangDo(nguoiDungId, lanLamId);
   if (lan.nopLuc) throw new KhongDuocLamDanhGiaError("Lần làm bài này đã nộp");
@@ -162,7 +162,8 @@ export async function nopBaiTracNghiem(nguoiDungId: string, lanLamId: string, tr
 
   const soCauDung = bai.cauHois.filter((c) => chamCau(c.dapAnDung, traLoi[c.id] ?? [])).length;
   const tongSoCau = bai.cauHois.length;
-  const diem = Math.round((soCauDung / tongSoCau) * 1000) / 100;
+  // (sửa 25/10/2026) chia đều cho số câu trên thang điểm của bài (mặc định 10)
+  const diem = Math.round((soCauDung / tongSoCau) * bai.thangDiem * 100) / 100;
   // chỉ nộp được 1 lần: điều kiện nopLuc = null trong where chặn nộp trùng đồng thời
   const capNhat = await prisma.lanLamTracNghiem.updateMany({
     where: { id: lanLamId, nopLuc: null },

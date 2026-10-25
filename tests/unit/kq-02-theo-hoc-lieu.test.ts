@@ -22,7 +22,7 @@ afterAll(async () => {
   await prisma.loaiHinhBoiDuong.deleteMany({ where: { id: { in: ids.loaiHinh } } });
 });
 
-const muc = (khoa: string, tinhDiem: boolean, diemDat: number | null, loai: "TN" | "SP" = "TN"): MucDanhGia => ({
+const muc = (khoa: string, tinhDiem: boolean, diemDat: number | null, loai: "TN" | "SP" = "TN", thangDiem = 10): MucDanhGia => ({
   khoa,
   loai,
   id: khoa,
@@ -31,6 +31,7 @@ const muc = (khoa: string, tinhDiem: boolean, diemDat: number | null, loai: "TN"
   tinhDiem,
   heSo: 1,
   diemDat,
+  thangDiem,
 });
 const co = (diem: number) => ({ diem, trangThai: "CO_DIEM" as const });
 const THAM_SO = { diemDat: 5, chuyenCanToiThieu: 80 };
@@ -39,6 +40,10 @@ describe("cách tính", () => {
   it("2 bài trắc nghiệm + 1 bài thu hoạch đều tính điểm hệ số 1: điểm cuối khóa = trung bình; kèm chuyên cần", () => {
     const ds = [muc("TN1", true, null), muc("TN2", true, null), muc("SP", true, null, "SP")];
     expect(danhGiaTheoHocLieu(ds, { TN1: co(8), TN2: co(6), SP: co(7) }, THAM_SO, 90)).toMatchObject({ diemTongKet: 7, datHocTap: true, ghiChu: null });
+    // (bổ sung 25/10/2026) bài thang 100: điểm cuối khóa quy về thang 10, điểm đạt so theo thang của bài
+    const ds100 = [muc("TN1", true, 50, "TN", 100), muc("TN2", true, null), muc("SP", true, null, "SP")];
+    expect(danhGiaTheoHocLieu(ds100, { TN1: co(80), TN2: co(6), SP: co(7) }, THAM_SO, null)).toMatchObject({ diemTongKet: 7, datHocTap: true });
+    expect(danhGiaTheoHocLieu(ds100, { TN1: co(40), TN2: co(6), SP: co(7) }, THAM_SO, null)).toMatchObject({ datHocTap: false, ghiChu: "TN1 40/100 < 50" });
     expect(danhGiaTheoHocLieu(ds, { TN1: co(8), TN2: co(6), SP: co(7) }, THAM_SO, 70)).toMatchObject({ datHocTap: false, ghiChu: "Chuyên cần 70% < 80%" });
     // chưa làm 1 bài = 0 điểm; bài thu hoạch đã nộp chưa chấm -> chưa có điểm cuối khóa
     expect(danhGiaTheoHocLieu(ds, { TN1: co(8), TN2: { diem: null, trangThai: "CHUA_LAM" }, SP: co(7) }, THAM_SO, null)).toMatchObject({ diemTongKet: 5, datHocTap: true });
@@ -53,8 +58,8 @@ describe("cách tính", () => {
   it("bài bắt buộc đạt không vào điểm cuối khóa nhưng phải đạt; bài tính điểm có điểm đạt riêng", () => {
     const ds = [muc("TN1", true, 6), muc("TN2", false, 5)];
     expect(danhGiaTheoHocLieu(ds, { TN1: co(9), TN2: co(5) }, THAM_SO, null)).toMatchObject({ diemTongKet: 9, datHocTap: true });
-    expect(danhGiaTheoHocLieu(ds, { TN1: co(9), TN2: co(4) }, THAM_SO, null)).toMatchObject({ datHocTap: false, ghiChu: "TN2 4 < 5" });
-    expect(danhGiaTheoHocLieu(ds, { TN1: co(5.5), TN2: co(8) }, THAM_SO, null)).toMatchObject({ datHocTap: false, ghiChu: "TN1 5.5 < 6" });
+    expect(danhGiaTheoHocLieu(ds, { TN1: co(9), TN2: co(4) }, THAM_SO, null)).toMatchObject({ datHocTap: false, ghiChu: "TN2 4/10 < 5" });
+    expect(danhGiaTheoHocLieu(ds, { TN1: co(5.5), TN2: co(8) }, THAM_SO, null)).toMatchObject({ datHocTap: false, ghiChu: "TN1 5.5/10 < 6" });
     expect(danhGiaTheoHocLieu(ds, { TN1: co(9) }, THAM_SO, null)).toMatchObject({ datHocTap: false, ghiChu: "Chưa làm: TN2" });
   });
 });
@@ -104,7 +109,7 @@ describe("cấu hình khi tạo học liệu và tổng hợp KQ-02", () => {
     // bài thu hoạch đổi thành bắt buộc đạt ≥ 8 (không tính điểm) -> trung bình 2 bài trắc nghiệm = 7, nhưng không đạt bài thu hoạch
     await capNhatYeuCauSanPham(sp.id, { tieuDe: "Bài thu hoạch", tinhDiem: false, diemDat: 8 }, NGUOI);
     await tongHopKetQuaKhoa(khoa.id);
-    expect(await prisma.ketQuaKhoa.findFirstOrThrow({ where: { khoaId: khoa.id } })).toMatchObject({ datHocTap: false, ghiChu: "Bài thu hoạch 7 < 8" });
+    expect(await prisma.ketQuaKhoa.findFirstOrThrow({ where: { khoaId: khoa.id } })).toMatchObject({ datHocTap: false, ghiChu: "Bài thu hoạch 7/10 < 8" });
 
     // chuyên cần tối thiểu: chương trình 90%, khóa sửa riêng 50%
     await datDiemDatChuongTrinh(ct.id, null, NGUOI, 90);

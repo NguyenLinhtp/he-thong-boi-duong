@@ -154,11 +154,35 @@ export function NutThaoTac({
  * Cách tính trong xét hoàn thành, dùng chung cho bài trắc nghiệm và yêu cầu sản phẩm (sửa 13/10/2026):
  * chỉ tự kiểm tra / bắt buộc đạt (điểm đạt, không vào điểm cuối khóa) / tính vào điểm cuối khóa (hệ số, điểm đạt tùy chọn).
  */
-export function TruongTinhDiem({ tinhDiem = false, heSo = 1, diemDat = null }: { tinhDiem?: boolean; heSo?: number; diemDat?: number | null }) {
+export function TruongTinhDiem({
+  tinhDiem = false,
+  heSo = 1,
+  diemDat = null,
+  thangDiem = 10,
+  loai = "TN",
+}: {
+  tinhDiem?: boolean;
+  heSo?: number;
+  diemDat?: number | null;
+  thangDiem?: number;
+  loai?: "TN" | "SP";
+}) {
   const [cach, setCach] = useState<"TU_KIEM_TRA" | "BAT_BUOC_DAT" | "TINH_DIEM">(tinhDiem ? "TINH_DIEM" : diemDat != null ? "BAT_BUOC_DAT" : "TU_KIEM_TRA");
+  // (bổ sung 25/10/2026) thang điểm của bài: điểm học viên, điểm đạt, điểm giảng viên chấm đều theo thang này
+  const [thang, setThang] = useState(String(thangDiem));
   return (
     <div className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3 text-sm">
-      <span className="font-medium">Điều kiện hoàn thành</span>
+      <span className="font-medium">Thang điểm và điều kiện hoàn thành</span>
+      <label className="flex flex-wrap items-center gap-1.5">
+        Thang điểm
+        <Input name="thangDiem" type="number" min={1} max={100} step={1} value={thang} onChange={(e) => setThang(e.target.value)} required className="h-8 w-20" />
+        <span className="text-xs text-muted-foreground">
+          {loai === "TN"
+            ? `vd. 10 hoặc 100 - điểm bài = số câu đúng ÷ số câu × ${thang || "thang điểm"} (chia đều theo số câu)`
+            : `vd. 10 hoặc 100 - giảng viên chấm từ 0 đến ${thang || "thang điểm"}`}
+          ; điểm cuối khóa quy về thang 10
+        </span>
+      </label>
       <div className="flex flex-wrap items-center gap-3">
         <select value={cach} onChange={(e) => setCach(e.target.value as typeof cach)} className="h-8 rounded-md border bg-background px-2 text-sm" aria-label="Cách tính">
           <option value="TU_KIEM_TRA">Chỉ để học viên tự kiểm tra</option>
@@ -174,7 +198,7 @@ export function TruongTinhDiem({ tinhDiem = false, heSo = 1, diemDat = null }: {
         )}
         {cach !== "TU_KIEM_TRA" && (
           <label className="flex items-center gap-1.5">
-            Điểm đạt (0-10){cach === "TINH_DIEM" && <span className="text-xs text-muted-foreground"> - không bắt buộc</span>}
+            Điểm đạt (0-{thang || "thang"}){cach === "TINH_DIEM" && <span className="text-xs text-muted-foreground"> - không bắt buộc</span>}
             <Input name="diemDat" inputMode="decimal" defaultValue={diemDat ?? ""} required={cach === "BAT_BUOC_DAT"} className="h-8 w-20" />
           </label>
         )}
@@ -228,7 +252,7 @@ export function FormYeuCauSanPham({ hanhDong }: { hanhDong: (t: KetQuaThaoTac, f
     <form action={formAction} className="flex flex-col gap-2 rounded-lg border border-dashed bg-muted/40 p-3">
       <Input name="tieuDe" required placeholder="Tên sản phẩm (VD: Kế hoạch bài dạy minh họa)" className="max-w-xl" />
       <textarea name="moTa" rows={3} className="max-w-xl rounded-lg border p-2 text-sm" placeholder="Yêu cầu, tiêu chí đánh giá (không bắt buộc)" />
-      <TruongTinhDiem />
+      <TruongTinhDiem loai="SP" />
       <div className="flex items-center gap-2">
         <Button type="submit" size="sm" disabled={dangLuu}>
           Thêm yêu cầu
@@ -248,7 +272,7 @@ export function FormSuaYeuCauSanPham({
   yc,
 }: {
   hanhDong: (t: KetQuaThaoTac, f: FormData) => Promise<KetQuaThaoTac>;
-  yc: { tieuDe: string; moTa: string | null; tinhDiem: boolean; heSo: number; diemDat: number | null };
+  yc: { tieuDe: string; moTa: string | null; tinhDiem: boolean; heSo: number; diemDat: number | null; thangDiem: number };
 }) {
   const [kq, formAction, dangLuu] = useActionState(hanhDong, undefined);
   return (
@@ -257,7 +281,7 @@ export function FormSuaYeuCauSanPham({
       <form key={JSON.stringify(yc)} action={formAction} className="mt-2 flex flex-col gap-2 rounded-lg border border-dashed bg-muted/40 p-3 text-sm">
         <Input name="tieuDe" required defaultValue={yc.tieuDe} className="max-w-xl" />
         <textarea name="moTa" rows={3} defaultValue={yc.moTa ?? ""} className="max-w-xl rounded-lg border p-2 text-sm" placeholder="Yêu cầu, tiêu chí đánh giá (không bắt buộc)" />
-        <TruongTinhDiem tinhDiem={yc.tinhDiem} heSo={yc.heSo} diemDat={yc.diemDat} />
+        <TruongTinhDiem tinhDiem={yc.tinhDiem} heSo={yc.heSo} diemDat={yc.diemDat} thangDiem={yc.thangDiem} loai="SP" />
         <div className="flex items-center gap-2">
           <Button type="submit" size="sm" disabled={dangLuu}>
             Lưu

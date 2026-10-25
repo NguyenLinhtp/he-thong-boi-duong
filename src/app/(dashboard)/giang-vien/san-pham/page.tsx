@@ -52,7 +52,7 @@ export default async function ChamSanPhamPage({ searchParams }: { searchParams: 
       <div>
         <h1 className="text-xl font-bold text-ued-blue-dam">KQ-01 · Chấm sản phẩm cuối khóa</h1>
         <p className="text-sm text-muted-foreground">
-          Bài nộp của học viên thuộc học phần/lớp anh/chị phụ trách. Điểm 0–10; sản phẩm được chọn tính điểm sẽ vào điểm
+          Bài nộp của học viên thuộc học phần/lớp anh/chị phụ trách. Chấm theo thang điểm cấu hình của từng yêu cầu sản phẩm (ghi ở đầu mỗi bảng); sản phẩm được chọn tính điểm sẽ vào điểm
           đánh giá trực tuyến ở màn hình Nhập điểm.
         </p>
       </div>
@@ -79,7 +79,10 @@ export default async function ChamSanPhamPage({ searchParams }: { searchParams: 
       ) : (
         [...nhom.entries()].map(([tieuDe, ds]) => (
           <section key={tieuDe} className="flex flex-col gap-2">
-            <h2 className="text-base font-bold text-ued-blue-dam">{tieuDe}</h2>
+            <h2 className="text-base font-bold text-ued-blue-dam">
+              {tieuDe}
+              <span className="ml-2 rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Chấm thang {ds[0].yeuCau.thangDiem} điểm</span>
+            </h2>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -109,6 +112,7 @@ export default async function ChamSanPhamPage({ searchParams }: { searchParams: 
                         diem={b.diem == null ? null : Number(b.diem)}
                         nhanXet={b.nhanXet}
                         khoa={b.daPheDuyet}
+                        thangDiem={b.yeuCau.thangDiem}
                       />
                       {b.chamLuc && (
                         <div className="mt-1 text-xs text-muted-foreground">

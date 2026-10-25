@@ -42,7 +42,7 @@ function OKetQua({ m, o }: { m: MucBai; o: OBai }) {
         ? "Đang làm"
         : o.trangThai === "CHUA_CHAM"
           ? "Chưa chấm"
-          : so(o.diem);
+          : `${so(o.diem)}/${m.thangDiem}`;
   return (
     <span className="flex flex-col leading-tight">
       <span className={cn("font-medium", mau, o.trangThai === "CHUA_LAM" && "text-muted-foreground")}>{chu}</span>
@@ -223,7 +223,7 @@ export default async function BaiLamTrucTuyenPage({ params, searchParams }: { pa
                       <TableCell>
                         <span className="font-medium">{tenMuc(t.muc)}</span>
                         <span className="block text-xs text-muted-foreground">
-                          {t.muc.hocPhan}
+                          {t.muc.hocPhan} · thang {t.muc.thangDiem}
                           {t.muc.diemDat !== null ? ` · điểm đạt ${so(t.muc.diemDat)}` : " · không xét đạt"}
                           {t.muc.soLanToiDa ? ` · tối đa ${t.muc.soLanToiDa} lượt` : ""}
                         </span>
@@ -235,7 +235,7 @@ export default async function BaiLamTrucTuyenPage({ params, searchParams }: { pa
                       <TableCell className={cn("text-right", t.chuaCham > 0 && "font-medium text-warning")}>{t.muc.loai === "SP" ? t.chuaCham : "—"}</TableCell>
                       <TableCell className="text-right">{t.muc.diemDat !== null ? t.dat : "—"}</TableCell>
                       <TableCell className={cn("text-right", t.chuaDat > 0 && "font-medium text-destructive")}>{t.muc.diemDat !== null ? t.chuaDat : "—"}</TableCell>
-                      <TableCell className="text-right">{so(t.diemTB)}</TableCell>
+                      <TableCell className="text-right">{t.diemTB === null ? "—" : `${so(t.diemTB)}/${t.muc.thangDiem}`}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

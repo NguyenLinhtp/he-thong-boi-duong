@@ -98,7 +98,19 @@ function DongHo({ hetHanLuc, khiHet }: { hetHanLuc: string; khiHet: () => void }
 }
 
 /** Làm bài trắc nghiệm ngay trong màn hình học: bắt đầu -> trả lời -> nộp (tự nộp khi hết giờ). */
-export function LamTracNghiem({ khoaId, baiId, duocLam, conLuot }: { khoaId: string; baiId: string; duocLam: boolean; conLuot: boolean }) {
+export function LamTracNghiem({
+  khoaId,
+  baiId,
+  duocLam,
+  conLuot,
+  thangDiem = 10,
+}: {
+  khoaId: string;
+  baiId: string;
+  duocLam: boolean;
+  conLuot: boolean;
+  thangDiem?: number;
+}) {
   const router = useRouter();
   const [lan, setLan] = useState<LanLam | null>(null);
   const [traLoi, setTraLoi] = useState<Record<string, number[]>>({});
@@ -125,7 +137,7 @@ export function LamTracNghiem({ khoaId, baiId, duocLam, conLuot }: { khoaId: str
     return (
       <div className="flex flex-col items-start gap-3 rounded-lg border bg-green-50 p-4">
         <p className="text-lg font-bold text-success">
-          Kết quả: {ketQua.soCauDung}/{ketQua.tongSoCau} câu đúng · {ketQua.diem.toLocaleString("vi-VN")} điểm
+          Kết quả: {ketQua.soCauDung}/{ketQua.tongSoCau} câu đúng · {ketQua.diem.toLocaleString("vi-VN")}/{thangDiem} điểm
         </p>
         <Button type="button" variant="outline" size="sm" onClick={() => setKetQua(null)}>
           Đóng

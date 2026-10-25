@@ -256,7 +256,7 @@ export default async function KetQuaKhoaPage({
                     <TableHead key={m.khoa}>
                       {m.ten}
                       <span className="block text-xs font-normal text-muted-foreground">
-                        {m.tinhDiem ? `hệ số ${m.heSo}` : "bắt buộc đạt"}
+                        thang {m.thangDiem} · {m.tinhDiem ? `hệ số ${m.heSo}` : "bắt buộc đạt"}
                         {m.diemDat !== null && ` · đạt ≥ ${m.diemDat}`}
                       </span>
                     </TableHead>

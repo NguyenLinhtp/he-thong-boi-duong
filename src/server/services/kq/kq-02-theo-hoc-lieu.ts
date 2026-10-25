@@ -20,7 +20,9 @@ export type MucDanhGia = {
   hocPhan: string;
   tinhDiem: boolean;
   heSo: number;
+  // (bổ sung 25/10/2026) điểm bài và điểm đạt của bài theo thang này; điểm cuối khóa quy về thang 10
   diemDat: number | null;
+  thangDiem: number;
 };
 
 export type DiemMuc = { diem: number | null; trangThai: "CO_DIEM" | "CHUA_LAM" | "CHUA_CHAM" };
@@ -45,6 +47,7 @@ export async function mucDanhGiaCuaChuongTrinh(chuongTrinhId: string): Promise<M
       tinhDiem: b.tinhDiem,
       heSo: Number(b.heSo),
       diemDat: b.diemDat == null ? null : Number(b.diemDat),
+      thangDiem: b.thangDiem,
     })),
     ...hp.yeuCauSanPhams.map((y) => ({
       khoa: `SP_${y.id}`,
@@ -55,6 +58,7 @@ export async function mucDanhGiaCuaChuongTrinh(chuongTrinhId: string): Promise<M
       tinhDiem: y.tinhDiem,
       heSo: Number(y.heSo),
       diemDat: y.diemDat == null ? null : Number(y.diemDat),
+      thangDiem: y.thangDiem,
     })),
   ]);
 }
@@ -101,13 +105,13 @@ export function danhGiaTheoHocLieu(
   let diemTongKet: number | null = null;
   if (tinhDiem.length > 0 && !chuaCham.some((m) => m.tinhDiem)) {
     const tongHeSo = tinhDiem.reduce((t, m) => t + m.heSo, 0);
-    diemTongKet = Math.round((tinhDiem.reduce((t, m) => t + m.heSo * (diem[m.khoa]?.diem ?? 0), 0) / tongHeSo) * 100) / 100;
+    diemTongKet = Math.round((tinhDiem.reduce((t, m) => t + m.heSo * (((diem[m.khoa]?.diem ?? 0) / m.thangDiem) * 10), 0) / tongHeSo) * 100) / 100;
   }
   if (chuaCham.length > 0) ghiChu.push(`Chưa chấm: ${chuaCham.map((m) => m.ten).join(", ")}`);
   for (const m of dsMuc.filter((x) => x.diemDat !== null)) {
     const d = diem[m.khoa];
     if (!d || d.trangThai === "CHUA_LAM") ghiChu.push(`${m.loai === "TN" ? "Chưa làm" : "Chưa nộp"}: ${m.ten}`);
-    else if (d.trangThai === "CO_DIEM" && (d.diem as number) < (m.diemDat as number)) ghiChu.push(`${m.ten} ${d.diem} < ${m.diemDat}`);
+    else if (d.trangThai === "CO_DIEM" && (d.diem as number) < (m.diemDat as number)) ghiChu.push(`${m.ten} ${d.diem}/${m.thangDiem} < ${m.diemDat}`);
   }
   if (diemTongKet !== null && diemTongKet < thamSo.diemDat) ghiChu.push(`Điểm cuối khóa ${diemTongKet} < ${thamSo.diemDat}`);
   if (tyLeChuyenCan !== null && tyLeChuyenCan < thamSo.chuyenCanToiThieu) ghiChu.push(`Chuyên cần ${tyLeChuyenCan}% < ${thamSo.chuyenCanToiThieu}%`);

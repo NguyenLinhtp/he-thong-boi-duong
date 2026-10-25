@@ -25,18 +25,18 @@ const kichThuoc = (byte: number | null) =>
   byte == null ? "" : byte < 1024 * 1024 ? `${Math.ceil(byte / 1024)} KB` : `${(byte / 1024 / 1024).toFixed(1)} MB`;
 
 // (sửa 13/10/2026) nhãn điều kiện hoàn thành của bài: tính điểm (hệ số, điểm đạt) / bắt buộc đạt / tự kiểm tra
-function NhanDiem({ tinhDiem, heSo, diemDat }: { tinhDiem: boolean; heSo: unknown; diemDat: unknown }) {
+function NhanDiem({ tinhDiem, heSo, diemDat, thangDiem }: { tinhDiem: boolean; heSo: unknown; diemDat: unknown; thangDiem: number }) {
   return tinhDiem ? (
     <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-800 ring-1 ring-blue-600/25 ring-inset">
-      Tính điểm cuối khóa · hệ số {Number(heSo)}
+      Thang {thangDiem} · tính điểm cuối khóa · hệ số {Number(heSo)}
       {diemDat != null && ` · đạt ≥ ${Number(diemDat)}`}
     </span>
   ) : diemDat != null ? (
     <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-600/25 ring-inset">
-      Bắt buộc đạt ≥ {Number(diemDat)}
+      Thang {thangDiem} · bắt buộc đạt ≥ {Number(diemDat)}
     </span>
   ) : (
-    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700 ring-1 ring-slate-500/25 ring-inset">Tự kiểm tra</span>
+    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700 ring-1 ring-slate-500/25 ring-inset">Thang {thangDiem} · tự kiểm tra</span>
   );
 }
 
@@ -138,7 +138,7 @@ export default async function HocLieuChuongTrinhPage({ params }: { params: Promi
                       <Link href={`/chuong-trinh/${id}/hoc-lieu/trac-nghiem/${bai.id}`} className="font-medium">
                         {bai.tieuDe}
                       </Link>
-                      <NhanDiem tinhDiem={bai.tinhDiem} heSo={bai.heSo} diemDat={bai.diemDat} />
+                      <NhanDiem tinhDiem={bai.tinhDiem} heSo={bai.heSo} diemDat={bai.diemDat} thangDiem={bai.thangDiem} />
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {bai._count.cauHois} câu hỏi
@@ -173,7 +173,7 @@ export default async function HocLieuChuongTrinhPage({ params }: { params: Promi
                   <li key={yc.id} className="flex flex-col gap-1 p-2 text-sm">
                     <div className="flex items-start justify-between gap-2">
                       <span className="font-medium">{yc.tieuDe}</span>
-                      <NhanDiem tinhDiem={yc.tinhDiem} heSo={yc.heSo} diemDat={yc.diemDat} />
+                      <NhanDiem tinhDiem={yc.tinhDiem} heSo={yc.heSo} diemDat={yc.diemDat} thangDiem={yc.thangDiem} />
                     </div>
                     {yc.moTa && <p className="text-xs whitespace-pre-line text-muted-foreground">{yc.moTa}</p>}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -181,7 +181,7 @@ export default async function HocLieuChuongTrinhPage({ params }: { params: Promi
                       {choSua && (
                         <FormSuaYeuCauSanPham
                           hanhDong={capNhatYeuCauSanPhamAction.bind(null, id, yc.id)}
-                          yc={{ tieuDe: yc.tieuDe, moTa: yc.moTa, tinhDiem: yc.tinhDiem, heSo: Number(yc.heSo), diemDat: yc.diemDat == null ? null : Number(yc.diemDat) }}
+                          yc={{ tieuDe: yc.tieuDe, moTa: yc.moTa, tinhDiem: yc.tinhDiem, heSo: Number(yc.heSo), diemDat: yc.diemDat == null ? null : Number(yc.diemDat), thangDiem: yc.thangDiem }}
                         />
                       )}
                       {choSua && yc._count.baiNops === 0 && (

@@ -1256,7 +1256,10 @@ model BaiTracNghiem {
   heSo         Decimal            @default(1) @db.Decimal(4, 2)
   // (bổ sung 13/10/2026) điều kiện hoàn thành của bài: điểm tối thiểu phải đạt (null = không bắt buộc đạt);
   // tinhDiem = đưa vào điểm cuối khóa theo hệ số
-  diemDat      Decimal?           @db.Decimal(4, 2)
+  diemDat      Decimal?           @db.Decimal(6, 2)
+  // (bổ sung 25/10/2026) thang điểm của bài (mặc định 10, vd. 100): điểm học viên, điểm đạt nhập theo thang này;
+  // khi tổng hợp điểm cuối khóa (KQ-02) và điểm đánh giá trực tuyến học phần (KQ-01) quy về thang 10
+  thangDiem    Int                @default(10)
   thuTu        Int                @default(0)
   createdAt    DateTime           @default(now())
   cauHois      CauHoiTracNghiem[]
@@ -1294,7 +1297,7 @@ model LanLamTracNghiem {
   traLoi    Json?
   soCauDung Int?
   tongSoCau Int?
-  diem      Decimal?      @db.Decimal(4, 2)
+  diem      Decimal?      @db.Decimal(6, 2)
 
   @@index([baiId, khoaId, hocVienId])
   @@map("lan_lam_trac_nghiem")
@@ -1310,7 +1313,10 @@ model YeuCauSanPham {
   tinhDiem  Boolean         @default(false)
   heSo      Decimal         @default(1) @db.Decimal(4, 2)
   // (bổ sung 13/10/2026) điểm tối thiểu phải đạt (null = không bắt buộc đạt)
-  diemDat   Decimal?        @db.Decimal(4, 2)
+  diemDat   Decimal?        @db.Decimal(6, 2)
+  // (bổ sung 25/10/2026) thang điểm của bài (mặc định 10, vd. 100): điểm học viên, điểm đạt nhập theo thang này;
+  // khi tổng hợp điểm cuối khóa (KQ-02) và điểm đánh giá trực tuyến học phần (KQ-01) quy về thang 10
+  thangDiem Int             @default(10)
   thuTu     Int             @default(0)
   createdAt DateTime        @default(now())
   baiNops   BaiNopSanPham[]
@@ -1333,7 +1339,7 @@ model BaiNopSanPham {
   khoaLuuTru String        @unique
   ghiChu     String?
   nopLuc     DateTime      @default(now())
-  diem       Decimal?      @db.Decimal(4, 2)
+  diem       Decimal?      @db.Decimal(6, 2)
   nhanXet    String?
   nguoiCham  String?
   chamLuc    DateTime?

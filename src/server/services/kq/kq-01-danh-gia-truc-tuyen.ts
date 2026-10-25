@@ -31,7 +31,9 @@ export async function chamSanPham(nguoiDungId: string, baiNopId: string, input: 
     throw new KhongPhuTrachHocPhanError();
   }
   if (await ketQuaKhoaDaPheDuyet(baiNop.khoaId)) throw new KhongDuocLamDanhGiaError("Kết quả khóa đã phê duyệt - không chấm/sửa điểm sản phẩm");
-  if (!(Number.isFinite(input.diem) && input.diem >= 0 && input.diem <= 10)) throw new DanhGiaKhongHopLeError("điểm phải trong khoảng 0-10");
+  // (sửa 25/10/2026) điểm theo thang điểm cấu hình của yêu cầu sản phẩm (mặc định 10)
+  const thang = baiNop.yeuCau.thangDiem;
+  if (!(Number.isFinite(input.diem) && input.diem >= 0 && input.diem <= thang)) throw new DanhGiaKhongHopLeError(`điểm phải trong khoảng 0-${thang} (thang ${thang})`);
   const diem = Math.round(input.diem * 100) / 100;
 
   return prisma.$transaction(async (tx) => {
@@ -82,7 +84,8 @@ export type DiemTrucTuyen = {
   diem: number | null;
   // có sản phẩm tính điểm đã nộp nhưng chưa chấm -> chưa đủ để dùng
   chuaDu: boolean;
-  chiTiet: { tieuDe: string; heSo: number; diem: number | null }[];
+  // diem theo thang điểm của bài; điểm học phần ở trên đã quy về thang 10
+  chiTiet: { tieuDe: string; heSo: number; diem: number | null; thangDiem: number }[];
 };
 
 /**
@@ -106,19 +109,19 @@ export async function diemDanhGiaTrucTuyen(khoaId: string, hocPhanId: string): P
     const chiTiet = [
       ...dsBai.map((bai) => {
         const ds = dsLan.filter((l) => l.baiId === bai.id && l.hocVienId === hocVienId).map((l) => Number(l.diem));
-        return { tieuDe: bai.tieuDe, heSo: Number(bai.heSo), diem: ds.length ? Math.max(...ds) : 0 };
+        return { tieuDe: bai.tieuDe, heSo: Number(bai.heSo), diem: ds.length ? Math.max(...ds) : 0, thangDiem: bai.thangDiem };
       }),
       ...dsYeuCau.map((yc) => {
         const bn = dsBaiNop.find((b) => b.yeuCauId === yc.id && b.hocVienId === hocVienId);
         if (bn && bn.diem == null) chuaDu = true;
-        return { tieuDe: yc.tieuDe, heSo: Number(yc.heSo), diem: bn ? (bn.diem == null ? null : Number(bn.diem)) : 0 };
+        return { tieuDe: yc.tieuDe, heSo: Number(yc.heSo), diem: bn ? (bn.diem == null ? null : Number(bn.diem)) : 0, thangDiem: yc.thangDiem };
       }),
     ];
     const tongHeSo = chiTiet.reduce((s, c) => s + c.heSo, 0);
     const diem =
       chiTiet.length === 0 || chuaDu
         ? null
-        : Math.round((chiTiet.reduce((s, c) => s + c.heSo * (c.diem ?? 0), 0) / tongHeSo) * 100) / 100;
+        : Math.round((chiTiet.reduce((s, c) => s + c.heSo * (((c.diem ?? 0) / c.thangDiem) * 10), 0) / tongHeSo) * 100) / 100;
     return { hocVienId, diem, chuaDu, chiTiet };
   });
 }

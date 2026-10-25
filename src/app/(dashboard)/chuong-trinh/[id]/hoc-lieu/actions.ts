@@ -41,6 +41,7 @@ const cauHinhBai = (f: FormData) => ({
   tinhDiem: f.get("tinhDiem") === "on",
   heSo: so(f.get("heSo")),
   diemDat: so(f.get("diemDat")),
+  thangDiem: so(f.get("thangDiem")),
 });
 const yeuCau = (f: FormData) => ({
   tieuDe: String(f.get("tieuDe") ?? ""),
@@ -48,6 +49,7 @@ const yeuCau = (f: FormData) => ({
   tinhDiem: f.get("tinhDiem") === "on",
   heSo: so(f.get("heSo")),
   diemDat: so(f.get("diemDat")),
+  thangDiem: so(f.get("thangDiem")),
 });
 
 export async function xoaHocLieuAction(chuongTrinhId: string, id: string) {

@@ -16,6 +16,7 @@ import {
   nhapCauHoiTuExcel,
   mauExcelCauHoi,
   taoYeuCauSanPham,
+  capNhatYeuCauSanPham,
   xoaYeuCauSanPham,
   hocLieuKhungChuongTrinh,
 } from "@/server/services/ct/ct-02-hoc-lieu";
@@ -318,5 +319,47 @@ describe("KQ-01 điểm đánh giá trực tuyến có hệ số", () => {
     const a = await taoHocVien(khoa.id);
     await taoBaiTracNghiem(hp.id, { tieuDe: "Chỉ để biết", tinhDiem: false });
     expect(await diemDanhGiaTrucTuyen(khoa.id, hp.id)).toEqual([{ hocVienId: a.hv.id, diem: null, chuaDu: false, chiTiet: [] }]);
+  });
+});
+
+// (bổ sung 25/10/2026) thang điểm cấu hình cho bài trắc nghiệm và sản phẩm cuối khóa
+describe("CT-02/GD-04/KQ-01 thang điểm của bài", () => {
+  it("trắc nghiệm thang 100 chia đều theo số câu; điểm đạt theo thang; không đổi thang khi đã có người làm", async () => {
+    const { ct, hp } = await taoChuongTrinh();
+    const khoa = await taoKhoa(ct.id);
+    const { nd } = await taoHocVien(khoa.id);
+    await expect(taoBaiTracNghiem(hp.id, { tieuDe: "x", tinhDiem: true, thangDiem: 0 })).rejects.toThrow(/thang điểm/);
+    await expect(taoBaiTracNghiem(hp.id, { tieuDe: "x", tinhDiem: true, thangDiem: 101 })).rejects.toThrow(/thang điểm/);
+    await expect(taoBaiTracNghiem(hp.id, { tieuDe: "x", tinhDiem: true, diemDat: 50 })).rejects.toThrow(/0-10/);
+    const bai = await taoBaiTracNghiem(hp.id, { tieuDe: "Thang 100", tinhDiem: true, thangDiem: 100, diemDat: 50 });
+    expect([bai.thangDiem, Number(bai.diemDat)]).toEqual([100, 50]);
+    for (let i = 0; i < 3; i++) await themCauHoi(bai.id, CH([0]));
+    const cau = await prisma.cauHoiTracNghiem.findMany({ where: { baiId: bai.id }, orderBy: { thuTu: "asc" } });
+
+    const lan = await batDauLamBai(nd.id, khoa.id, bai.id);
+    const kq = await nopBaiTracNghiem(nd.id, lan.lanLamId, { [cau[0].id]: [0], [cau[1].id]: [0], [cau[2].id]: [1] });
+    expect(kq.diem).toBe(66.67);
+
+    await expect(capNhatBaiTracNghiem(bai.id, { tieuDe: "Thang 100", tinhDiem: true, thangDiem: 10 })).rejects.toThrow(/không đổi thang điểm/);
+    // giữ nguyên thang thì vẫn sửa cấu hình khác được
+    expect((await capNhatBaiTracNghiem(bai.id, { tieuDe: "Thang 100 (sửa)", tinhDiem: true, thangDiem: 100, diemDat: 60 })).tieuDe).toBe("Thang 100 (sửa)");
+  });
+
+  it("sản phẩm thang 100: giảng viên chấm 0-100, ngoài thang bị chặn; điểm đánh giá trực tuyến quy về thang 10", async () => {
+    const { ct, hp } = await taoChuongTrinh();
+    const khoa = await taoKhoa(ct.id);
+    const { nd, hv } = await taoHocVien(khoa.id);
+    const gv = await taoGiangVien(khoa.id, hp.id);
+    await expect(taoYeuCauSanPham(hp.id, { tieuDe: "x", tinhDiem: true, thangDiem: 100, diemDat: 120 })).rejects.toThrow(/0-100/);
+    const yc = await taoYeuCauSanPham(hp.id, { tieuDe: "Thu hoạch thang 100", tinhDiem: true, thangDiem: 100 });
+    const bn = await nopSanPham(nd.id, { khoaId: khoa.id, yeuCauId: yc.id, tep: tep("a.pdf") });
+
+    await expect(chamSanPham(gv.nd.id, bn.id, { diem: 101 })).rejects.toThrow(/0-100/);
+    expect(Number((await chamSanPham(gv.nd.id, bn.id, { diem: 85 })).diem)).toBe(85);
+    const dA = (await diemDanhGiaTrucTuyen(khoa.id, hp.id)).find((d) => d.hocVienId === hv.id)!;
+    expect([dA.diem, dA.chiTiet[0].diem, dA.chiTiet[0].thangDiem]).toEqual([8.5, 85, 100]);
+
+    // đã có bài được chấm thì không đổi thang
+    await expect(capNhatYeuCauSanPham(yc.id, { tieuDe: yc.tieuDe, tinhDiem: true, thangDiem: 10 })).rejects.toThrow(/không đổi thang điểm/);
   });
 });

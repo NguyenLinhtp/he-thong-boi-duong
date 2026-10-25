@@ -52,7 +52,7 @@ export default async function NhapDiemHocPhanPage({
         ? {
             diem: tt.diem,
             chuaDu: tt.chuaDu,
-            chiTiet: tt.chiTiet.map((c) => `${c.tieuDe} (hệ số ${c.heSo}): ${c.diem ?? "chưa chấm"}`).join("\n"),
+            chiTiet: tt.chiTiet.map((c) => `${c.tieuDe} (hệ số ${c.heSo}): ${c.diem == null ? "chưa chấm" : `${c.diem}/${c.thangDiem}`}`).join("\n"),
           }
         : null,
     };

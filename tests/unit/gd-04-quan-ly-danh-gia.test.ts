@@ -116,7 +116,7 @@ describe("GD-04 quản lý bài làm trực tuyến: thống kê", () => {
 
     const dong = (hvId: string) => bang.dsDong.find((d) => d.hocVienId === hvId)!;
     expect(dong(a1.hv.id).chuaDat).toEqual([]);
-    expect(dong(a2.hv.id).chuaDat).toEqual(["Kiểm tra 1 0 < 5", "Chưa chấm: Thu hoạch"]);
+    expect(dong(a2.hv.id).chuaDat).toEqual(["Kiểm tra 1 0/10 < 5", "Chưa chấm: Thu hoạch"]);
     expect(dong(b1.hv.id).chuaDat).toEqual(["Chưa làm: Kiểm tra 1", "Chưa nộp: Thu hoạch"]);
     expect(dong(a1.hv.id).o[`TN-${f.bai.id}`]).toMatchObject({ trangThai: "DAT", diem: 10, soLan: 1, soLanToiDa: 1 });
   });
